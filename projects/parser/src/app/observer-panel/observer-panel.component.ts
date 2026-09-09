@@ -23,6 +23,7 @@ export class ObserverPanelComponent {
     protected batchDelayMs = 50;
     protected propertyCheckIntervalMs = 500;
     protected wholeDocument = false;
+    protected readonly popupLabels = {closed: 'Закрыт', open: 'Открыт', unresolved: 'Связанный список не найден', native: 'Native options'};
 
     constructor() {
         afterNextRender(() => this.start());

@@ -1,7 +1,7 @@
 <main>
     <header>
         <span class="brand">Training Observer</span>
-        <span class="badge">Шаг 3 · Живое наблюдение</span>
+        <span class="badge">Шаг 4 · Логические контролы</span>
         <button tuiButton type="button" size="s" appearance="flat" data-training-observer-ignore
             (click)="showInspector.set(!showInspector())">
             {{ showInspector() ? 'Закрыть инспектор' : 'Открыть инспектор' }}
@@ -14,17 +14,24 @@
         <section #page class="page" data-testid="observed-page" aria-labelledby="page-title">
             <h2 id="page-title">Тестовая страница</h2>
             <p class="muted">Контролы Taiga UI и обычный HTML</p>
-            <tui-textfield>
+            <tui-textfield [tuiTextfieldCleaner]="true">
                 <label tuiLabel for="full-name">Имя</label>
-                <input id="full-name" tuiTextfield value="Алексей" />
+                <input id="full-name" name="fullName" tuiInput [(ngModel)]="fullName" />
             </tui-textfield>
-            <label class="field" for="department">Отдел
-                <select id="department">
-                    <option value="engineering">Разработка</option>
-                    <option value="support">Поддержка</option>
-                </select>
-            </label>
-            <label class="check"><input id="notifications" type="checkbox" checked /> Получать уведомления</label>
+            <tui-textfield class="choice-field" [tuiTextfieldCleaner]="false" [disabledItemHandler]="departmentDisabled">
+                <label tuiLabel for="department">Отдел</label>
+                <input id="department" tuiSelect [(ngModel)]="department" />
+                <tui-data-list-wrapper *tuiDropdown [items]="departments" />
+            </tui-textfield>
+            <tui-textfield class="choice-field">
+                <label tuiLabel for="employee">Сотрудник</label>
+                <input #employeeInput id="employee" tuiComboBox [(ngModel)]="employee"
+                    (input)="search(employeeInput.value)" />
+                <tui-data-list-wrapper *tuiDropdown [items]="searchResults()"
+                    [attr.aria-busy]="searching()" [emptyContent]="searching() ? 'Поиск…' : 'Ничего не найдено'" />
+            </tui-textfield>
+            <p class="muted">Выберите отдел. Введите «Ан» в поле сотрудника: результаты появятся с задержкой 400 мс.</p>
+            <label class="check"><input id="notifications" type="checkbox" tuiCheckbox [(ngModel)]="notifications" /> Получать уведомления</label>
             <label class="field" for="secret">Пароль (значение не входит в снимок)
                 <input id="secret" type="password" autocomplete="new-password" />
             </label>

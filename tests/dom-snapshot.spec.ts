@@ -55,18 +55,20 @@ test('captures a serializable, consistent graph without modifying the observed D
 });
 
 test('reads current input, checkbox and select properties; snapshots remain manual', async ({page}) => {
+    await page.getByTestId('observed-page').evaluate((root) => root.insertAdjacentHTML('beforeend',
+        '<select id="native-department"><option value="engineering">Разработка</option><option value="support">Поддержка</option></select>'));
     const before = await capture(page);
 
     await page.locator('#full-name').fill('Мария');
     await page.locator('#notifications').uncheck();
-    await page.locator('#department').selectOption('support');
+    await page.locator('#native-department').selectOption('support');
     expect(JSON.parse(await page.getByTestId('snapshot-json').innerText())).toEqual(before);
 
     const after = await capture(page);
 
     expect(byId(after, 'full-name').state.value).toBe('Мария');
     expect(byId(after, 'notifications').state.checked).toBe(false);
-    expect(byId(after, 'department').state.value).toBe('support');
+    expect(byId(after, 'native-department').state.value).toBe('support');
     expect(byId(after, 'full-name').id).toBe(byId(before, 'full-name').id);
     expect(byId(before, 'notifications').state.checked).toBe(true);
     // Programmatic property changes do not require an event for the next capture.

@@ -3,6 +3,7 @@ import {computed, DestroyRef, inject, Injectable, NgZone, signal} from '@angular
 
 import {type DomElementSnapshot, type DomSnapshot} from './models/dom-snapshot';
 import {DomSnapshotBuilder} from './services/dom-snapshot-builder';
+import {ControlSnapshotBuilder} from './services/control-snapshot-builder';
 import {DomElementAnalyzer} from './services/dom-element-analyzer';
 import {DomObservationSession} from './services/dom-observation-session';
 import {DOM_OBSERVATION_OPTIONS, type DomObservationOptions} from './tokens/dom-observation-options';
@@ -12,6 +13,7 @@ import {type DomSnapshotOptions} from './tokens/dom-snapshot-options';
 @Injectable({providedIn: 'root'})
 export class TrainingObserver {
     private readonly builder = inject(DomSnapshotBuilder);
+    private readonly controlBuilder = inject(ControlSnapshotBuilder);
     private readonly zone = inject(NgZone);
     private readonly current = signal<DomSnapshot | null>(null);
     private readonly document = inject(DOCUMENT);
@@ -36,6 +38,11 @@ export class TrainingObserver {
 
         return snapshot ? snapshot.interactiveIds.map((id) => snapshot.nodes[id])
             .filter((node): node is DomElementSnapshot => node.kind === 'element') : [];
+    });
+    readonly logicalControls = computed(() => {
+        const snapshot = this.snapshot();
+
+        return snapshot ? this.controlBuilder.build(snapshot) : [];
     });
 
     constructor() {
@@ -112,7 +119,7 @@ export class TrainingObserver {
     }
 
     private publish(snapshot: DomSnapshot, onlyIfChanged: boolean): void {
-        const fingerprint = JSON.stringify([snapshot.rootId, snapshot.nodes, snapshot.interactiveIds, snapshot.stats]);
+        const fingerprint = JSON.stringify([snapshot.rootId, snapshot.relatedRootIds, snapshot.nodes, snapshot.interactiveIds, snapshot.stats]);
 
         this.zone.run(() => {
             this.scans.update((count) => count + 1);

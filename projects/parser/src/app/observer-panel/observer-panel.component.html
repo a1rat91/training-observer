@@ -36,7 +36,8 @@
     }
     @if (observer.snapshot(); as snapshot) {
         <p class="stats" aria-live="polite">
-            {{ snapshot.stats.nodeCount }} узлов · {{ observer.controls().length }} потенциальных контролов
+            {{ snapshot.stats.nodeCount }} узлов · {{ observer.logicalControls().length }} логических контролов
+            · {{ observer.controls().length }} потенциальных DOM-контролов
             · {{ snapshot.durationMs.toFixed(1) }} мс
         </p>
         @if (snapshot.stats.truncated) {
@@ -45,16 +46,58 @@
         @if (snapshot.stats.boundaryCount) {
             <p>Найдено границ iframe / Shadow DOM: {{ snapshot.stats.boundaryCount }}. Их содержимое пока не обходится.</p>
         }
+        <div class="choice-states" data-testid="choice-states">
+            @for (control of observer.logicalControls(); track control.id) {
+                @if (control.choice; as choice) {
+                    <section class="choice-state" [attr.data-control-id]="control.locatorHints.id">
+                        <h3>{{ control.label }} · {{ control.kind }}</h3>
+                        <p>Текст поля: <strong>{{ choice.displayValue || 'пусто' }}</strong></p>
+                        <p>Список: <strong>{{ popupLabels[choice.popup.status] }}</strong>
+                            @if (choice.popup.busy) { <span class="badge">Загрузка</span> }
+                        </p>
+                        <small>Связь: {{ choice.popup.relation }} · {{ choice.popup.referencedIds.join(', ') || 'нет ID' }}</small>
+                        <p>Выбор по DOM: {{ choice.selection.status === 'observed' ? (choice.selection.labels.join(', ') || 'пусто') : 'не подтверждён' }}</p>
+                        @if (choice.popup.options.length) {
+                            <ul>
+                                @for (option of choice.popup.options.slice(0, 20); track option.nodeId) {
+                                    <li>{{ option.label }}
+                                        @if (option.selected) { <span class="badge available">Выбран</span> }
+                                        @if (option.disabled) { <span class="badge">Заблокирован</span> }
+                                    </li>
+                                }
+                            </ul>
+                        } @else if (choice.popup.text) { <p>{{ choice.popup.text }}</p> }
+                        <small>В текущем DOM-снимке {{ choice.popup.options.length }} вариантов. Список может быть загружен частично.</small>
+                    </section>
+                }
+            }
+        </div>
         <div class="table-scroll">
             <table>
-                <thead><tr><th>Элемент</th><th>Подпись</th><th>Состояние</th></tr></thead>
+                <thead><tr><th>Тип</th><th>Подпись и поиск</th><th>Значение</th><th>Состояние</th></tr></thead>
                 <tbody>
-                    @for (control of observer.controls(); track control.id) {
+                    @for (control of observer.logicalControls(); track control.id) {
                         <tr>
-                            <td><code>{{ control.tagName }}</code><small>{{ control.id }}</small></td>
-                            <td>{{ control.label || 'Без подписи' }}</td>
+                            <td><code>{{ control.kind }}</code><small>{{ control.source }}</small><small>{{ control.id }}</small></td>
+                            <td>
+                                {{ control.label || 'Без подписи' }}
+                                <small>{{ control.memberNodeIds.length }} DOM-узлов</small>
+                                <details>
+                                    <summary>Признаки поиска</summary>
+                                    <pre>{{ control.locatorHints | json }}</pre>
+                                </details>
+                            </td>
+                            <td>
+                                @if (control.state.redacted) { <span class="badge">Скрыто</span> }
+                                @else if (control.kind === 'checkbox') {
+                                    {{ control.state.indeterminate ? 'Смешанное' : control.state.checked ? 'Включён' : 'Выключен' }}
+                                } @else { {{ control.state.value ?? '—' }} }
+                            </td>
                             <td>
                                 @if (control.state.disabled) { <span class="badge">Заблокирован</span> }
+                                @if (control.state.readOnly) { <span class="badge">Только чтение</span> }
+                                @if (control.state.required) { <span class="badge">Обязательное</span> }
+                                @if (control.state.invalid) { <span class="badge">Ошибка</span> }
                                 @if (!control.visible) { <span class="badge">Скрыт</span> }
                                 @if (control.pointerActionable) { <span class="badge available">Доступен указателю</span> }
                                 @if (control.hitTest === 'covered') { <span class="badge">Перекрыт</span> }
@@ -65,6 +108,11 @@
                 </tbody>
             </table>
         </div>
+        <p class="muted">Поддержаны текстовые поля, кнопки, checkbox, select и первые combobox Taiga UI. Признаки поиска ещё не гарантируют уникальность.</p>
+        <details class="json">
+            <summary>Логические контролы JSON</summary>
+            <pre data-testid="controls-json">{{ observer.logicalControls() | json }}</pre>
+        </details>
         <details class="json" open>
             <summary>Полный снимок JSON</summary>
             <pre data-testid="snapshot-json">{{ snapshot | json }}</pre>

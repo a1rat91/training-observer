@@ -64,6 +64,8 @@ export interface DomSnapshot {
     readonly capturedAt: string;
     readonly durationMs: number;
     readonly rootId: DomNodeId | null;
+    /** Additional roots outside the scope, explicitly linked by an open control's aria-controls. */
+    readonly relatedRootIds?: readonly DomNodeId[];
     readonly nodes: Readonly<Record<DomNodeId, DomNodeSnapshot>>;
     readonly interactiveIds: readonly DomNodeId[];
     readonly stats: {

@@ -288,9 +288,13 @@ test('DestroyRef releases polling and pending work when the inspector is unmount
 });
 
 test('reports a detached root and retains the last successful snapshot', async ({page}) => {
-    const before = await snapshot(page);
-
-    await page.getByTestId('observed-page').evaluate((root) => root.remove());
+    await settings(page, 0);
+    // Read and detach in one browser task: no unrelated capture can occur between two RPCs.
+    const before = await page.getByTestId('observed-page').evaluate((root) => {
+        const published = JSON.parse(document.querySelector('[data-testid="snapshot-json"]')!.textContent!);
+        root.remove();
+        return published;
+    });
     await expect(page.getByTestId('observation-status')).toHaveText('Наблюдение остановлено');
     await expect(page.getByRole('alert')).toContainText('observed root was removed');
     expect((await snapshot(page)).capturedAt).toBe(before.capturedAt);

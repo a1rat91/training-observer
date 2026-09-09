@@ -147,8 +147,30 @@ export class DomSnapshotBuilder {
         const rootId = options.ignoreSelector && root.closest(options.ignoreSelector) ? null :
             visit(root, null, this.rootPath(root), 0);
 
+        // Portals are not descendants of the form. Follow only explicit links from captured,
+        // open list controls; never guess an owner from focus, timing or the nearest dropdown.
+        const relatedRootIds: DomNodeId[] = [];
+        const linked = new Set<Element>();
+        for (const node of Object.values(nodes)) {
+            if (node.kind !== 'element' || node.attributes['aria-expanded'] !== 'true' ||
+                node.attributes['aria-haspopup'] !== 'listbox') continue;
+            for (const id of (node.attributes['aria-controls'] ?? '').trim().split(/\s+/)) {
+                const element = this.document.getElementById(id);
+                if (element && !root.contains(element) && !element.contains(root) &&
+                    !(options.ignoreSelector && element.closest(options.ignoreSelector)) && !isScrollDecoration(element)) {
+                    linked.add(element);
+                }
+            }
+        }
+        // If two references overlap, capture the outer root once so parent links stay consistent.
+        for (const element of linked) {
+            if ([...linked].some((other) => other !== element && other.contains(element))) continue;
+            const id = visit(element, null, this.rootPath(element), 0);
+            if (id) relatedRootIds.push(id);
+        }
+
         return {
-            schemaVersion: 1, capturedAt, rootId, nodes, interactiveIds,
+            schemaVersion: 1, capturedAt, rootId, relatedRootIds, nodes, interactiveIds,
             durationMs: view.performance.now() - started,
             stats: {nodeCount, elementCount, textCount, boundaryCount, truncated: limits.size > 0, limitsReached: [...limits]},
         };
