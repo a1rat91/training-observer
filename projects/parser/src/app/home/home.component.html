@@ -1,13 +1,95 @@
 <main>
     <header>
         <span class="brand">Training Observer</span>
-        <span class="project">parser</span>
+        <span class="badge">Шаг 2 · Снимок DOM</span>
     </header>
-    <section>
-        <p class="eyebrow">Основа проекта</p>
-        <h1>Парсер страницы</h1>
-        <p class="description">Здесь появится интерфейс наблюдателя: элементы страницы, их состояния и действия пользователя.</p>
-        <div class="placeholder">Приложение готово к следующему этапу разработки</div>
-    </section>
-    <footer>Angular 19 · Nx · Taiga UI</footer>
+    <h1>Исследуем страницу</h1>
+    <p class="intro">Измените форму и снимите её состояние. Каждый снимок — отдельный ручной обход DOM.</p>
+
+    <div class="workspace">
+        <section #page class="page" data-testid="observed-page" aria-labelledby="page-title">
+            <h2 id="page-title">Тестовая страница</h2>
+            <p class="muted">Контролы Taiga UI и обычный HTML</p>
+            <tui-textfield>
+                <label tuiLabel for="full-name">Имя</label>
+                <input id="full-name" tuiTextfield value="Алексей" />
+            </tui-textfield>
+            <label class="field" for="department">Отдел
+                <select id="department">
+                    <option value="engineering">Разработка</option>
+                    <option value="support">Поддержка</option>
+                </select>
+            </label>
+            <label class="check"><input id="notifications" type="checkbox" checked /> Получать уведомления</label>
+            <label class="field" for="secret">Пароль (значение не входит в снимок)
+                <input id="secret" type="password" autocomplete="new-password" />
+            </label>
+            <div class="actions">
+                <button tuiButton type="button" size="m" disabled style="cursor: pointer">Сохранить</button>
+                <button tuiButton type="button" size="m" appearance="secondary"
+                    (click)="additionalField.set(!additionalField())">
+                    {{ additionalField() ? 'Убрать поле' : 'Добавить поле' }}
+                </button>
+            </div>
+            @if (additionalField()) {
+                <label class="field" for="comment">Комментарий
+                    <textarea id="comment" rows="2"></textarea>
+                </label>
+            }
+            <div hidden><input aria-label="Скрытое поле" value="Скрытое значение" /></div>
+        </section>
+
+        <section class="inspector" data-training-observer-ignore aria-labelledby="inspector-title">
+            <div class="toolbar">
+                <h2 id="inspector-title">Инспектор</h2>
+                <button tuiButton type="button" size="m" (click)="capture()">Снять снимок</button>
+            </div>
+            <details class="settings">
+                <summary>Ограничения обхода</summary>
+                <label>Максимум узлов <input type="number" min="1" [(ngModel)]="maxNodes" /></label>
+                <label>Максимум уровней <input type="number" min="0" max="100" [(ngModel)]="maxDepth" /></label>
+            </details>
+            @if (error()) {
+                <p role="alert">{{ error() }}</p>
+            }
+            @if (observer.snapshot(); as snapshot) {
+                <p class="stats" aria-live="polite">
+                    {{ snapshot.stats.nodeCount }} узлов · {{ observer.controls().length }} потенциальных контролов
+                    · {{ snapshot.durationMs.toFixed(1) }} мс
+                </p>
+                @if (snapshot.stats.truncated) {
+                    <p role="alert">Снимок неполный: достигнут лимит {{ snapshot.stats.limitsReached.join(', ') }}.</p>
+                }
+                @if (snapshot.stats.boundaryCount) {
+                    <p>Найдено границ iframe / Shadow DOM: {{ snapshot.stats.boundaryCount }}. Их содержимое пока не обходится.</p>
+                }
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th>Элемент</th><th>Подпись</th><th>Состояние</th></tr></thead>
+                        <tbody>
+                            @for (control of observer.controls(); track control.id) {
+                                <tr>
+                                    <td><code>{{ control.tagName }}</code><small>{{ control.id }}</small></td>
+                                    <td>{{ control.label || 'Без подписи' }}</td>
+                                    <td>
+                                        @if (control.state.disabled) { <span class="badge">Заблокирован</span> }
+                                        @if (!control.visible) { <span class="badge">Скрыт</span> }
+                                        @if (control.pointerActionable) { <span class="badge available">Доступен указателю</span> }
+                                        @if (control.hitTest === 'covered') { <span class="badge">Перекрыт</span> }
+                                        @if (control.visible && !control.inViewport) { <span class="badge">Вне экрана</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <details class="json" open>
+                    <summary>Полный снимок JSON</summary>
+                    <pre data-testid="snapshot-json">{{ snapshot | json }}</pre>
+                </details>
+            } @else {
+                <div class="empty">Нажмите «Снять снимок», чтобы увидеть модель тестовой страницы.</div>
+            }
+        </section>
+    </div>
 </main>

@@ -3,8 +3,9 @@ dist/
 .nx/
 .angular/
 coverage/
+playwright-report/
+test-results/
 *.tsbuildinfo
 *.log
 .DS_Store
 .idea/
-

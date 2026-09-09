@@ -9,6 +9,7 @@
         "start": "nx serve demo",
         "start:parser": "nx serve parser",
         "start:all": "nx run-many -t serve -p demo parser --parallel=2",
+        "test": "playwright test",
         "build": "nx run-many -t build -p training-observer parser demo --configuration=production",
         "graph": "nx graph"
     },
@@ -36,6 +37,7 @@
         "@angular/compiler-cli": "19.2.25",
         "@nx/angular": "20.8.4",
         "@nx/workspace": "20.8.4",
+        "@playwright/test": "1.63.0",
         "@schematics/angular": "19.2.27",
         "ng-packagr": "19.2.2",
         "nx": "20.8.4",
