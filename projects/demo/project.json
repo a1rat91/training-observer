@@ -1,0 +1,79 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "demo",
+    "projectType": "application",
+    "sourceRoot": "projects/demo/src",
+    "prefix": "app",
+    "tags": [
+        "type:application"
+    ],
+    "targets": {
+        "build": {
+            "executor": "@angular-devkit/build-angular:application",
+            "outputs": [
+                "{workspaceRoot}/dist/demo"
+            ],
+            "options": {
+                "outputPath": "dist/demo",
+                "index": "projects/demo/src/index.html",
+                "browser": "projects/demo/src/main.ts",
+                "polyfills": [
+                    "zone.js"
+                ],
+                "tsConfig": "projects/demo/tsconfig.app.json",
+                "inlineStyleLanguage": "less",
+                "assets": [
+                    {
+                        "glob": "**/*",
+                        "input": "node_modules/@taiga-ui/icons/src",
+                        "output": "assets/taiga-ui/icons"
+                    }
+                ],
+                "styles": [
+                    "node_modules/@taiga-ui/styles/taiga-ui-theme.less",
+                    "node_modules/@taiga-ui/styles/taiga-ui-fonts.less",
+                    "projects/demo/src/styles.less"
+                ]
+            },
+            "configurations": {
+                "production": {
+                    "budgets": [
+                        {
+                            "type": "initial",
+                            "maximumWarning": "1mb",
+                            "maximumError": "2mb"
+                        },
+                        {
+                            "type": "anyComponentStyle",
+                            "maximumWarning": "4kb",
+                            "maximumError": "8kb"
+                        }
+                    ],
+                    "outputHashing": "all"
+                },
+                "development": {
+                    "optimization": false,
+                    "extractLicenses": false,
+                    "sourceMap": true
+                }
+            },
+            "defaultConfiguration": "production"
+        },
+        "serve": {
+            "executor": "@angular-devkit/build-angular:dev-server",
+            "options": {
+                "port": 4200,
+                "host": "127.0.0.1"
+            },
+            "configurations": {
+                "production": {
+                    "buildTarget": "demo:build:production"
+                },
+                "development": {
+                    "buildTarget": "demo:build:development"
+                }
+            },
+            "defaultConfiguration": "development"
+        }
+    }
+}

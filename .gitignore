@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.nx/
+.angular/
+coverage/
+*.tsbuildinfo
+*.log
+.DS_Store
+.idea/
+
