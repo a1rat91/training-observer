@@ -1,10 +1,14 @@
 <main>
     <header>
         <span class="brand">Training Observer</span>
-        <span class="badge">Шаг 2 · Снимок DOM</span>
+        <span class="badge">Шаг 3 · Живое наблюдение</span>
+        <button tuiButton type="button" size="s" appearance="flat" data-training-observer-ignore
+            (click)="showInspector.set(!showInspector())">
+            {{ showInspector() ? 'Закрыть инспектор' : 'Открыть инспектор' }}
+        </button>
     </header>
     <h1>Исследуем страницу</h1>
-    <p class="intro">Измените форму и снимите её состояние. Каждый снимок — отдельный ручной обход DOM.</p>
+    <p class="intro">Изменяйте форму: инспектор обновляется автоматически. Наблюдение можно остановить и продолжить.</p>
 
     <div class="workspace">
         <section #page class="page" data-testid="observed-page" aria-labelledby="page-title">
@@ -39,57 +43,9 @@
             <div hidden><input aria-label="Скрытое поле" value="Скрытое значение" /></div>
         </section>
 
-        <section class="inspector" data-training-observer-ignore aria-labelledby="inspector-title">
-            <div class="toolbar">
-                <h2 id="inspector-title">Инспектор</h2>
-                <button tuiButton type="button" size="m" (click)="capture()">Снять снимок</button>
-            </div>
-            <details class="settings">
-                <summary>Ограничения обхода</summary>
-                <label>Максимум узлов <input type="number" min="1" [(ngModel)]="maxNodes" /></label>
-                <label>Максимум уровней <input type="number" min="0" max="100" [(ngModel)]="maxDepth" /></label>
-            </details>
-            @if (error()) {
-                <p role="alert">{{ error() }}</p>
-            }
-            @if (observer.snapshot(); as snapshot) {
-                <p class="stats" aria-live="polite">
-                    {{ snapshot.stats.nodeCount }} узлов · {{ observer.controls().length }} потенциальных контролов
-                    · {{ snapshot.durationMs.toFixed(1) }} мс
-                </p>
-                @if (snapshot.stats.truncated) {
-                    <p role="alert">Снимок неполный: достигнут лимит {{ snapshot.stats.limitsReached.join(', ') }}.</p>
-                }
-                @if (snapshot.stats.boundaryCount) {
-                    <p>Найдено границ iframe / Shadow DOM: {{ snapshot.stats.boundaryCount }}. Их содержимое пока не обходится.</p>
-                }
-                <div class="table-scroll">
-                    <table>
-                        <thead><tr><th>Элемент</th><th>Подпись</th><th>Состояние</th></tr></thead>
-                        <tbody>
-                            @for (control of observer.controls(); track control.id) {
-                                <tr>
-                                    <td><code>{{ control.tagName }}</code><small>{{ control.id }}</small></td>
-                                    <td>{{ control.label || 'Без подписи' }}</td>
-                                    <td>
-                                        @if (control.state.disabled) { <span class="badge">Заблокирован</span> }
-                                        @if (!control.visible) { <span class="badge">Скрыт</span> }
-                                        @if (control.pointerActionable) { <span class="badge available">Доступен указателю</span> }
-                                        @if (control.hitTest === 'covered') { <span class="badge">Перекрыт</span> }
-                                        @if (control.visible && !control.inViewport) { <span class="badge">Вне экрана</span> }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                <details class="json" open>
-                    <summary>Полный снимок JSON</summary>
-                    <pre data-testid="snapshot-json">{{ snapshot | json }}</pre>
-                </details>
-            } @else {
-                <div class="empty">Нажмите «Снять снимок», чтобы увидеть модель тестовой страницы.</div>
-            }
-        </section>
+        @if (showInspector()) {
+            <app-observer-panel [root]="page" />
+        }
+
     </div>
 </main>

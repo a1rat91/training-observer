@@ -30,6 +30,8 @@ function byId(snapshot: DomSnapshot, id: string): DomElementSnapshot {
 test.beforeEach(async ({page}) => {
     await page.goto('/');
     await expect(page.getByRole('heading', {name: 'Исследуем страницу'})).toBeVisible();
+    await page.getByRole('button', {name: 'Остановить', exact: true}).click();
+    await expect(page.getByTestId('observation-status')).toHaveText('Наблюдение остановлено');
 });
 
 test('captures a serializable, consistent graph without modifying the observed DOM', async ({page}) => {

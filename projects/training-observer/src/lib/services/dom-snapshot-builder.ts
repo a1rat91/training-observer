@@ -5,6 +5,7 @@ import {type DomElementSnapshot, type DomNodeId, type DomNodeSnapshot, type DomS
 import {DOM_SNAPSHOT_OPTIONS, type DomSnapshotOptions} from '../tokens/dom-snapshot-options';
 import {DomElementAnalyzer} from './dom-element-analyzer';
 import {DomGeometry} from './dom-geometry';
+import {isScrollDecoration} from './dom-scroll-decoration';
 
 const SKIP_TAGS = new Set(['script', 'style', 'link', 'meta', 'noscript', 'template', 'svg']);
 
@@ -74,7 +75,7 @@ export class DomSnapshotBuilder {
 
             const element = node as Element;
 
-            if (SKIP_TAGS.has(element.localName) ||
+            if (isScrollDecoration(element) || SKIP_TAGS.has(element.localName) ||
                 (options.ignoreSelector && element.matches(options.ignoreSelector))) {
                 return null;
             }

@@ -1,0 +1,75 @@
+<section class="inspector" aria-labelledby="inspector-title">
+    <div class="toolbar">
+        <h2 id="inspector-title">Инспектор</h2>
+        <span class="badge" [class.available]="observer.isObserving()" data-testid="observation-status">
+            {{ observer.isObserving() ? 'Наблюдение включено' : 'Наблюдение остановлено' }}
+        </span>
+    </div>
+    <div class="actions">
+        @if (observer.isObserving()) {
+            <button tuiButton type="button" size="m" (click)="observer.stop()">Остановить</button>
+        } @else {
+            <button tuiButton type="button" size="m" (click)="start()">Начать наблюдение</button>
+        }
+        <button tuiButton type="button" size="m" appearance="secondary" (click)="capture()">Снять снимок</button>
+        <button tuiButton type="button" size="m" appearance="flat" (click)="observer.clear()">Очистить</button>
+    </div>
+    <p class="muted">
+        Пересчётов: <span data-testid="scan-count">{{ observer.scanCount() }}</span> ·
+        Публикаций: <span data-testid="revision">{{ observer.revision() }}</span>
+    </p>
+    <details class="settings">
+        <summary>Ограничения обхода</summary>
+        <label>Максимум узлов <input type="number" min="1" [(ngModel)]="maxNodes" /></label>
+        <label>Максимум уровней <input type="number" min="0" max="100" [(ngModel)]="maxDepth" /></label>
+        <label>Объединение событий, мс <input type="number" min="0" [(ngModel)]="batchDelayMs" /></label>
+        <label>Сверка свойств, мс (0 — выключить) <input type="number" min="0" [(ngModel)]="propertyCheckIntervalMs" /></label>
+        <label>Вся страница <input type="checkbox" [(ngModel)]="wholeDocument" /></label>
+        <p class="muted">Настройки наблюдения применяются при запуске.</p>
+        <button tuiButton type="button" size="s" (click)="start()">Применить настройки</button>
+    </details>
+    @if (error()) {
+        <p role="alert">{{ error() }}</p>
+    }
+    @if (observer.error()) {
+        <p role="alert">{{ observer.error() }}</p>
+    }
+    @if (observer.snapshot(); as snapshot) {
+        <p class="stats" aria-live="polite">
+            {{ snapshot.stats.nodeCount }} узлов · {{ observer.controls().length }} потенциальных контролов
+            · {{ snapshot.durationMs.toFixed(1) }} мс
+        </p>
+        @if (snapshot.stats.truncated) {
+            <p role="alert">Снимок неполный: достигнут лимит {{ snapshot.stats.limitsReached.join(', ') }}.</p>
+        }
+        @if (snapshot.stats.boundaryCount) {
+            <p>Найдено границ iframe / Shadow DOM: {{ snapshot.stats.boundaryCount }}. Их содержимое пока не обходится.</p>
+        }
+        <div class="table-scroll">
+            <table>
+                <thead><tr><th>Элемент</th><th>Подпись</th><th>Состояние</th></tr></thead>
+                <tbody>
+                    @for (control of observer.controls(); track control.id) {
+                        <tr>
+                            <td><code>{{ control.tagName }}</code><small>{{ control.id }}</small></td>
+                            <td>{{ control.label || 'Без подписи' }}</td>
+                            <td>
+                                @if (control.state.disabled) { <span class="badge">Заблокирован</span> }
+                                @if (!control.visible) { <span class="badge">Скрыт</span> }
+                                @if (control.pointerActionable) { <span class="badge available">Доступен указателю</span> }
+                                @if (control.hitTest === 'covered') { <span class="badge">Перекрыт</span> }
+                                @if (control.visible && !control.inViewport) { <span class="badge">Вне экрана</span> }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <details class="json" open>
+            <summary>Полный снимок JSON</summary>
+            <pre data-testid="snapshot-json">{{ snapshot | json }}</pre>
+        </details>
+    } @else {
+        <div class="empty">Нажмите «Снять снимок», чтобы увидеть модель тестовой страницы.</div>
+    }
+</section>
