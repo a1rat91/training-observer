@@ -1,5 +1,5 @@
 import {expect, test, type Page} from '@playwright/test';
-import {type ControlSnapshot} from '../projects/training-observer/src/index';
+import {type ControlSnapshot} from '../libs/training-observer/src/index';
 
 test.use({trace: 'off'});
 

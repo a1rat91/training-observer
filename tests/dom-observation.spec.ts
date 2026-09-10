@@ -1,6 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
 
-import {type DomElementSnapshot, type DomSnapshot} from '../projects/training-observer/src/index';
+import {type DomElementSnapshot, type DomSnapshot} from '../libs/training-observer/src/index';
 
 // Trace snapshots themselves read native form properties, which would contaminate the polling probe.
 test.use({trace: 'off'});

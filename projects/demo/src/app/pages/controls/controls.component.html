@@ -1,13 +1,10 @@
 <main>
-    <header>
-        <span class="brand">Training Observer</span>
-        <span class="badge">Шаг 4 · Логические контролы</span>
-        <a routerLink="/microfrontends" data-training-observer-ignore>Микрофронты</a>
+    <div class="toolbar" data-training-observer-ignore>
         <button tuiButton type="button" size="s" appearance="flat" data-training-observer-ignore
             (click)="showInspector.set(!showInspector())">
             {{ showInspector() ? 'Закрыть инспектор' : 'Открыть инспектор' }}
         </button>
-    </header>
+    </div>
     <h1>Исследуем страницу</h1>
     <p class="intro">Изменяйте форму: инспектор обновляется автоматически. Наблюдение можно остановить и продолжить.</p>
 

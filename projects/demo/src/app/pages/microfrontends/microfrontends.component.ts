@@ -1,14 +1,13 @@
 import {JsonPipe} from '@angular/common';
 import {afterNextRender, ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {RouterLink} from '@angular/router';
 import {TuiButton, TuiInput} from '@taiga-ui/core';
 import {TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
 import {MicrofrontendObserver} from '@training-observer/core';
 
 @Component({
     selector: 'app-microfrontends',
-    imports: [FormsModule, JsonPipe, RouterLink, TuiInput, TuiButton, TuiSelect, TuiDataListWrapper],
+    imports: [FormsModule, JsonPipe, TuiInput, TuiButton, TuiSelect, TuiDataListWrapper],
     providers: [MicrofrontendObserver],
     templateUrl: './microfrontends.component.html',
     styleUrl: './microfrontends.component.less',

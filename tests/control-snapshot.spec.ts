@@ -1,6 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
 
-import {type ControlSnapshot, type DomSnapshot} from '../projects/training-observer/src/index';
+import {type ControlSnapshot, type DomSnapshot} from '../libs/training-observer/src/index';
 
 test.use({trace: 'off'});
 
@@ -23,6 +23,8 @@ test.beforeEach(async ({page}) => {
 });
 
 test('normalizes real Taiga UI textfield, cleaner, button and checkbox', async ({page}) => {
+    // Lazy routing may publish the first snapshot before NgModel's deferred write.
+    await expect.poll(async () => (await control(page, 'full-name'))?.state.value).toBe('Алексей');
     const field = (await control(page, 'full-name'))!;
     expect(field).toMatchObject({kind: 'textbox', source: 'taiga-ui', label: 'Имя',
         state: {value: 'Алексей', disabled: false, redacted: false},

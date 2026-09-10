@@ -17,7 +17,7 @@
         "isolatedModules": true,
         "useDefineForClassFields": false,
         "paths": {
-            "@training-observer/core": ["projects/training-observer/src/index.ts"]
+            "@training-observer/core": ["libs/training-observer/src/index.ts"]
         }
     },
     "angularCompilerOptions": {

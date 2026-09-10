@@ -1,5 +1,5 @@
 import {expect, test, type Page} from '@playwright/test';
-import {type MicrofrontendSnapshot} from '../projects/training-observer/src/index';
+import {type MicrofrontendSnapshot} from '../libs/training-observer/src/index';
 
 test.use({trace: 'off'});
 
@@ -226,7 +226,7 @@ test('DestroyRef releases property reads for a still-connected external area', a
         document.body.append(root);
     });
     await expect(page.getByTestId('mf-count')).toHaveText('4');
-    await page.getByRole('link', {name: '← Общий стенд'}).click();
+    await page.getByRole('navigation', {name: 'Разделы demo'}).getByRole('link', {name: 'Контролы', exact: true}).click();
     await page.getByRole('button', {name: 'Остановить', exact: true}).click();
     await page.locator('#lifecycle-input').evaluate((input: HTMLInputElement) => { input.value = 'После destroy'; });
     const reads = await page.locator('#lifecycle-input').evaluate((input) => (input as HTMLInputElement & {reads: number}).reads);

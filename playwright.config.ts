@@ -13,7 +13,7 @@ export default defineConfig({
         trace: 'retain-on-failure',
     },
     webServer: {
-        command: 'npx nx serve parser --port=4301',
+        command: 'npx nx serve demo --port=4301',
         url: 'http://127.0.0.1:4301',
         reuseExistingServer: !process.env['CI'],
         timeout: 120_000,

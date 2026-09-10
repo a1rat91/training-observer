@@ -1,6 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
 
-import {type DomElementSnapshot, type DomSnapshot} from '../projects/training-observer/src/index';
+import {type DomElementSnapshot, type DomSnapshot} from '../libs/training-observer/src/index';
 
 async function capture(page: Page): Promise<DomSnapshot> {
     const output = page.getByTestId('snapshot-json');
