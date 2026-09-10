@@ -8,6 +8,7 @@ import {DomGeometry} from './dom-geometry';
 import {isScrollDecoration} from './dom-scroll-decoration';
 
 const SKIP_TAGS = new Set(['script', 'style', 'link', 'meta', 'noscript', 'template', 'svg']);
+const POPUP_ROLES = new Set(['true', 'menu', 'listbox', 'tree', 'grid', 'dialog']);
 
 @Injectable({providedIn: 'root'})
 export class DomSnapshotBuilder {
@@ -148,12 +149,12 @@ export class DomSnapshotBuilder {
             visit(root, null, this.rootPath(root), 0);
 
         // Portals are not descendants of the form. Follow only explicit links from captured,
-        // open list controls; never guess an owner from focus, timing or the nearest dropdown.
+        // open popup controls; never guess an owner from focus, timing or the nearest dropdown.
         const relatedRootIds: DomNodeId[] = [];
         const linked = new Set<Element>();
         for (const node of Object.values(nodes)) {
             if (node.kind !== 'element' || node.attributes['aria-expanded'] !== 'true' ||
-                node.attributes['aria-haspopup'] !== 'listbox') continue;
+                !POPUP_ROLES.has(node.attributes['aria-haspopup'])) continue;
             for (const id of (node.attributes['aria-controls'] ?? '').trim().split(/\s+/)) {
                 const element = this.document.getElementById(id);
                 if (element && !root.contains(element) && !element.contains(root) &&

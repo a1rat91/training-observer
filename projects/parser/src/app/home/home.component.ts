@@ -1,13 +1,13 @@
 import {ChangeDetectionStrategy, Component, DestroyRef, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {TuiButton, TuiCheckbox, TuiInput} from '@taiga-ui/core';
+import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput} from '@taiga-ui/core';
 import {TuiComboBox, TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
 
 import {ObserverPanelComponent} from '../observer-panel/observer-panel.component';
 
 @Component({
     selector: 'app-home',
-    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiSelect, TuiComboBox, TuiDataListWrapper],
+    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
     templateUrl: './home.component.html',
     styleUrl: './home.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,6 +25,8 @@ export class HomeComponent {
     private searchTimer: ReturnType<typeof setTimeout> | undefined;
     protected readonly additionalField = signal(false);
     protected readonly showInspector = signal(true);
+    protected readonly hintOpen = signal(false);
+    protected readonly dialogOpen = signal(false);
 
     constructor() {
         inject(DestroyRef).onDestroy(() => clearTimeout(this.searchTimer));

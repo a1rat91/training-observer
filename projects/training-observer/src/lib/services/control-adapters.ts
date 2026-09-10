@@ -61,6 +61,13 @@ export class TaigaControlAdapter implements ControlAdapter {
             return {kind: 'combobox', source: 'taiga-ui', host: field ?? node};
         }
 
+        // TuiInput uses role=combobox for arbitrary dropdown content too. Preserve
+        // the editing field without claiming that it implements selection semantics.
+        if (node.tagName === 'input' && 'tuiinput' in attributes &&
+            attributes['role'] === 'combobox' && !('tuiselectlike' in attributes)) {
+            return {kind: 'textbox', source: 'taiga-ui', host: field ?? node};
+        }
+
         if (kind === 'textbox' && (field || 'tuiinput' in attributes || 'tuitextfield' in attributes)) {
             return {kind, source: 'taiga-ui', host: field ?? node};
         }

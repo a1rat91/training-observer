@@ -1,3 +1,4 @@
+import {type DomSnapshot} from '../models/dom-snapshot';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
 import {isScrollDecoration, SCROLL_DECORATION_SELECTOR} from './dom-scroll-decoration';
@@ -27,21 +28,22 @@ export class DomObservationSession {
     private batchTimer: number | null = null;
     private propertyTimer: number | null = null;
     private propertyStates = new Map<Element, string>();
+    private relatedRoots: Element[] = [];
     private disposed = false;
 
     constructor(
         private readonly root: Element,
         private readonly options: DomObservationOptions,
         private readonly analyzer: DomElementAnalyzer,
-        private readonly onChange: () => void,
+        private readonly onChange: () => DomSnapshot,
         private readonly onError: (error: unknown) => void,
     ) {
         this.document = root.ownerDocument;
         this.view = this.document.defaultView!;
     }
 
-    start(): void {
-        this.refreshProperties();
+    start(snapshot: DomSnapshot): void {
+        this.refreshProperties(snapshot);
         this.mutationObserver = new this.view.MutationObserver((records) => {
             if (!this.root.isConnected || records.some((record) => this.isRelevantMutation(record))) {
                 this.schedule();
@@ -92,8 +94,18 @@ export class DomObservationSession {
         }
     }
 
-    refreshProperties(): void {
+    refreshProperties(snapshot?: DomSnapshot): void {
         if (!this.disposed && this.options.propertyCheckIntervalMs > 0) {
+            if (snapshot) {
+                // Reconcile only portals captured for this session, not arbitrary document inputs.
+                this.relatedRoots = (snapshot.relatedRootIds ?? []).flatMap((id) => {
+                    const node = snapshot.nodes[id];
+                    const domId = node?.kind === 'element' ? node.attributes['id'] : undefined;
+                    const element = domId ? this.document.getElementById(domId) : null;
+
+                    return element ? [element] : [];
+                });
+            }
             this.propertyStates = this.readProperties();
         }
     }
@@ -118,6 +130,7 @@ export class DomObservationSession {
         }
 
         this.propertyStates.clear();
+        this.relatedRoots = [];
     }
 
     private schedule(): void {
@@ -137,8 +150,7 @@ export class DomObservationSession {
                     throw new Error('The observed root was removed from the document. Start observation on a new root.');
                 }
 
-                this.onChange();
-                this.refreshProperties();
+                this.refreshProperties(this.onChange());
             } catch (error: unknown) {
                 this.onError(error);
             }
@@ -188,10 +200,12 @@ export class DomObservationSession {
 
     private readProperties(): Map<Element, string> {
         const result = new Map<Element, string>();
-        const controls = Array.from(this.root.querySelectorAll(PROPERTY_CONTROLS));
+        const controls = new Set<Element>();
 
-        if (this.root.matches(PROPERTY_CONTROLS)) {
-            controls.unshift(this.root);
+        for (const root of [this.root, ...this.relatedRoots]) {
+            if (!root.isConnected) continue;
+            if (root.matches(PROPERTY_CONTROLS)) controls.add(root);
+            root.querySelectorAll(PROPERTY_CONTROLS).forEach((element) => controls.add(element));
         }
 
         for (const element of controls) {

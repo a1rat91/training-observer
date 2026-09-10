@@ -6,22 +6,25 @@ export interface ChoiceSnapshot {
     /** Input text is observable; in a combobox it is not proof of a committed selection. */
     readonly displayValue: string;
     readonly selection: {readonly status: 'observed' | 'unknown'; readonly labels: readonly string[]};
-    readonly popup: {
-        readonly status: 'closed' | 'open' | 'unresolved' | 'native';
-        readonly relation: 'aria-controls' | 'native-options' | 'missing';
-        readonly referencedIds: readonly string[];
-        readonly rootNodeIds: readonly DomNodeId[];
-        readonly busy: boolean | null;
-        readonly text: string;
-        /** Only the options currently captured, never a claim about the complete data source. */
-        readonly options: readonly {
-            readonly nodeId: DomNodeId;
-            readonly label: string;
-            readonly value?: string;
-            readonly selected: boolean | null;
-            readonly disabled: boolean;
-        }[];
-    };
+    readonly popup: PopupSnapshot;
+}
+
+/** Explicit popup relationship; its content need not be a list of selectable options. */
+export interface PopupSnapshot {
+    readonly status: 'closed' | 'open' | 'unresolved' | 'native';
+    readonly relation: 'aria-controls' | 'native-options' | 'missing';
+    readonly referencedIds: readonly string[];
+    readonly rootNodeIds: readonly DomNodeId[];
+    readonly busy: boolean | null;
+    readonly text: string;
+    /** Only the options currently captured, never a claim about the complete data source. */
+    readonly options: readonly {
+        readonly nodeId: DomNodeId;
+        readonly label: string;
+        readonly value?: string;
+        readonly selected: boolean | null;
+        readonly disabled: boolean;
+    }[];
 }
 
 /** Search evidence, not a guaranteed unique locator. No current value or geometry. */
@@ -61,4 +64,6 @@ export interface ControlSnapshot {
     readonly rects: readonly DomRectSnapshot[];
     readonly locatorHints: ControlLocatorHints;
     readonly choice?: ChoiceSnapshot;
+    /** Generic Taiga input dropdown, without asserting a committed selection. */
+    readonly popup?: PopupSnapshot;
 }

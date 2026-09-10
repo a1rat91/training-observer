@@ -48,6 +48,14 @@
         }
         <div class="choice-states" data-testid="choice-states">
             @for (control of observer.logicalControls(); track control.id) {
+                @if (control.popup; as popup) {
+                    <section class="choice-state" [attr.data-control-id]="control.locatorHints.id">
+                        <h3>{{ control.label }} · поле с dropdown</h3>
+                        <p>Popup: <strong>{{ popupLabels[popup.status] }}</strong></p>
+                        <small>Связь: {{ popup.relation }} · {{ popup.referencedIds.join(', ') || 'нет ID' }}</small>
+                        @if (popup.text) { <p>{{ popup.text }}</p> }
+                    </section>
+                }
                 @if (control.choice; as choice) {
                     <section class="choice-state" [attr.data-control-id]="control.locatorHints.id">
                         <h3>{{ control.label }} · {{ control.kind }}</h3>

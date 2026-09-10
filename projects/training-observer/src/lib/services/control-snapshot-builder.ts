@@ -3,7 +3,7 @@ import {inject, Injectable} from '@angular/core';
 import {type ControlSnapshot} from '../models/control-snapshot';
 import {type DomElementSnapshot, type DomNodeId, type DomSnapshot} from '../models/dom-snapshot';
 import {NativeControlAdapter, TaigaControlAdapter} from './control-adapters';
-import {buildChoiceSnapshot} from './choice-snapshot-builder';
+import {buildChoiceSnapshot, buildPopupSnapshot} from './choice-snapshot-builder';
 
 @Injectable({providedIn: 'root'})
 export class ControlSnapshotBuilder {
@@ -116,6 +116,8 @@ export class ControlSnapshotBuilder {
                 pointerActionable: target.pointerActionable && !state.disabled && !state.inert,
                 rects: target.rects,
                 choice: kind === 'select' || kind === 'combobox' ? buildChoiceSnapshot(snapshot, target, host, kind) : undefined,
+                popup: source === 'taiga-ui' && kind === 'textbox' && target.attributes['role'] === 'combobox'
+                    ? buildPopupSnapshot(snapshot, target, host) : undefined,
                 locatorHints: {
                     kind, label, tagName: target.tagName,
                     role: target.attributes['role'] || (kind === 'select' ? 'multiple' in target.attributes ? 'listbox' : 'combobox' : kind),

@@ -48,6 +48,25 @@
                 </label>
             }
             <div hidden><input aria-label="Скрытое поле" value="Скрытое значение" /></div>
+            <details>
+                <summary>Обычные поля с dropdown</summary>
+                <p>Обычное поле Taiga с подсказкой: можно вводить произвольный текст без выбора варианта.</p>
+                <tui-textfield [tuiDropdownManual]="hintOpen()">
+                    <label tuiLabel for="generic-hint">Запрос с подсказкой</label>
+                    <input id="generic-hint" tuiInput (focus)="hintOpen.set(true)" (blur)="hintOpen.set(false)" />
+                    <p *tuiDropdown>Введите несколько слов для поиска.</p>
+                </tui-textfield>
+                <p>Второе поле использует стандартную директиву Taiga для связи с popup типа dialog.</p>
+                <tui-textfield [tuiDropdownManual]="dialogOpen()">
+                    <label tuiLabel for="generic-dialog">Запрос с настройками</label>
+                    <input id="generic-dialog" tuiInput tuiDropdownA11y tuiDropdownRole="dialog"
+                        (focus)="dialogOpen.set(true)" />
+                    <div *tuiDropdown>
+                        <label>Дополнение <input id="popup-detail" value="Начальное" /></label>
+                        <button tuiButton type="button" (click)="dialogOpen.set(false)">Готово</button>
+                    </div>
+                </tui-textfield>
+            </details>
         </section>
 
         @if (showInspector()) {

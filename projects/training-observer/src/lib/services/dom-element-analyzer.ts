@@ -64,7 +64,8 @@ export class DomElementAnalyzer {
             .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? '').join(' ');
         const labels = (element as HTMLInputElement).labels;
         const associatedLabel = labels ? Array.from(labels).map((label) => label.textContent ?? '').join(' ') : '';
-        const text = element.matches('button,a,summary,[role="button"],[role="option"],option') ? element.textContent : '';
+        const text = element.localName === 'option' ? (element as HTMLOptionElement).label :
+            element.matches('button,a,summary,[role="button"],[role="option"]') ? element.textContent : '';
 
         return this.normalize(labelledBy || element.getAttribute('aria-label') || associatedLabel || text ||
             element.getAttribute('title') || element.getAttribute('placeholder') || '');

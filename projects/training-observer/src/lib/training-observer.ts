@@ -72,7 +72,11 @@ export class TrainingObserver {
 
         this.zone.runOutsideAngular(() => {
             const session = new DomObservationSession(root, options, this.analyzer,
-                () => this.publish(this.builder.build(root, options), true),
+                () => {
+                    const snapshot = this.builder.build(root, options);
+                    this.publish(snapshot, true);
+                    return snapshot;
+                },
                 (error) => this.zone.run(() => {
                     this.stop();
                     this.failure.set(error instanceof Error ? error.message : String(error));
@@ -81,7 +85,7 @@ export class TrainingObserver {
             this.session = session;
 
             try {
-                session.start();
+                session.start(initial);
             } catch (error: unknown) {
                 this.stop();
                 throw error;
