@@ -9,6 +9,14 @@ export interface DomObservationOptions extends DomSnapshotOptions {
     readonly propertyCheckIntervalMs: number;
 }
 
+export function validateObservationTiming(options: DomObservationOptions): void {
+    for (const name of ['batchDelayMs', 'propertyCheckIntervalMs'] as const) {
+        if (!Number.isInteger(options[name]) || options[name] < 0 || options[name] > 2_147_483_647) {
+            throw new Error(`${name} must be a non-negative integer up to 2147483647.`);
+        }
+    }
+}
+
 export const DOM_OBSERVATION_OPTIONS = new InjectionToken<DomObservationOptions>('DOM_OBSERVATION_OPTIONS', {
     providedIn: 'root',
     factory: () => ({

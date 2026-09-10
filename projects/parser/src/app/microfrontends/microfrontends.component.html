@@ -1,0 +1,78 @@
+<main>
+    <header data-training-observer-ignore>
+        <a routerLink="/">← Общий стенд</a>
+        <h1>Независимые микрофронты</h1>
+        <p>Измените поле: счётчик обновится у его области. Dropdown отдела появляется вне микрофронта и остаётся связан с ним.</p>
+        <div class="actions">
+            <button tuiButton size="s" (click)="extra.set(!extra())">{{ extra() ? 'Удалить дополнительный' : 'Добавить микрофронт' }}</button>
+            <button tuiButton size="s" (click)="nested.set(!nested())">{{ nested() ? 'Убрать вложенный' : 'Вернуть вложенный' }}</button>
+            @if (observer.isObserving()) {
+                <button tuiButton size="s" appearance="secondary" (click)="observer.stop()">Остановить области</button>
+            } @else {
+                <button tuiButton size="s" (click)="start()">Начать наблюдение областей</button>
+            }
+            <button tuiButton size="s" appearance="secondary" (click)="observer.refresh()">Обновить все области</button>
+            <label>Сверка свойств, мс <input type="number" min="0" [(ngModel)]="polling" /></label>
+            <button tuiButton size="s" appearance="flat" (click)="start()">Применить интервал</button>
+        </div>
+    </header>
+    <div class="workspace">
+        <div class="examples">
+            <section data-mf="profile" id="mf-profile">
+                <h2>Профиль</h2>
+                <tui-textfield>
+                    <label tuiLabel for="mf-name">Имя</label>
+                    <input id="mf-name" tuiInput [(ngModel)]="name" />
+                </tui-textfield>
+                @if (nested()) {
+                    <section data-mf="address" id="mf-address">
+                        <h3>Вложенный микрофронт: адрес</h3>
+                        <label>Город <input id="mf-city" value="Москва" /></label>
+                    </section>
+                }
+            </section>
+            <section data-mf="employment" id="mf-employment">
+                <h2>Работа</h2>
+                <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label tuiLabel for="mf-department">Отдел</label>
+                    <input id="mf-department" tuiSelect [(ngModel)]="department" />
+                    <tui-data-list-wrapper *tuiDropdown [items]="departments" />
+                </tui-textfield>
+                <label>Комментарий <input id="mf-comment" value="Начальный" /></label>
+            </section>
+            @if (extra()) {
+                <section data-mf="profile" id="mf-extra">
+                    <h2>Другой экземпляр profile</h2>
+                    <label>Заметка <input id="mf-note" /></label>
+                </section>
+            }
+        </div>
+        <aside data-training-observer-ignore>
+            <h2>Области <span data-testid="mf-count">{{ observer.areas().length }}</span></h2>
+            <p data-testid="mf-status">{{ observer.isObserving() ? 'Наблюдение включено' : 'Наблюдение остановлено' }}</p>
+            @for (area of observer.areas(); track area.id) {
+                <button class="area" [class.selected]="selected()?.id === area.id" (click)="selectedId.set(area.id)">
+                    <strong>{{ area.name || 'Без имени' }}</strong> · {{ area.id }}
+                    <small>Пересчётов: {{ area.scanCount }} · публикаций: {{ area.revision }} · контролов: {{ area.logicalControls.length }}</small>
+                    @if (area.parentId) { <small>Родитель: {{ area.parentId }}</small> }
+                    @if (area.error) { <small role="alert">{{ area.error }}</small> }
+                </button>
+            }
+            @if (selected(); as area) {
+                <h3>{{ area.name }} · контролы</h3>
+                @if (area.snapshot?.stats?.truncated) { <p role="alert">Снимок неполный: достигнут лимит.</p> }
+                <ul>
+                    @for (control of area.logicalControls; track control.id) {
+                        <li>{{ control.label || 'Без подписи' }} · {{ control.kind }} · {{ control.state.value ?? '—' }}
+                            @if (control.choice) {
+                                <small>Popup: {{ control.choice.popup.status }} · вариантов: {{ control.choice.popup.options.length }}</small>
+                            }
+                        </li>
+                    }
+                </ul>
+                <details><summary>Снимок выбранной области</summary><pre>{{ area.snapshot | json }}</pre></details>
+            }
+            <details><summary>Все области JSON</summary><pre data-testid="mf-json">{{ observer.areas() | json }}</pre></details>
+        </aside>
+    </div>
+</main>

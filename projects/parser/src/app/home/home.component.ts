@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component, DestroyRef, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {RouterLink} from '@angular/router';
 import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput} from '@taiga-ui/core';
 import {TuiComboBox, TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
 
@@ -7,7 +8,7 @@ import {ObserverPanelComponent} from '../observer-panel/observer-panel.component
 
 @Component({
     selector: 'app-home',
-    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
+    imports: [ObserverPanelComponent, FormsModule, RouterLink, TuiButton, TuiCheckbox, TuiInput, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
     templateUrl: './home.component.html',
     styleUrl: './home.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,

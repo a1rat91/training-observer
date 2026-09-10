@@ -76,6 +76,10 @@ export class DomSnapshotBuilder {
 
             const element = node as Element;
 
+            if (element !== root && options.boundarySelector && element.matches(options.boundarySelector)) {
+                return null;
+            }
+
             if (isScrollDecoration(element) || SKIP_TAGS.has(element.localName) ||
                 (options.ignoreSelector && element.matches(options.ignoreSelector))) {
                 return null;
@@ -158,6 +162,7 @@ export class DomSnapshotBuilder {
             for (const id of (node.attributes['aria-controls'] ?? '').trim().split(/\s+/)) {
                 const element = this.document.getElementById(id);
                 if (element && !root.contains(element) && !element.contains(root) &&
+                    !(options.boundarySelector && element.closest(options.boundarySelector)) &&
                     !(options.ignoreSelector && element.closest(options.ignoreSelector)) && !isScrollDecoration(element)) {
                     linked.add(element);
                 }
@@ -207,7 +212,7 @@ export class DomSnapshotBuilder {
         return `/${parts.join('/')}`;
     }
 
-    private validateOptions(options: DomSnapshotOptions): void {
+    validateOptions(options: DomSnapshotOptions): void {
         if (!Number.isInteger(options.maxDepth) || options.maxDepth < 0 || options.maxDepth > 100 ||
             !Number.isInteger(options.maxNodes) || options.maxNodes < 1) {
             throw new Error('maxDepth must be an integer from 0 to 100; maxNodes must be a positive integer.');
@@ -215,6 +220,9 @@ export class DomSnapshotBuilder {
 
         if (options.ignoreSelector) {
             this.document.documentElement.matches(options.ignoreSelector);
+        }
+        if (options.boundarySelector) {
+            this.document.documentElement.matches(options.boundarySelector);
         }
     }
 }

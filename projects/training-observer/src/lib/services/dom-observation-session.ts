@@ -2,9 +2,10 @@ import {type DomSnapshot} from '../models/dom-snapshot';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
 import {isScrollDecoration, SCROLL_DECORATION_SELECTOR} from './dom-scroll-decoration';
+import {type DomObservationScope} from './dom-observation-scope';
 
 const PROPERTY_CONTROLS = 'input,textarea,select,option';
-const PAGE_EVENTS = [
+export const PAGE_EVENTS = [
     'input', 'change', 'reset', 'toggle', 'focusin', 'focusout',
     'load', 'transitionend', 'animationend',
 ];
@@ -37,34 +38,21 @@ export class DomObservationSession {
         private readonly analyzer: DomElementAnalyzer,
         private readonly onChange: () => DomSnapshot,
         private readonly onError: (error: unknown) => void,
+        private readonly scope?: DomObservationScope,
     ) {
         this.document = root.ownerDocument;
         this.view = this.document.defaultView!;
     }
 
-    start(snapshot: DomSnapshot): void {
+    start(snapshot: DomSnapshot, externalSources = false): void {
         this.refreshProperties(snapshot);
-        this.mutationObserver = new this.view.MutationObserver((records) => {
-            if (!this.root.isConnected || records.some((record) => this.isRelevantMutation(record))) {
-                this.schedule();
-            }
-        });
+        if (externalSources) return;
+        this.mutationObserver = new this.view.MutationObserver((records) => this.handleMutations(records));
         // Ancestor styles, external labels and overlays can affect even a scoped snapshot.
         this.mutationObserver.observe(this.document, {subtree: true, childList: true, attributes: true, characterData: true});
 
         for (const name of PAGE_EVENTS) {
-            this.listen(this.document, name, (event) => {
-                if (event.type === 'transitionend' &&
-                    DECORATIVE_TRANSITION_PROPERTIES.has((event as TransitionEvent).propertyName)) {
-                    return;
-                }
-
-                const target = event.target as Node | null;
-
-                if (!target || (!isScrollDecoration(target) && !this.excludedAncestor(target))) {
-                    this.schedule();
-                }
-            });
+            this.listen(this.document, name, (event) => this.handleEvent(event));
         }
 
         // Scroll alone is not a learning action. Virtualization/lazy loading is observed
@@ -72,29 +60,42 @@ export class DomObservationSession {
         this.listen(this.view, 'resize', () => this.schedule());
 
         if (this.options.propertyCheckIntervalMs > 0) {
-            this.propertyTimer = this.view.setInterval(() => {
-                if (this.disposed) {
-                    return;
-                }
+            this.propertyTimer = this.view.setInterval(() => this.checkProperties(), this.options.propertyCheckIntervalMs);
+        }
+    }
 
-                try {
-                    const next = this.readProperties();
-                    const changed = next.size !== this.propertyStates.size ||
-                        [...next].some(([element, value]) => this.propertyStates.get(element) !== value);
+    handleMutations(records: readonly MutationRecord[]): void {
+        if (!this.root.isConnected || records.some((record) =>
+            (!this.scope || this.scope.acceptsMutation(record)) && this.isRelevantMutation(record))) this.schedule();
+    }
 
-                    this.propertyStates = next;
+    handleEvent(event: Event): void {
+        if (event.type === 'transitionend' &&
+            DECORATIVE_TRANSITION_PROPERTIES.has((event as TransitionEvent).propertyName)) return;
+        const target = event.target as Node | null;
+        if ((!target || !this.scope || this.scope.acceptsEvent(target)) &&
+            (!target || (!isScrollDecoration(target) && !this.excludedAncestor(target)))) this.schedule();
+    }
 
-                    if (changed || !this.root.isConnected) {
-                        this.schedule();
-                    }
-                } catch (error: unknown) {
-                    this.onError(error);
-                }
-            }, this.options.propertyCheckIntervalMs);
+    invalidate(): void {
+        this.schedule();
+    }
+
+    checkProperties(): void {
+        if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
+        try {
+            const next = this.readProperties();
+            const changed = next.size !== this.propertyStates.size ||
+                [...next].some(([element, value]) => this.propertyStates.get(element) !== value);
+            this.propertyStates = next;
+            if (changed || !this.root.isConnected) this.schedule();
+        } catch (error: unknown) {
+            this.onError(error);
         }
     }
 
     refreshProperties(snapshot?: DomSnapshot): void {
+        if (snapshot) this.scope?.update(snapshot);
         if (!this.disposed && this.options.propertyCheckIntervalMs > 0) {
             if (snapshot) {
                 // Reconcile only portals captured for this session, not arbitrary document inputs.
@@ -209,7 +210,7 @@ export class DomObservationSession {
         }
 
         for (const element of controls) {
-            if (!isScrollDecoration(element) && !this.excludedAncestor(element)) {
+            if ((!this.scope || this.scope.owns(element)) && !isScrollDecoration(element) && !this.excludedAncestor(element)) {
                 result.set(element, JSON.stringify(this.analyzer.state(element)));
             }
         }

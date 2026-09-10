@@ -89,6 +89,7 @@ ID стабилен только для того же живого DOM-узла 
 [Логические контролы: адаптеры, объединение DOM и признаки поиска](docs/logical-controls.md).
 [Select и ComboBox: динамические dropdown, поиск и выбранные варианты](docs/dropdown-observation.md).
 [Матрица покрытия контролов и план областей data-mf](docs/control-coverage.md).
+[Независимые области data-mf: MicrofrontendObserver и стенд /microfrontends](docs/microfrontend-observation.md).
 
 ## Проверки
 

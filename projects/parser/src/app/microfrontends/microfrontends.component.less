@@ -1,0 +1,15 @@
+main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+header { margin-bottom: 2rem; }
+h1 { font-size: 2rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; }
+section, aside { padding: 1.5rem; border: 1px solid var(--tui-border-normal); border-radius: 1rem; }
+section { margin-bottom: 1rem; }
+section section { margin: 1.5rem 0 0; background: var(--tui-background-neutral-1); }
+.examples > section > label { display: block; margin-top: 1rem; }
+.area { display: block; width: 100%; text-align: left; padding: .75rem; margin-bottom: .5rem; border: 1px solid var(--tui-border-normal); border-radius: .5rem; background: var(--tui-background-base); color: inherit; cursor: pointer; }
+.area.selected { border-color: var(--tui-border-focus); }
+small { display: block; color: var(--tui-text-secondary); }
+li { margin-bottom: .75rem; }
+pre { max-height: 35rem; overflow: auto; font-size: .75rem; }
+@media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } }

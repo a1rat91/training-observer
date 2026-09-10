@@ -1,4 +1,6 @@
 export {TrainingObserver} from './lib/training-observer';
+export {MicrofrontendObserver} from './lib/microfrontend-observer';
+export type {MicrofrontendSnapshot} from './lib/models/microfrontend-snapshot';
 export {DomSnapshotBuilder} from './lib/services/dom-snapshot-builder';
 export {ControlSnapshotBuilder} from './lib/services/control-snapshot-builder';
 export type {ControlSnapshot, ControlKind, ControlLocatorHints, ChoiceSnapshot, PopupSnapshot} from './lib/models/control-snapshot';

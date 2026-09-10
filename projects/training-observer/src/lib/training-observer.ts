@@ -6,7 +6,7 @@ import {DomSnapshotBuilder} from './services/dom-snapshot-builder';
 import {ControlSnapshotBuilder} from './services/control-snapshot-builder';
 import {DomElementAnalyzer} from './services/dom-element-analyzer';
 import {DomObservationSession} from './services/dom-observation-session';
-import {DOM_OBSERVATION_OPTIONS, type DomObservationOptions} from './tokens/dom-observation-options';
+import {DOM_OBSERVATION_OPTIONS, type DomObservationOptions, validateObservationTiming} from './tokens/dom-observation-options';
 import {type DomSnapshotOptions} from './tokens/dom-snapshot-options';
 
 /** One observation session per service instance. Provide locally for a microfrontend's lifecycle. */
@@ -58,11 +58,7 @@ export class TrainingObserver {
 
         const options = {...this.defaults, ...overrides};
 
-        for (const name of ['batchDelayMs', 'propertyCheckIntervalMs'] as const) {
-            if (!Number.isInteger(options[name]) || options[name] < 0 || options[name] > 2_147_483_647) {
-                throw new Error(`${name} must be a non-negative integer up to 2147483647.`);
-            }
-        }
+        validateObservationTiming(options);
 
         // Validate and build before replacing a working session, so bad options do not stop it.
         const initial = this.zone.runOutsideAngular(() => this.builder.build(root, options));
