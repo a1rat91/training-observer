@@ -97,8 +97,10 @@
                             </td>
                             <td>
                                 @if (control.state.redacted) { <span class="badge">Скрыто</span> }
-                                @else if (control.kind === 'checkbox') {
+                                @else if (control.kind === 'checkbox' || control.kind === 'switch') {
                                     {{ control.state.indeterminate ? 'Смешанное' : control.state.checked ? 'Включён' : 'Выключен' }}
+                                } @else if (control.kind === 'radio') {
+                                    {{ control.state.checked ? 'Выбран' : 'Не выбран' }} <small>{{ control.state.value }}</small>
                                 } @else { {{ control.state.value ?? '—' }} }
                             </td>
                             <td>
@@ -116,7 +118,7 @@
                 </tbody>
             </table>
         </div>
-        <p class="muted">Поддержаны текстовые поля, кнопки, checkbox, select и первые combobox Taiga UI. Признаки поиска ещё не гарантируют уникальность.</p>
+        <p class="muted">Поддержаны текстовые поля, кнопки, checkbox, radio, switch, select и combobox Taiga UI. Признаки поиска ещё не гарантируют уникальность.</p>
         <details class="json">
             <summary>Логические контролы JSON</summary>
             <pre data-testid="controls-json">{{ observer.logicalControls() | json }}</pre>

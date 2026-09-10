@@ -65,6 +65,19 @@
                     </div>
                 </tui-textfield>
             </details>
+            <details>
+                <summary>Radio и Switch</summary>
+                <fieldset id="delivery-group">
+                    <legend>Способ доставки</legend>
+                    <label class="check"><input tuiRadio type="radio" id="delivery-email" name="delivery" value="email"
+                        [(ngModel)]="delivery" required /> Электронная почта</label>
+                    <label class="check"><input tuiRadio type="radio" id="delivery-sms" name="delivery" value="sms"
+                        [(ngModel)]="delivery" required /> SMS</label>
+                    <label class="check"><input tuiRadio type="radio" id="delivery-paper" name="delivery" value="paper"
+                        [(ngModel)]="delivery" [disabled]="true" /> Бумажное письмо</label>
+                </fieldset>
+                <label class="check"><input tuiSwitch type="checkbox" id="auto-save" [(ngModel)]="autoSave" /> Автосохранение</label>
+            </details>
         </section>
 
         @if (showInspector()) {

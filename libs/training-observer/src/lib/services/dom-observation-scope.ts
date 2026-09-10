@@ -8,7 +8,7 @@ export class DomObservationScope {
     private dependencies: Element[] = [];
     private referenceIds = new Set<string>();
 
-    constructor(readonly root: Element) {}
+    constructor(readonly root: Element, private readonly ignoreSelector = '') {}
 
     update(snapshot: DomSnapshot): void {
         const document = this.root.ownerDocument;
@@ -43,10 +43,16 @@ export class DomObservationScope {
         return this.portals.some((portal) => portal.contains(element));
     }
 
-    acceptsEvent(node: Node): boolean {
+    acceptsEvent(node: Node, eventType: string): boolean {
+        if (this.owns(node)) return true;
         // A stylesheet can finish loading after the mutation batch that inserted its link.
         if (node.nodeType === 1 && (node as Element).matches('style,link[rel="stylesheet"]')) return true;
-        return this.owns(node) || this.dependencies.some((element) => element.contains(node)) ||
+        // Browsers do not emit change on the radio that becomes unchecked.
+        if ((eventType === 'input' || eventType === 'change') && this.hasRadioPeer(node)) return true;
+        // The form owner can live outside this area through an explicit form="id".
+        if (eventType === 'reset' && node.nodeType === 1 && (node as Element).localName === 'form' &&
+            this.ownedFormControls().some((control) => control.form === node)) return true;
+        return this.dependencies.some((element) => element.contains(node)) ||
             (node.nodeType === 1 && (node as Element).contains(this.root));
     }
 
@@ -79,5 +85,22 @@ export class DomObservationScope {
             return this.referenceIds.has(element.id) ||
                 Array.from(element.querySelectorAll('[id]')).some((child) => this.referenceIds.has(child.id));
         });
+    }
+
+    private hasRadioPeer(node: Node): boolean {
+        if (node.nodeType !== 1 || !(node as Element).matches('input[type="radio"]')) return false;
+        const radio = node as HTMLInputElement;
+        // Unnamed radios are independent, even in the same form/fieldset.
+        return Boolean(radio.name) && this.ownedFormControls().some((control) =>
+            control.localName === 'input' && control.type === 'radio' && control.name === radio.name &&
+            control.form === radio.form && control.getRootNode() === radio.getRootNode());
+    }
+
+    private ownedFormControls(): (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[] {
+        const selector = 'input,select,textarea';
+        return [this.root, ...this.portals].flatMap((root) =>
+            [...(root.matches(selector) ? [root] : []), ...Array.from(root.querySelectorAll(selector))])
+            .filter((element) => this.owns(element) && !(this.ignoreSelector && element.closest(this.ignoreSelector))) as
+                (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[];
     }
 }

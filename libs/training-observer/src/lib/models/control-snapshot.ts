@@ -1,6 +1,6 @@
 import {type DomControlState, type DomNodeId, type DomRectSnapshot, type HitTestResult} from './dom-snapshot';
 
-export type ControlKind = 'textbox' | 'button' | 'checkbox' | 'select' | 'combobox';
+export type ControlKind = 'textbox' | 'button' | 'checkbox' | 'radio' | 'switch' | 'select' | 'combobox';
 
 export interface ChoiceSnapshot {
     /** Input text is observable; in a combobox it is not proof of a committed selection. */

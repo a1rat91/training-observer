@@ -1,13 +1,13 @@
 import {ChangeDetectionStrategy, Component, DestroyRef, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput} from '@taiga-ui/core';
-import {TuiComboBox, TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
+import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput, TuiRadio} from '@taiga-ui/core';
+import {TuiComboBox, TuiDataListWrapper, TuiSelect, TuiSwitch} from '@taiga-ui/kit';
 
 import {ObserverPanelComponent} from '../../shared/observer-panel/observer-panel.component';
 
 @Component({
     selector: 'app-controls',
-    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
+    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiRadio, TuiSwitch, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
     templateUrl: './controls.component.html',
     styleUrl: './controls.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,6 +15,8 @@ import {ObserverPanelComponent} from '../../shared/observer-panel/observer-panel
 export class ControlsComponent {
     protected fullName = 'Алексей';
     protected notifications = true;
+    protected delivery = 'email';
+    protected autoSave = false;
     protected department: string | null = 'Разработка';
     protected employee: string | null = null;
     protected readonly departments = ['Разработка', 'Поддержка', 'Продажи'];

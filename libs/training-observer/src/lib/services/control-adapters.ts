@@ -25,7 +25,12 @@ function nativeKind(node: DomElementSnapshot): ControlKind | null {
     }
 
     if (node.tagName === 'input' && type === 'checkbox') {
+        if (role === 'switch' || (!role && 'switch' in node.attributes)) return 'switch';
         return !role || role === 'checkbox' ? 'checkbox' : null;
+    }
+
+    if (node.tagName === 'input' && type === 'radio') {
+        return !role || role === 'radio' ? 'radio' : null;
     }
 
     if ((node.tagName === 'textarea' ||
@@ -73,7 +78,9 @@ export class TaigaControlAdapter implements ControlAdapter {
         }
 
         if ((kind === 'button' && ('tuibutton' in attributes || 'tuiiconbutton' in attributes)) ||
-            (kind === 'checkbox' && 'tuicheckbox' in attributes)) {
+            (kind === 'checkbox' && 'tuicheckbox' in attributes) ||
+            (kind === 'radio' && 'tuiradio' in attributes) ||
+            (kind === 'switch' && 'tuiswitch' in attributes)) {
             return {kind, source: 'taiga-ui', host: node};
         }
 

@@ -55,7 +55,7 @@ test('projects native controls with labels and search context but leaves unsuppo
             <label><input id="native-check" type="checkbox" checked>Согласие</label>
             <button id="native-button"><span>Отправить</span></button>
             <input id="native-submit" type="submit" value="Подтвердить">
-            <input id="not-text" type="range"><input id="not-checkbox" type="radio">
+            <input id="not-text" type="range"><input id="native-radio" type="radio">
         </fieldset>
     `));
     await expect.poll(async () => (await control(page, 'native-name'))?.label).toBe('Получатель');
@@ -67,7 +67,7 @@ test('projects native controls with labels and search context but leaves unsuppo
     expect(await control(page, 'native-button')).toMatchObject({kind: 'button', label: 'Отправить'});
     expect(await control(page, 'native-submit')).toMatchObject({kind: 'button', label: 'Подтвердить'});
     expect(await control(page, 'not-text')).toBeUndefined();
-    expect(await control(page, 'not-checkbox')).toBeUndefined();
+    expect(await control(page, 'native-radio')).toMatchObject({kind: 'radio', source: 'native', state: {checked: false, value: 'on'}});
     expect(await control(page, 'department')).toMatchObject({kind: 'select', source: 'taiga-ui'});
     expect(Object.values((await snapshot(page)).nodes).some((node) => node.kind === 'element' && node.attributes['id'] === 'department')).toBe(true);
 });

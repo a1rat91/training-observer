@@ -73,7 +73,7 @@ export class DomObservationSession {
         if (event.type === 'transitionend' &&
             DECORATIVE_TRANSITION_PROPERTIES.has((event as TransitionEvent).propertyName)) return;
         const target = event.target as Node | null;
-        if ((!target || !this.scope || this.scope.acceptsEvent(target)) &&
+        if ((!target || !this.scope || this.scope.acceptsEvent(target, event.type)) &&
             (!target || (!isScrollDecoration(target) && !this.excludedAncestor(target)))) this.schedule();
     }
 

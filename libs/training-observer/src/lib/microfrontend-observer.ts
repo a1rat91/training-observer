@@ -161,7 +161,7 @@ export class MicrofrontendObserver {
             session.dispose();
             area.state = {...area.state, error: error instanceof Error ? error.message : String(error)};
             this.publish();
-        }, new DomObservationScope(root));
+        }, new DomObservationScope(root, options.ignoreSelector));
         const area: Area = {root, session, parent: root.parentElement, fingerprint: null, state: {
             id, name: root.getAttribute('data-mf') ?? '', parentId: null, snapshot: null,
             logicalControls: [], scanCount: 0, revision: 0, error: null,

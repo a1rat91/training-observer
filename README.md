@@ -81,7 +81,7 @@ ID стабилен только для того же живого DOM-узла 
 Текущие ограничения: light DOM одного документа, полные пересчёты, приблизительные
 подписи/интерактивность/видимость. iframe и открытые shadow roots отмечаются как
 необойдённые границы. `observer.logicalControls()` нормализует текстовые поля,
-кнопки, checkbox, select и combobox, включая первые адаптеры Taiga UI.
+кнопки, checkbox, radio, switch, select и combobox, включая адаптеры Taiga UI.
 Связанные dropdown вне формы включаются в снимок через `aria-controls`.
 Остальные типы доступны в DOM-снимке.
 Запись действий, подсветка и проверка ученика — следующие этапы. Автоматические
@@ -96,6 +96,7 @@ ID стабилен только для того же живого DOM-узла 
 [Полный разбор buildDomTree.js и схема переноса](docs/build-dom-tree-analysis.md).
 [Автоматическое наблюдение: API, источники обновлений и ограничения](docs/automatic-observation.md).
 [Логические контролы: адаптеры, объединение DOM и признаки поиска](docs/logical-controls.md).
+[Form-контролы: Radio, Switch, подписи и native-группы](docs/form-controls.md).
 [Select и ComboBox: динамические dropdown, поиск и выбранные варианты](docs/dropdown-observation.md).
 [Матрица покрытия контролов и план областей data-mf](docs/control-coverage.md).
 [Независимые области data-mf: MicrofrontendObserver и стенд /microfrontends](docs/microfrontend-observation.md).

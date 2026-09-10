@@ -87,7 +87,10 @@ export class ControlSnapshotBuilder {
                 (kind === 'button' && typeof target.state.value === 'string' ? target.state.value : '');
             const state = {
                 ...target.state,
-                value: ['textbox', 'select', 'combobox'].includes(kind) && !target.state.redacted ? target.state.value : undefined,
+                // A radio value identifies its DOM option; checked indicates selection.
+                // It need not be the Angular model value (e.g. an object-valued radio).
+                value: ['textbox', 'select', 'combobox', 'radio'].includes(kind) && !target.state.redacted ? target.state.value : undefined,
+                indeterminate: kind === 'switch' ? undefined : target.state.indeterminate,
                 expanded: target.state.expanded ?? host.state.expanded,
                 disabled: target.state.disabled || host.state.disabled,
                 readOnly: target.state.readOnly || host.state.readOnly,
