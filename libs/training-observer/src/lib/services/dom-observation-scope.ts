@@ -1,4 +1,5 @@
 import {type DomSnapshot} from '../models/dom-snapshot';
+import {resolveRelatedRoots} from './snapshot-references';
 
 export const MICROFRONTEND_SELECTOR = '[data-mf]';
 
@@ -27,12 +28,7 @@ export class DomObservationScope {
             const element = document.getElementById(id);
             return element ? [element] : [];
         });
-        this.portals = (snapshot.relatedRootIds ?? []).flatMap((id) => {
-            const node = snapshot.nodes[id];
-            const element = node?.kind === 'element' && node.attributes['id']
-                ? document.getElementById(node.attributes['id']) : null;
-            return element ? [element] : [];
-        });
+        this.portals = resolveRelatedRoots(snapshot, document);
     }
 
     owns(node: Node): boolean {

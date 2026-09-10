@@ -3,6 +3,7 @@ import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
 import {isScrollDecoration, SCROLL_DECORATION_SELECTOR} from './dom-scroll-decoration';
 import {type DomObservationScope} from './dom-observation-scope';
+import {resolveRelatedRoots} from './snapshot-references';
 
 const PROPERTY_CONTROLS = 'input,textarea,select,option';
 export const PAGE_EVENTS = [
@@ -20,6 +21,15 @@ const DECORATIVE_TRANSITION_PROPERTIES = new Set([
     'caret-color', 'box-shadow', 'text-shadow',
 ]);
 
+type SessionSources =
+    | {readonly mode: 'standalone'}
+    | {readonly mode: 'shared'; readonly scope: DomObservationScope};
+
+interface SessionCallbacks {
+    readonly captureAndPublish: () => DomSnapshot;
+    readonly onError: (error: unknown) => void;
+}
+
 /** Browser resources owned by a single start()/stop() cycle. Created outside Angular's zone. */
 export class DomObservationSession {
     private readonly document: Document;
@@ -31,50 +41,45 @@ export class DomObservationSession {
     private propertyStates = new Map<Element, string>();
     private relatedRoots: Element[] = [];
     private disposed = false;
+    private callbacks: SessionCallbacks | null = null;
+    private readonly scope: DomObservationScope | undefined;
 
     constructor(
         private readonly root: Element,
         private readonly options: DomObservationOptions,
         private readonly analyzer: DomElementAnalyzer,
-        private readonly onChange: () => DomSnapshot,
-        private readonly onError: (error: unknown) => void,
-        private readonly scope?: DomObservationScope,
+        private readonly sources: SessionSources,
     ) {
         this.document = root.ownerDocument;
         this.view = this.document.defaultView!;
+        this.scope = sources.mode === 'shared' ? sources.scope : undefined;
     }
 
-    start(snapshot: DomSnapshot, externalSources = false): void {
-        this.refreshProperties(snapshot);
-        if (externalSources) return;
-        this.mutationObserver = new this.view.MutationObserver((records) => this.handleMutations(records));
-        // Ancestor styles, external labels and overlays can affect even a scoped snapshot.
-        this.mutationObserver.observe(this.document, {subtree: true, childList: true, attributes: true, characterData: true});
-
-        for (const name of PAGE_EVENTS) {
-            this.listen(this.document, name, (event) => this.handleEvent(event));
-        }
-
-        // Scroll alone is not a learning action. Virtualization/lazy loading is observed
-        // through resulting DOM mutations; geometry can be refreshed by an explicit capture.
-        this.listen(this.view, 'resize', () => this.schedule());
-
-        if (this.options.propertyCheckIntervalMs > 0) {
-            this.propertyTimer = this.view.setInterval(() => this.checkProperties(), this.options.propertyCheckIntervalMs);
-        }
+    start(snapshot: DomSnapshot, callbacks: SessionCallbacks): void {
+        this.callbacks = callbacks;
+        this.acceptSnapshot(snapshot);
+        if (this.sources.mode === 'standalone') this.connectOwnSources();
     }
 
     handleMutations(records: readonly MutationRecord[]): void {
-        if (!this.root.isConnected || records.some((record) =>
-            (!this.scope || this.scope.acceptsMutation(record)) && this.isRelevantMutation(record))) this.schedule();
+        if (!this.root.isConnected) {
+            this.schedule();
+            return;
+        }
+
+        const relevant = records.some((record) =>
+            (!this.scope || this.scope.acceptsMutation(record)) && this.isRelevantMutation(record));
+        if (relevant) this.schedule();
     }
 
     handleEvent(event: Event): void {
         if (event.type === 'transitionend' &&
             DECORATIVE_TRANSITION_PROPERTIES.has((event as TransitionEvent).propertyName)) return;
         const target = event.target as Node | null;
-        if ((!target || !this.scope || this.scope.acceptsEvent(target, event.type)) &&
-            (!target || (!isScrollDecoration(target) && !this.excludedAncestor(target)))) this.schedule();
+        if (target && this.scope && !this.scope.acceptsEvent(target, event.type)) return;
+        if (target && (isScrollDecoration(target) || this.excludedAncestor(target))) return;
+
+        this.schedule();
     }
 
     invalidate(): void {
@@ -90,25 +95,14 @@ export class DomObservationSession {
             this.propertyStates = next;
             if (changed || !this.root.isConnected) this.schedule();
         } catch (error: unknown) {
-            this.onError(error);
+            this.callbacks?.onError(error);
         }
     }
 
-    refreshProperties(snapshot?: DomSnapshot): void {
-        if (snapshot) this.scope?.update(snapshot);
-        if (!this.disposed && this.options.propertyCheckIntervalMs > 0) {
-            if (snapshot) {
-                // Reconcile only portals captured for this session, not arbitrary document inputs.
-                this.relatedRoots = (snapshot.relatedRootIds ?? []).flatMap((id) => {
-                    const node = snapshot.nodes[id];
-                    const domId = node?.kind === 'element' ? node.attributes['id'] : undefined;
-                    const element = domId ? this.document.getElementById(domId) : null;
-
-                    return element ? [element] : [];
-                });
-            }
-            this.propertyStates = this.readProperties();
-        }
+    /** Resets polling after a manual capture without changing this session's scope or portals. */
+    resetPropertyBaseline(): void {
+        if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
+        this.propertyStates = this.readProperties();
     }
 
     dispose(): void {
@@ -132,6 +126,34 @@ export class DomObservationSession {
 
         this.propertyStates.clear();
         this.relatedRoots = [];
+        this.callbacks = null;
+    }
+
+    private connectOwnSources(): void {
+        this.mutationObserver = new this.view.MutationObserver((records) => this.handleMutations(records));
+        // Ancestor styles, external labels and overlays can affect even a scoped snapshot.
+        this.mutationObserver.observe(this.document, {subtree: true, childList: true, attributes: true, characterData: true});
+
+        for (const name of PAGE_EVENTS) {
+            this.listen(this.document, name, (event) => this.handleEvent(event));
+        }
+
+        // Scroll alone is not a learning action. Virtualization/lazy loading is observed
+        // through resulting DOM mutations; geometry can be refreshed by an explicit capture.
+        this.listen(this.view, 'resize', () => this.schedule());
+
+        if (this.options.propertyCheckIntervalMs > 0) {
+            this.propertyTimer = this.view.setInterval(() => this.checkProperties(), this.options.propertyCheckIntervalMs);
+        }
+    }
+
+    /** Dependencies must stay current even when native property polling is disabled. */
+    private acceptSnapshot(snapshot: DomSnapshot): void {
+        this.scope?.update(snapshot);
+        if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
+
+        this.relatedRoots = resolveRelatedRoots(snapshot, this.document);
+        this.resetPropertyBaseline();
     }
 
     private schedule(): void {
@@ -139,23 +161,24 @@ export class DomObservationSession {
             return;
         }
 
-        this.batchTimer = this.view.setTimeout(() => {
-            this.batchTimer = null;
+        this.batchTimer = this.view.setTimeout(() => this.capturePendingChanges(), this.options.batchDelayMs);
+    }
 
-            if (this.disposed) {
-                return;
+    private capturePendingChanges(): void {
+        this.batchTimer = null;
+        const callbacks = this.callbacks;
+        if (this.disposed || !callbacks) return;
+
+        try {
+            if (!this.root.isConnected) {
+                throw new Error('The observed root was removed from the document. Start observation on a new root.');
             }
 
-            try {
-                if (!this.root.isConnected) {
-                    throw new Error('The observed root was removed from the document. Start observation on a new root.');
-                }
-
-                this.refreshProperties(this.onChange());
-            } catch (error: unknown) {
-                this.onError(error);
-            }
-        }, this.options.batchDelayMs);
+            const snapshot = callbacks.captureAndPublish();
+            this.acceptSnapshot(snapshot);
+        } catch (error: unknown) {
+            callbacks.onError(error);
+        }
     }
 
     private listen(target: EventTarget, name: string, listener: EventListener): void {

@@ -6,6 +6,7 @@ import {DomSnapshotBuilder} from './services/dom-snapshot-builder';
 import {ControlSnapshotBuilder} from './services/control-snapshot-builder';
 import {DomElementAnalyzer} from './services/dom-element-analyzer';
 import {DomObservationSession} from './services/dom-observation-session';
+import {snapshotFingerprint} from './services/snapshot-fingerprint';
 import {DOM_OBSERVATION_OPTIONS, type DomObservationOptions, validateObservationTiming} from './tokens/dom-observation-options';
 import {type DomSnapshotOptions} from './tokens/dom-snapshot-options';
 
@@ -67,21 +68,21 @@ export class TrainingObserver {
         this.failure.set(null);
 
         this.zone.runOutsideAngular(() => {
-            const session = new DomObservationSession(root, options, this.analyzer,
-                () => {
-                    const snapshot = this.builder.build(root, options);
-                    this.publish(snapshot, true);
-                    return snapshot;
-                },
-                (error) => this.zone.run(() => {
-                    this.stop();
-                    this.failure.set(error instanceof Error ? error.message : String(error));
-                }));
-
+            const session = new DomObservationSession(root, options, this.analyzer, {mode: 'standalone'});
             this.session = session;
 
             try {
-                session.start(initial);
+                session.start(initial, {
+                    captureAndPublish: () => {
+                        const snapshot = this.builder.build(root, options);
+                        this.publish(snapshot, true);
+                        return snapshot;
+                    },
+                    onError: (error) => this.zone.run(() => {
+                        this.stop();
+                        this.failure.set(error instanceof Error ? error.message : String(error));
+                    }),
+                });
             } catch (error: unknown) {
                 this.stop();
                 throw error;
@@ -106,7 +107,7 @@ export class TrainingObserver {
         const snapshot = this.zone.runOutsideAngular(() => this.builder.build(root, options));
 
         this.publish(snapshot, false);
-        this.zone.runOutsideAngular(() => this.session?.refreshProperties());
+        this.zone.runOutsideAngular(() => this.session?.resetPropertyBaseline());
 
         return snapshot;
     }
@@ -119,7 +120,7 @@ export class TrainingObserver {
     }
 
     private publish(snapshot: DomSnapshot, onlyIfChanged: boolean): void {
-        const fingerprint = JSON.stringify([snapshot.rootId, snapshot.relatedRootIds, snapshot.nodes, snapshot.interactiveIds, snapshot.stats]);
+        const fingerprint = snapshotFingerprint(snapshot);
 
         this.zone.run(() => {
             this.scans.update((count) => count + 1);

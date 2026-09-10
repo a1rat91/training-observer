@@ -9,6 +9,7 @@ import {DomObservationScope, MICROFRONTEND_SELECTOR} from './services/dom-observ
 import {DomObservationSession, PAGE_EVENTS} from './services/dom-observation-session';
 import {isScrollDecoration} from './services/dom-scroll-decoration';
 import {DomSnapshotBuilder} from './services/dom-snapshot-builder';
+import {snapshotFingerprint} from './services/snapshot-fingerprint';
 import {DOM_OBSERVATION_OPTIONS, type DomObservationOptions, validateObservationTiming} from './tokens/dom-observation-options';
 
 interface Area {
@@ -58,34 +59,7 @@ export class MicrofrontendObserver {
         this.stop();
         this.zone.runOutsideAngular(() => {
             this.reconcile(root, options);
-            const mutations = new view.MutationObserver((records) => {
-                const relevant = records.filter((record) => this.discoveryRelevant(record, options.ignoreSelector));
-                if (!relevant.length) return;
-                const existing = new Set(this.entries.values());
-                // Attributes can change arbitrary user-provided ignore selectors as well as data-mf.
-                if (relevant.some((record) => record.type !== 'characterData')) this.reconcile(root, options);
-                for (const area of this.entries.values()) {
-                    if (existing.has(area)) area.session.handleMutations(relevant);
-                }
-            });
-            mutations.observe(this.document, {subtree: true, childList: true, attributes: true, characterData: true});
-            this.cleanups.push(() => mutations.disconnect());
-            for (const name of PAGE_EVENTS) {
-                const listener = (event: Event): void => {
-                    for (const area of this.entries.values()) area.session.handleEvent(event);
-                };
-                this.document.addEventListener(name, listener, {capture: true, passive: true});
-                this.cleanups.push(() => this.document.removeEventListener(name, listener, true));
-            }
-            const resize = (): void => this.refresh();
-            view.addEventListener('resize', resize, {passive: true});
-            this.cleanups.push(() => view.removeEventListener('resize', resize));
-            if (options.propertyCheckIntervalMs > 0) {
-                const timer = view.setInterval(() => {
-                    for (const area of this.entries.values()) area.session.checkProperties();
-                }, options.propertyCheckIntervalMs);
-                this.cleanups.push(() => view.clearInterval(timer));
-            }
+            this.connectSharedSources(root, options, view);
         });
         this.active.set(true);
     }
@@ -110,6 +84,41 @@ export class MicrofrontendObserver {
     clear(): void {
         this.stop();
         this.current.set([]);
+    }
+
+    private connectSharedSources(
+        root: Element,
+        options: DomObservationOptions,
+        view: Window & typeof globalThis,
+    ): void {
+        const mutations = new view.MutationObserver((records) => {
+            const relevant = records.filter((record) => this.discoveryRelevant(record, options.ignoreSelector));
+            if (!relevant.length) return;
+            const existing = new Set(this.entries.values());
+            // Attributes can change arbitrary user-provided ignore selectors as well as data-mf.
+            if (relevant.some((record) => record.type !== 'characterData')) this.reconcile(root, options);
+            for (const area of this.entries.values()) {
+                if (existing.has(area)) area.session.handleMutations(relevant);
+            }
+        });
+        mutations.observe(this.document, {subtree: true, childList: true, attributes: true, characterData: true});
+        this.cleanups.push(() => mutations.disconnect());
+        for (const name of PAGE_EVENTS) {
+            const listener = (event: Event): void => {
+                for (const area of this.entries.values()) area.session.handleEvent(event);
+            };
+            this.document.addEventListener(name, listener, {capture: true, passive: true});
+            this.cleanups.push(() => this.document.removeEventListener(name, listener, true));
+        }
+        const resize = (): void => this.refresh();
+        view.addEventListener('resize', resize, {passive: true});
+        this.cleanups.push(() => view.removeEventListener('resize', resize));
+        if (options.propertyCheckIntervalMs > 0) {
+            const timer = view.setInterval(() => {
+                for (const area of this.entries.values()) area.session.checkProperties();
+            }, options.propertyCheckIntervalMs);
+            this.cleanups.push(() => view.clearInterval(timer));
+        }
     }
 
     private reconcile(root: Element, options: DomObservationOptions): void {
@@ -153,31 +162,41 @@ export class MicrofrontendObserver {
             id = `mf${++this.nextId}`;
             this.identities.set(root, id);
         }
-        const session = new DomObservationSession(root, options, this.analyzer, () => {
-            const snapshot = this.captureArea(area, options);
-            this.publish();
-            return snapshot;
-        }, (error) => {
-            session.dispose();
-            area.state = {...area.state, error: error instanceof Error ? error.message : String(error)};
-            this.publish();
-        }, new DomObservationScope(root, options.ignoreSelector));
+        const session = new DomObservationSession(root, options, this.analyzer, {
+            mode: 'shared',
+            scope: new DomObservationScope(root, options.ignoreSelector),
+        });
         const area: Area = {root, session, parent: root.parentElement, fingerprint: null, state: {
             id, name: root.getAttribute('data-mf') ?? '', parentId: null, snapshot: null,
             logicalControls: [], scanCount: 0, revision: 0, error: null,
         }};
         try {
-            session.start(this.captureArea(area, options), true);
+            const initial = this.captureArea(area, options);
+            session.start(initial, {
+                captureAndPublish: () => {
+                    const snapshot = this.captureArea(area, options);
+                    this.publish();
+                    return snapshot;
+                },
+                onError: (error) => {
+                    this.failArea(area, error);
+                    this.publish();
+                },
+            });
         } catch (error: unknown) {
-            session.dispose();
-            area.state = {...area.state, error: error instanceof Error ? error.message : String(error)};
+            this.failArea(area, error);
         }
         return area;
     }
 
+    private failArea(area: Area, error: unknown): void {
+        area.session.dispose();
+        area.state = {...area.state, error: error instanceof Error ? error.message : String(error)};
+    }
+
     private captureArea(area: Area, options: DomObservationOptions): DomSnapshot {
         const snapshot = this.builder.build(area.root, options);
-        const fingerprint = JSON.stringify([snapshot.rootId, snapshot.relatedRootIds, snapshot.nodes, snapshot.interactiveIds, snapshot.stats]);
+        const fingerprint = snapshotFingerprint(snapshot);
         const changed = fingerprint !== area.fingerprint;
         area.fingerprint = fingerprint;
         area.state = {...area.state, scanCount: area.state.scanCount + 1,
