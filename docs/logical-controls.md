@@ -22,6 +22,7 @@ observer.logicalControls(); // новый список ControlSnapshot
 | Тип | Native HTML | Taiga UI 5.15 |
 | --- | --- | --- |
 | `textbox` | input text/search/email/tel/url/password, textarea | текстовый input/textarea в обычном `tui-textfield`, маркер `tuiInput` |
+| `number` | input number | input с `tuiInputNumber`; значение — точная строка DOM |
 | `button` | button, input button/submit/reset | button с `tuiButton` / `tuiIconButton` |
 | `checkbox` | input checkbox | input checkbox с `tuiCheckbox` |
 | `radio` | input radio | input radio с `tuiRadio` |
@@ -34,14 +35,14 @@ DOM-тегов и атрибутов, без обращения к Angular injec
 или приватным полям Taiga UI. Стенд содержит настоящие TuiInput, TuiButton и
 TuiCheckbox с привязкой к форме для проверки пользовательского взаимодействия.
 
-Числовые/календарные контролы, contenteditable,
+Slider/Range, календарные контролы, contenteditable,
 ARIA-контролы без native-элемента и редактор `tui-textfield[multi]` не входят в
 этот набор. Их DOM остаётся в исходном снимке. Вложенный простой контрол сложного
 виджета может быть распознан отдельно; полноценная семантика виджета ещё не описана.
 
 Динамические dropdown, варианты, загрузка и границы достоверности выбранного значения
 описаны в [наблюдении за Select и ComboBox](dropdown-observation.md).
-Radio и Switch, включая подписи и межобластные radio-группы, описаны
+Radio, Switch и InputNumber, включая подписи, значения и межобластные radio-группы, описаны
 в [наблюдении form-контролов](form-controls.md).
 
 ## Объединение DOM

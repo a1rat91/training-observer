@@ -78,6 +78,26 @@
                 </fieldset>
                 <label class="check"><input tuiSwitch type="checkbox" id="auto-save" [(ngModel)]="autoSave" /> Автосохранение</label>
             </details>
+            <details>
+                <summary>InputNumber</summary>
+                <tui-textfield [tuiTextfieldCleaner]="true">
+                    <label tuiLabel for="amount">Сумма</label>
+                    <input tuiInputNumber id="amount" [(ngModel)]="amount" [min]="0" [max]="2000"
+                        [step]="0.5" postfix=" ₽" required />
+                </tui-textfield>
+                <tui-textfield [tuiNumberFormat]="{decimalSeparator: '.', thousandSeparator: ','}">
+                    <label tuiLabel for="international-amount">Сумма в другом формате</label>
+                    <input tuiInputNumber id="international-amount" [(ngModel)]="internationalAmount" prefix="$" />
+                </tui-textfield>
+                <tui-textfield>
+                    <label tuiLabel for="large-number">Большое целое</label>
+                    <input tuiInputNumber bigint id="large-number" [(ngModel)]="largeNumber" [max]="infinity" />
+                </tui-textfield>
+                <label class="field" for="native-quantity">Количество (HTML)
+                    <input id="native-quantity" type="number" value="2" min="0" max="10" step="2" required />
+                </label>
+                <p class="muted">Инспектор сохраняет строку поля с её форматированием. Попробуйте ввод, очистку и кнопки +/−.</p>
+            </details>
         </section>
 
         @if (showInspector()) {

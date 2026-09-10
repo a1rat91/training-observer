@@ -1,13 +1,13 @@
 import {ChangeDetectionStrategy, Component, DestroyRef, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput, TuiRadio} from '@taiga-ui/core';
-import {TuiComboBox, TuiDataListWrapper, TuiSelect, TuiSwitch} from '@taiga-ui/kit';
+import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput, TuiNumberFormat, TuiRadio} from '@taiga-ui/core';
+import {TuiComboBox, TuiDataListWrapper, TuiInputNumber, TuiSelect, TuiSwitch} from '@taiga-ui/kit';
 
 import {ObserverPanelComponent} from '../../shared/observer-panel/observer-panel.component';
 
 @Component({
     selector: 'app-controls',
-    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiRadio, TuiSwitch, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
+    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiInputNumber, TuiNumberFormat, TuiRadio, TuiSwitch, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
     templateUrl: './controls.component.html',
     styleUrl: './controls.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,6 +17,10 @@ export class ControlsComponent {
     protected notifications = true;
     protected delivery = 'email';
     protected autoSave = false;
+    protected amount: number | null = 1250.5;
+    protected internationalAmount: number | null = -1234.5;
+    protected largeNumber: bigint | null = BigInt('900719925474099312345');
+    protected readonly infinity = Infinity;
     protected department: string | null = 'Разработка';
     protected employee: string | null = null;
     protected readonly departments = ['Разработка', 'Поддержка', 'Продажи'];

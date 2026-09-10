@@ -1,6 +1,6 @@
 import {type DomControlState, type DomNodeId, type DomRectSnapshot, type HitTestResult} from './dom-snapshot';
 
-export type ControlKind = 'textbox' | 'button' | 'checkbox' | 'radio' | 'switch' | 'select' | 'combobox';
+export type ControlKind = 'textbox' | 'number' | 'button' | 'checkbox' | 'radio' | 'switch' | 'select' | 'combobox';
 
 export interface ChoiceSnapshot {
     /** Input text is observable; in a combobox it is not proof of a committed selection. */
@@ -56,6 +56,7 @@ export interface ControlSnapshot {
     readonly hostNodeId: DomNodeId;
     /** Captured representation, including labels/decoration; not an event-target resolver. */
     readonly memberNodeIds: readonly DomNodeId[];
+    /** For number fields, value is the exact DOM string, including mask/formatting, not the Angular model. */
     readonly state: DomControlState;
     readonly visible: boolean;
     readonly inViewport: boolean;

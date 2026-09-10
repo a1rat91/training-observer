@@ -1,9 +1,18 @@
 import {inject, Injectable} from '@angular/core';
 
-import {type ControlSnapshot} from '../models/control-snapshot';
+import {type ControlKind, type ControlSnapshot} from '../models/control-snapshot';
 import {type DomElementSnapshot, type DomNodeId, type DomSnapshot} from '../models/dom-snapshot';
 import {NativeControlAdapter, TaigaControlAdapter} from './control-adapters';
 import {buildChoiceSnapshot, buildPopupSnapshot} from './choice-snapshot-builder';
+
+function controlRole(target: DomElementSnapshot, kind: ControlKind): string {
+    if (target.attributes['role']) return target.attributes['role'];
+    if (kind === 'select') return 'multiple' in target.attributes ? 'listbox' : 'combobox';
+    // Taiga's masked numeric field is still a text input in the accessibility tree.
+    if (kind === 'number') return target.attributes['type']?.toLowerCase() === 'number' ? 'spinbutton' : 'textbox';
+
+    return kind;
+}
 
 @Injectable({providedIn: 'root'})
 export class ControlSnapshotBuilder {
@@ -39,14 +48,14 @@ export class ControlSnapshotBuilder {
             const match = this.taiga.match(target, parents) ?? this.native.match(target);
 
             // Multi-value textfields need their own adapter; don't mislabel their editing input.
-            if (match?.kind === 'textbox' && field && 'multi' in field.attributes) {
+            if (match && ['textbox', 'number'].includes(match.kind) && field && 'multi' in field.attributes) {
                 return [];
             }
 
             return match ? [{target, parents, match}] : [];
         });
         // Only a known Taiga cleaner belonging to a supported field is folded into that field.
-        const fieldHosts = new Set(candidates.filter(({match}) => ['textbox', 'select', 'combobox'].includes(match.kind) && match.source === 'taiga-ui')
+        const fieldHosts = new Set(candidates.filter(({match}) => ['textbox', 'number', 'select', 'combobox'].includes(match.kind) && match.source === 'taiga-ui')
             .map(({match}) => match.host.id));
         const controls = candidates.filter(({target, parents}) =>
             !('tuibuttonx' in target.attributes && parents.some((parent) => fieldHosts.has(parent.id))));
@@ -80,7 +89,7 @@ export class ControlSnapshotBuilder {
                 (target.attributes['id'] && label.attributes['for'] === target.attributes['id']) ||
                 parents.some((parent) => parent.id === label.id));
             relatedLabels.forEach((label) => collect(label.id));
-            const fieldLabels = source === 'taiga-ui' && ['textbox', 'select', 'combobox'].includes(kind)
+            const fieldLabels = source === 'taiga-ui' && ['textbox', 'number', 'select', 'combobox'].includes(kind)
                 ? labels.filter((label) => members.has(label.id) && 'tuilabel' in label.attributes) : [];
             // A single unassociated floating label is usable; don't guess among several labels.
             const label = target.label || (fieldLabels.length === 1 ? normalize(text(fieldLabels[0].id)) : '') ||
@@ -89,7 +98,7 @@ export class ControlSnapshotBuilder {
                 ...target.state,
                 // A radio value identifies its DOM option; checked indicates selection.
                 // It need not be the Angular model value (e.g. an object-valued radio).
-                value: ['textbox', 'select', 'combobox', 'radio'].includes(kind) && !target.state.redacted ? target.state.value : undefined,
+                value: ['textbox', 'number', 'select', 'combobox', 'radio'].includes(kind) && !target.state.redacted ? target.state.value : undefined,
                 indeterminate: kind === 'switch' ? undefined : target.state.indeterminate,
                 expanded: target.state.expanded ?? host.state.expanded,
                 disabled: target.state.disabled || host.state.disabled,
@@ -119,11 +128,11 @@ export class ControlSnapshotBuilder {
                 pointerActionable: target.pointerActionable && !state.disabled && !state.inert,
                 rects: target.rects,
                 choice: kind === 'select' || kind === 'combobox' ? buildChoiceSnapshot(snapshot, target, host, kind) : undefined,
-                popup: source === 'taiga-ui' && kind === 'textbox' && target.attributes['role'] === 'combobox'
+                popup: source === 'taiga-ui' && (kind === 'textbox' || kind === 'number') && target.attributes['role'] === 'combobox'
                     ? buildPopupSnapshot(snapshot, target, host) : undefined,
                 locatorHints: {
                     kind, label, tagName: target.tagName,
-                    role: target.attributes['role'] || (kind === 'select' ? 'multiple' in target.attributes ? 'listbox' : 'combobox' : kind),
+                    role: controlRole(target, kind),
                     inputType: target.tagName === 'input' ? (target.attributes['type'] || 'text').toLowerCase() : undefined,
                     id: target.attributes['id'], name: target.attributes['name'],
                     testId: target.attributes['data-testid'] || host.attributes['data-testid'],

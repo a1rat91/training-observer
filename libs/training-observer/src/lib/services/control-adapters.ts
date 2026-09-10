@@ -33,6 +33,10 @@ function nativeKind(node: DomElementSnapshot): ControlKind | null {
         return !role || role === 'radio' ? 'radio' : null;
     }
 
+    if (node.tagName === 'input' && type === 'number') {
+        return !role || role === 'spinbutton' ? 'number' : null;
+    }
+
     if ((node.tagName === 'textarea' ||
         (node.tagName === 'input' && ['text', 'search', 'email', 'tel', 'url', 'password'].includes(type))) &&
         (!role || role === 'textbox' || role === 'searchbox') && !('tuiselectlike' in node.attributes)) {
@@ -64,6 +68,14 @@ export class TaigaControlAdapter implements ControlAdapter {
         }
         if (node.tagName === 'input' && 'tuicombobox' in attributes) {
             return {kind: 'combobox', source: 'taiga-ui', host: field ?? node};
+        }
+
+        // A masked text input is numeric only with this explicit Taiga signature.
+        // inputmode alone does not distinguish numbers from phone/account identifiers.
+        if (node.tagName === 'input' && 'tuiinputnumber' in attributes &&
+            ['text', 'number'].includes((attributes['type'] ?? 'text').toLowerCase()) &&
+            (!attributes['role'] || ['textbox', 'spinbutton', 'combobox'].includes(attributes['role']))) {
+            return {kind: 'number', source: 'taiga-ui', host: field ?? node};
         }
 
         // TuiInput uses role=combobox for arbitrary dropdown content too. Preserve
