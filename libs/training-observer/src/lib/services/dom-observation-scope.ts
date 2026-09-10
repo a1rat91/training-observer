@@ -2,6 +2,8 @@ import {type DomSnapshot} from '../models/dom-snapshot';
 import {resolveRelatedRoots} from './snapshot-references';
 
 export const MICROFRONTEND_SELECTOR = '[data-mf]';
+const STYLESHEET_SELECTOR = 'style,link[rel="stylesheet"]';
+type FormControlElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 /** Routes invalidations using DOM ownership and explicit external dependencies. */
 export class DomObservationScope {
@@ -41,46 +43,70 @@ export class DomObservationScope {
 
     acceptsEvent(node: Node, eventType: string): boolean {
         if (this.owns(node)) return true;
-        // A stylesheet can finish loading after the mutation batch that inserted its link.
-        if (node.nodeType === 1 && (node as Element).matches('style,link[rel="stylesheet"]')) return true;
+        // Stylesheets can finish loading after the mutation batch that inserted their link.
+        if (node.nodeType === 1 && (node as Element).matches(STYLESHEET_SELECTOR)) return true;
         // Browsers do not emit change on the radio that becomes unchecked.
         if ((eventType === 'input' || eventType === 'change') && this.hasRadioPeer(node)) return true;
-        // The form owner can live outside this area through an explicit form="id".
-        if (eventType === 'reset' && node.nodeType === 1 && (node as Element).localName === 'form' &&
-            this.ownedFormControls().some((control) => control.form === node)) return true;
-        return this.dependencies.some((element) => element.contains(node)) ||
-            (node.nodeType === 1 && (node as Element).contains(this.root));
+        if (eventType === 'reset' && this.isOwnedForm(node)) return true;
+
+        return this.isInsideDependency(node) || this.isAncestorElement(node);
     }
 
     acceptsMutation(record: MutationRecord): boolean {
-        if (this.owns(record.target)) {
-            if (record.type !== 'childList') return true;
-            // A separately observed nested root contributes no nodes to this snapshot.
-            return [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some((node) =>
-                node.nodeType !== 1 || !(node as Element).matches(MICROFRONTEND_SELECTOR));
-        }
+        if (this.owns(record.target)) return this.changesOwnedContent(record);
 
         const target = record.target.nodeType === 1 ? record.target as Element : record.target.parentElement;
         if (!target) return false;
-        // Adding a boundary to existing content removes that content from the enclosing area.
-        if (record.type === 'attributes' && record.attributeName === 'data-mf' &&
-            target.parentElement?.closest(MICROFRONTEND_SELECTOR) === this.root) return true;
-        // Common ancestor attributes and stylesheet updates may affect multiple areas.
-        if (record.type === 'attributes' && target.contains(this.root)) return true;
-        if (target.closest('style,link[rel="stylesheet"]')) return true;
-        if (this.dependencies.some((element) => element.contains(target))) return true;
-
-        if (record.type === 'attributes' && record.attributeName === 'id' && this.referenceIds.has(target.id)) return true;
+        if (this.changesNestedBoundary(record, target)) return true;
+        if (record.type === 'attributes' && this.isAncestorElement(target)) return true;
+        if (target.closest(STYLESHEET_SELECTOR)) return true;
+        if (this.isInsideDependency(target)) return true;
+        if (this.changesReferencedId(record, target)) return true;
         if (record.type !== 'childList') return false;
-        return [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some((node) => {
-            if (node.contains(this.root)) return true;
-            if (this.dependencies.some((element) => node.contains(element))) return true;
-            if (node.nodeType !== 1) return false;
-            const element = node as Element;
-            if (element.matches('style,link[rel="stylesheet"]') || element.querySelector('style,link[rel="stylesheet"]')) return true;
-            return this.referenceIds.has(element.id) ||
-                Array.from(element.querySelectorAll('[id]')).some((child) => this.referenceIds.has(child.id));
-        });
+
+        return changedNodes(record).some((node) => this.affectsExternalContext(node));
+    }
+
+    private changesOwnedContent(record: MutationRecord): boolean {
+        if (record.type !== 'childList') return true;
+        // Mounting/removing only nested microfrontend roots contributes no nodes to this area.
+        return changedNodes(record).some((node) =>
+            node.nodeType !== 1 || !(node as Element).matches(MICROFRONTEND_SELECTOR));
+    }
+
+    private changesNestedBoundary(record: MutationRecord, target: Element): boolean {
+        // Adding a marker to existing content removes that content from the enclosing area.
+        return record.type === 'attributes' && record.attributeName === 'data-mf' &&
+            target.parentElement?.closest(MICROFRONTEND_SELECTOR) === this.root;
+    }
+
+    private changesReferencedId(record: MutationRecord, target: Element): boolean {
+        return record.type === 'attributes' && record.attributeName === 'id' && this.referenceIds.has(target.id);
+    }
+
+    private isAncestorElement(node: Node): boolean {
+        return node.nodeType === 1 && (node as Element).contains(this.root);
+    }
+
+    private isInsideDependency(node: Node): boolean {
+        return this.dependencies.some((element) => element.contains(node));
+    }
+
+    private affectsExternalContext(node: Node): boolean {
+        if (node.contains(this.root)) return true;
+        if (this.dependencies.some((element) => node.contains(element))) return true;
+        if (node.nodeType !== 1) return false;
+        const element = node as Element;
+        if (element.matches(STYLESHEET_SELECTOR) || element.querySelector(STYLESHEET_SELECTOR)) return true;
+
+        return this.referenceIds.has(element.id) ||
+            Array.from(element.querySelectorAll('[id]')).some((child) => this.referenceIds.has(child.id));
+    }
+
+    private isOwnedForm(node: Node): boolean {
+        // The form owner can live outside this area through an explicit form="id".
+        return node.nodeType === 1 && (node as Element).localName === 'form' &&
+            this.ownedFormControls().some((control) => control.form === node);
     }
 
     private hasRadioPeer(node: Node): boolean {
@@ -92,11 +118,20 @@ export class DomObservationScope {
             control.form === radio.form && control.getRootNode() === radio.getRootNode());
     }
 
-    private ownedFormControls(): (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[] {
+    private ownedFormControls(): FormControlElement[] {
         const selector = 'input,select,textarea';
-        return [this.root, ...this.portals].flatMap((root) =>
-            [...(root.matches(selector) ? [root] : []), ...Array.from(root.querySelectorAll(selector))])
-            .filter((element) => this.owns(element) && !(this.ignoreSelector && element.closest(this.ignoreSelector))) as
-                (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[];
+        const controls: FormControlElement[] = [];
+
+        for (const root of [this.root, ...this.portals]) {
+            if (root.matches(selector)) controls.push(root as FormControlElement);
+            root.querySelectorAll<FormControlElement>(selector).forEach((control) => controls.push(control));
+        }
+
+        return controls.filter((element) =>
+            this.owns(element) && !(this.ignoreSelector && element.closest(this.ignoreSelector)));
     }
+}
+
+function changedNodes(record: MutationRecord): Node[] {
+    return [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)];
 }
