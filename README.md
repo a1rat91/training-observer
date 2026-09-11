@@ -1,7 +1,7 @@
 # Training Observer
 
 Технический spike системы обучения поверх существующего Angular-приложения. Работа идёт по [плану](docs/spike/PLAN.md):
-этапы 1–7 завершены, следующий — benchmark восстановления элементов.
+этапы 1–8 завершены, следующий — итоговая архитектура MVP и границы применимости.
 
 Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; старые файлы ядра в корне `libs/element-spike/src` и
 `projects/demo/src/pages/spike` остаются черновиками. Проверенный recorder находится в
@@ -23,6 +23,7 @@ npm start
 
 | Маршрут              | Содержимое                                                                                              |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/spike/benchmark`   | Измеренные результаты восстановления: 28 целей, 17 изменений, JSON/CSV                                  |
 | `/spike/learn`       | Прохождение ученика: задания, подсказки, ожидание полей и проверка результата                           |
 | `/spike/record`      | Запись администратора: действия, значения, состояния, JSON export                                       |
 | `/spike/procedure`   | Плеер динамических форм: две ветки, HTTP backend, ошибки, возврат и завершение                          |
@@ -39,6 +40,7 @@ npm start
 npm test
 npx playwright test tests/learning.spec.ts tests/recording.spec.ts tests/procedure.spec.ts tests/research.spec.ts
 npm run research:spike
+npm run benchmark:spike
 ```
 
 Нужен установленный Google Chrome. Node-тесты проверяют серверный протокол, Playwright — маршруты и живые
@@ -51,10 +53,11 @@ npm run research:spike
 создайте и проверьте JSON-сценарий, затем нажмите «Сохранить и открыть прохождение». На `/spike/learn` выберите другой
 layout и нажмите «Начать обучение». [Полный цикл и ограничения authoring/runtime](docs/spike/scenario-runtime.md).
 
-Resolver v2 и сценарный runtime проверены unit-тестами и прохождением в новом документе; полный benchmark ещё не
-проведён. `npm test` запускает unit-тесты контрактов, recorder, resolver, runtime и тестового backend;
-`npm run test:spike` — контракты, recorder, resolver и runtime. Проверки маршрутов и прохождений запускаются отдельно
-через Playwright.
+Resolver v2 и сценарный runtime проверены unit-тестами и прохождением в новом документе.
+[Benchmark](docs/spike/benchmark.md): 368/369 eligible целей найдены верно; неразличимая подмена сущности дала один
+false accept, сохранённый в отчёте. [Открыть результаты](http://localhost:4200/spike/benchmark). `npm test` запускает
+unit-тесты контрактов, recorder, resolver, runtime и тестового backend; `npm run test:spike` — контракты, recorder,
+resolver и runtime. Проверки маршрутов и прохождений запускаются отдельно через Playwright.
 
 После остановки записи можно пересоздать процедуру с другим расположением и нажать **«Проверить поиск»**.
 [Алгоритм resolver и ограничения](docs/spike/resolver.md).

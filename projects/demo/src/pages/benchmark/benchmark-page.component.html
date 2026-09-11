@@ -1,0 +1,141 @@
+<h1>Benchmark восстановления элементов</h1>
+<p>
+    Сохранённый результат запуска {{ report.generatedAt }}. Это измерения на тестовых формах Taiga UI 4, а не гарантия
+    для любого приложения. Здесь ничего не записывается: запись и обучение находятся на отдельных страницах.
+</p>
+<p>
+    {{ report.targets.length }} вариантов целей × {{ report.variants.length }} изменений DOM. Все методы получают один и
+    тот же DOM. Скрытый эталон доступен только проверке результата.
+</p>
+<nav aria-label="Отчёты benchmark">
+    <a
+        download
+        href="assets/spike-benchmark/report.json"
+        size="s"
+        tuiButton
+    >
+        Полный JSON
+    </a>
+    <a
+        download
+        href="assets/spike-benchmark/results.csv"
+        size="s"
+        tuiButton
+    >
+        Элементы · CSV
+    </a>
+    <a
+        download
+        href="assets/spike-benchmark/dynamic.csv"
+        size="s"
+        tuiButton
+    >
+        Процедура · CSV
+    </a>
+</nav>
+<h2>Сравнение методов</h2>
+<p>
+    Recovery — верно найденные / доступные различимые цели. Precision — верно найденные / все принятые совпадения. Wrong
+    включает выбор чужого элемента и небезопасное принятие неоднозначной или недоступной цели. Такие случаи не исключены
+    из отчёта ради высокого процента.
+</p>
+<div class="scroll">
+    <table aria-label="Сравнение методов">
+        <thead>
+            <tr>
+                <th>Метод</th>
+                <th>Correct</th>
+                <th>Wrong</th>
+                <th>Ambiguous</th>
+                <th>Broken</th>
+                <th>Recovery</th>
+                <th>Precision</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of methods; track row.name) {
+                <tr>
+                    <th>{{ row.name }}</th>
+                    <td>{{ row.correct }}</td>
+                    <td>{{ row.wrong }}</td>
+                    <td>{{ row.ambiguous }}</td>
+                    <td>{{ row.broken }}</td>
+                    <td>{{ row.eligibleCorrect }}/{{ row.eligible }} · {{ row.recovery | percent: '1.2-2' }}</td>
+                    <td>{{ row.correct }}/{{ row.resolved }} · {{ row.precision | percent: '1.2-2' }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<p>
+    Единственная подмена, которую resolver принял: другая бизнес-сущность с полностью идентичным DOM. Без идентификатора
+    из приложения обнаружить её невозможно. Изменённое название «Продолжить оформление» resolver, наоборот, отклонил:
+    отказ лучше догадки, но это снижает recovery.
+</p>
+<h2>Resolver по изменениям DOM</h2>
+<div class="scroll">
+    <table aria-label="Изменения DOM">
+        <thead>
+            <tr>
+                <th>Изменение</th>
+                <th>Correct</th>
+                <th>Wrong</th>
+                <th>Ambiguous</th>
+                <th>Broken</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of variants; track row.name) {
+                <tr>
+                    <th>{{ row.name }}</th>
+                    <td>{{ row.correct }}</td>
+                    <td>{{ row.wrong }}</td>
+                    <td>{{ row.ambiguous }}</td>
+                    <td>{{ row.broken }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<h2>Динамический плеер процедур</h2>
+<p>
+    Отдельный живой прогон: новый документ, другое расположение, HTTP append/replace, валидация 422, открытие и закрытие
+    dropdown, сброс. Проверяется поиск владельца dropdown; исчезнувший option не становится постоянным locator.
+</p>
+<table aria-label="Динамическая процедура">
+    <thead>
+        <tr>
+            <th>Переход</th>
+            <th>Доступных целей</th>
+            <th>Correct</th>
+            <th>Ожидаемо отсутствуют</th>
+            <th>Broken</th>
+            <th>Wrong</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (row of dynamic; track row.name) {
+            <tr>
+                <th>{{ row.name }}</th>
+                <td>{{ row.eligible }}</td>
+                <td>{{ row.correct }}</td>
+                <td>{{ row.negative }}</td>
+                <td>{{ row.broken }}</td>
+                <td>{{ row.wrong }}</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<details>
+    <summary>Условия измерения</summary>
+    <p>
+        Chrome {{ report.browser }}. Пороги resolver: {{ report.thresholds.threshold }} /
+        {{ report.thresholds.margin }}. На этой матрице они не подбирались.
+    </p>
+    <p>
+        Resolver, median / p95: {{ report.summary['resolver-v2'].resolveMedianMs | number: '1.1-2' }} /
+        {{ report.summary['resolver-v2'].resolveP95Ms | number: '1.1-2' }} мс. Время измерено внутри страницы. Время
+        готовых locators включает обмен с Playwright, поэтому напрямую сравнивать скорость нельзя.
+    </p>
+    <p>Повторный запуск из проекта: npm run benchmark:spike. Полная методика: docs/spike/benchmark.md.</p>
+</details>

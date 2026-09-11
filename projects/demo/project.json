@@ -73,6 +73,11 @@
                         "glob": "**/*",
                         "input": "node_modules/@taiga-ui/icons/src",
                         "output": "assets/taiga-ui/icons"
+                    },
+                    {
+                        "glob": "*.{json,csv}",
+                        "input": "docs/spike/benchmark",
+                        "output": "assets/spike-benchmark"
                     }
                 ],
                 "baseHref": "/",

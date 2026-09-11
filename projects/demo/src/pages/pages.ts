@@ -2,6 +2,7 @@ import {DemoPath} from '@demo/constants';
 import {type TuiDocRoutePages} from '@taiga-ui/addon-doc';
 
 export const DEMO_PAGES: TuiDocRoutePages = [
+    {section: 'Spike', title: 'Benchmark восстановления', route: DemoPath.Benchmark},
     {section: 'Spike', title: 'Прохождение обучения', route: DemoPath.Learn},
     {section: 'Spike', title: 'Запись процедуры', route: DemoPath.Record},
     {section: 'Spike', title: 'Плеер процедур', route: DemoPath.Procedure},
