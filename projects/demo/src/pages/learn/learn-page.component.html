@@ -13,11 +13,12 @@
         <procedure-page />
     </div>
     <aside aria-label="Панель обучения">
-        <details [open]="!source">
+        <details [open]="!source || !!error()">
             <summary>Сценарий</summary>
             <p>
                 JSON передаётся со страницы записи через локальное хранилище этого браузера. Можно вставить другой
-                сценарий.
+                сценарий. «Скачать запись» экспортирует журнал действий; для обучения нужен сценарий из блока
+                «Подготовка сценария».
             </p>
             <tui-textfield>
                 <label tuiLabel>JSON сценария</label>
@@ -49,6 +50,16 @@
         </div>
         @if (error()) {
             <p role="alert">{{ error() }}</p>
+        }
+        @if (importedRecording()) {
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                (click)="prepareRecording()"
+            >
+                Подготовить сценарий из записи
+            </button>
         }
         @if (current(); as state) {
             <h2 aria-live="polite">{{ labels[state.status] }}</h2>

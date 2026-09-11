@@ -7,16 +7,21 @@ import {
     signal,
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {Router} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiTextarea} from '@taiga-ui/kit';
 
-import {parseScenario} from '../../../../../libs/element-spike/src/contracts';
+import {
+    parseRecording,
+    parseScenario,
+    type Recording,
+} from '../../../../../libs/element-spike/src/contracts';
 import {
     type RuntimeSnapshot,
     ScenarioRuntime,
 } from '../../../../../libs/element-spike/src/runtime';
 import ProcedurePageComponent from '../procedure/procedure-page.component';
-import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
+import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
 
 @Component({
     standalone: true,
@@ -30,7 +35,9 @@ export default class LearnPageComponent {
     private readonly zone = inject(NgZone);
     private readonly destroyRef = inject(DestroyRef);
     private runtime?: ScenarioRuntime;
+    private readonly router = inject(Router);
 
+    public readonly importedRecording = signal<Recording | null>(null);
     public readonly current = signal<RuntimeSnapshot | null>(null);
     public readonly error = signal('');
     public readonly hintVisible = signal(false);
@@ -62,8 +69,25 @@ export default class LearnPageComponent {
         this.current.set(null);
         this.error.set('');
         this.hintVisible.set(false);
+        this.importedRecording.set(null);
 
         try {
+            const document: unknown = JSON.parse(this.source);
+
+            if (
+                document &&
+                typeof document === 'object' &&
+                'kind' in document &&
+                document.kind === 'training-recording'
+            ) {
+                this.importedRecording.set(parseRecording(this.source));
+                this.error.set(
+                    'Это запись действий, а не учебный сценарий. Подготовьте из неё сценарий: выберите признак завершения и проверьте задания.',
+                );
+
+                return;
+            }
+
             const scenario = parseScenario(this.source);
 
             this.zone.runOutsideAngular(() => {
@@ -83,6 +107,20 @@ export default class LearnPageComponent {
         } catch (error: unknown) {
             this.error.set(
                 error instanceof Error ? error.message : 'Не удалось запустить сценарий',
+            );
+        }
+    }
+
+    public prepareRecording(): void {
+        try {
+            const recording = parseRecording(this.source);
+
+            sessionStorage.setItem(RECORDING_IMPORT_KEY, JSON.stringify(recording));
+            void this.router.navigateByUrl('/spike/record');
+        } catch (error: unknown) {
+            this.importedRecording.set(null);
+            this.error.set(
+                error instanceof Error ? error.message : 'Не удалось передать запись',
             );
         }
     }

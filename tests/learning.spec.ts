@@ -1,4 +1,8 @@
+import {readFile} from 'node:fs/promises';
+
 import {expect, type Page, test} from '@playwright/test';
+
+import {parseRecording, parseScenario} from '../libs/element-spike/src/contracts';
 
 async function select(page: Page, name: string, option: string): Promise<void> {
     await page.getByRole('combobox', {name, exact: true}).click();
@@ -252,4 +256,76 @@ test('late response after stop cannot advance a freshly started learner', async 
     await expect(
         learner.getByRole('heading', {name: 'Заполните «ФИО»', exact: true}),
     ).toBeVisible();
+});
+
+test('recording JSON pasted into learner can be prepared without recording actions again', async ({
+    page,
+}) => {
+    await page.goto('/spike/record');
+    await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
+    await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
+    await identity(page);
+    await next(page);
+    await internal(page);
+    await next(page);
+    await complete(page);
+    await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
+    const pending = page.waitForEvent('download');
+
+    await page.getByRole('button', {name: 'Скачать запись', exact: true}).click();
+    const recording = parseRecording(
+        await readFile(await (await pending).path(), 'utf8'),
+    );
+
+    await page.goto('/spike/learn');
+    await page
+        .getByRole('textbox', {name: 'JSON сценария', exact: true})
+        .fill(JSON.stringify(recording));
+    await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
+    await expect(page.getByRole('alert')).toContainText(
+        'Это запись действий, а не учебный сценарий',
+    );
+    await expect(
+        page.getByRole('button', {name: 'Остановить обучение', exact: true}),
+    ).toBeDisabled();
+    await page
+        .getByRole('button', {name: 'Подготовить сценарий из записи', exact: true})
+        .click();
+    await expect(page).toHaveURL(/\/spike\/record$/);
+    await expect(page.getByRole('status')).toContainText('Запись импортирована');
+    await expect(
+        page.getByRole('list', {name: 'Записанные действия'}).getByRole('listitem'),
+    ).toHaveCount(recording.actions.length);
+    // Recreate only the visible success evidence; the imported action log remains untouched.
+    await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
+    await identity(page);
+    await next(page);
+    await internal(page);
+    await next(page);
+    await complete(page);
+    await expect(
+        page.getByRole('list', {name: 'Записанные действия'}).getByRole('listitem'),
+    ).toHaveCount(recording.actions.length);
+    await page
+        .getByRole('button', {name: 'Выбрать признак завершения', exact: true})
+        .click();
+    await page.getByRole('heading', {name: 'Заявка принята', exact: true}).click();
+    await page
+        .getByRole('button', {name: 'Создать черновик сценария', exact: true})
+        .click();
+    const download = page.waitForEvent('download');
+
+    await page.getByRole('button', {name: 'Скачать сценарий', exact: true}).click();
+    const scenario = parseScenario(await readFile(await (await download).path(), 'utf8'));
+
+    expect(scenario.kind).toBe('training-scenario');
+    expect(scenario.steps).toHaveLength(recording.actions.length);
+    await page
+        .getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true})
+        .click();
+    await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
+    await expect(
+        page.getByRole('heading', {name: 'Выполните задание', exact: true}),
+    ).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
 });

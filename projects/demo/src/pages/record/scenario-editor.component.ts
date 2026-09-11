@@ -99,6 +99,15 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
             >
                 Сохранить и открыть прохождение
             </button>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="disabled()"
+                (click)="download()"
+            >
+                Скачать сценарий
+            </button>
         }
         @if (error()) {
             <p role="alert">{{ error() }}</p>
@@ -193,6 +202,24 @@ export class ScenarioEditorComponent {
         } catch (error: unknown) {
             this.error.set(
                 error instanceof Error ? error.message : 'Не удалось создать сценарий',
+            );
+        }
+    }
+
+    public download(): void {
+        try {
+            const json = serializeScenario(parseScenario(this.source));
+            const url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
+            const anchor = document.createElement('a');
+
+            anchor.href = url;
+            anchor.download = 'training-scenario-v2.json';
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            this.error.set('');
+        } catch (error: unknown) {
+            this.error.set(
+                error instanceof Error ? error.message : 'Не удалось скачать сценарий',
             );
         }
     }

@@ -11,13 +11,16 @@ import {TuiButton} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
 
 import {
+    parseRecording,
     type Recording,
     type Resolution,
     type SemanticAction,
+    serializeRecording,
 } from '../../../../../libs/element-spike/src/contracts';
 import {ElementRecorder} from '../../../../../libs/element-spike/src/recording';
 import {ElementResolver} from '../../../../../libs/element-spike/src/resolution';
 import ProcedurePageComponent from '../procedure/procedure-page.component';
+import {RECORDING_IMPORT_KEY} from '../scenario-storage';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
 @Component({
@@ -44,14 +47,34 @@ export default class RecordPageComponent {
     public readonly resolutions = signal<Array<{name: string; report: Resolution}>>([]);
     public readonly error = signal('');
     public captureValues = true;
+    public readonly imported = signal(false);
 
     constructor() {
+        try {
+            const source = sessionStorage.getItem(RECORDING_IMPORT_KEY);
+
+            if (source) {
+                const recording = parseRecording(source);
+
+                sessionStorage.removeItem(RECORDING_IMPORT_KEY);
+                this.recording.set(recording);
+                this.imported.set(true);
+            }
+        } catch (error: unknown) {
+            this.error.set(
+                error instanceof Error
+                    ? error.message
+                    : 'Не удалось импортировать запись',
+            );
+        }
+
         this.destroyRef.onDestroy(() => this.recorder?.stop());
     }
 
     public start(root: HTMLElement): void {
         this.recorder?.stop();
         this.error.set('');
+        this.imported.set(false);
         this.resolutions.set([]);
         this.zone.runOutsideAngular(() => {
             this.recorder = new ElementRecorder(root, {
@@ -102,7 +125,8 @@ export default class RecordPageComponent {
 
     public download(): void {
         try {
-            const json = this.recorder?.export();
+            const recording = this.recording();
+            const json = recording ? serializeRecording(recording) : null;
 
             if (!json) {
                 return;
