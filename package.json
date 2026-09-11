@@ -24,7 +24,9 @@
         "start": "nx serve demo",
         "stylelint": "stylelint '**/*.{less,css}' --config package.json",
         "stylelint:fix": "stylelint '**/*.{less,css}' --config package.json --fix",
-        "test": "nx run-many --target=test --projects=training-observer"
+        "test": "nx run-many --target=test --projects=training-observer",
+        "test:pw": "playwright test",
+        "test:pw:load": "playwright test --config=playwright.load.config.ts"
     },
     "commitlint": {
         "extends": [
@@ -83,6 +85,7 @@
         "@nx/js": "20.8.4",
         "@nx/node": "20.8.4",
         "@nx/workspace": "20.8.4",
+        "@playwright/test": "^1.62.1",
         "@schematics/angular": "19.2.27",
         "@taiga-ui/addon-charts": "^4.98.0",
         "@taiga-ui/addon-commerce": "^4.98.0",

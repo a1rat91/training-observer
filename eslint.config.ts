@@ -22,5 +22,5 @@ export default [
             '@angular-eslint/prefer-signals': 'off',
         },
     },
-    {ignores: ['**/*.html', '**/*.js']},
+    {ignores: ['**/*.html', '**/*.js', '.nessy/**']},
 ];

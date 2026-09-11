@@ -6,6 +6,16 @@
         "strict": false,
         "esModuleInterop": true
     },
-    "include": ["projects", "scripts", "jest.config.ts", "eslint.config.ts", ".release-it.js"],
+    "include": [
+        "projects",
+        "scripts",
+        "tests",
+        "benchmarks",
+        "jest.config.ts",
+        "playwright.config.ts",
+        "playwright.load.config.ts",
+        "eslint.config.ts",
+        ".release-it.js"
+    ],
     "exclude": ["**/node_modules", "**/schematics/**", "**/.*/", "**/*.js", "**/typings.d.ts"]
 }
