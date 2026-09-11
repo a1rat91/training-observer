@@ -11,15 +11,19 @@ type FormControlElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaEle
 export class DomObservationScope {
     private portals: Element[] = [];
     private dependencies: Element[] = [];
+    private nestedRoots = new WeakSet<Element>();
     private referenceIds = new Set<string>();
 
     constructor(
         public readonly root: Element,
         private readonly ignoreSelector = '',
+        private readonly boundarySelector = MICROFRONTEND_SELECTOR,
     ) {}
 
     public update(snapshot: DomSnapshot): void {
         const document = this.root.ownerDocument;
+        this.nestedRoots = new WeakSet(this.boundarySelector
+            ? Array.from(this.root.querySelectorAll(this.boundarySelector)) : []);
 
         this.referenceIds = new Set<string>();
 
@@ -58,11 +62,12 @@ export class DomObservationScope {
             return false;
         }
 
-        const owner = element.closest(MICROFRONTEND_SELECTOR);
-
-        return owner
-            ? owner === this.root
-            : this.portals.some((portal) => portal.contains(element));
+        if (this.root.contains(element)) {
+            const owner = this.boundarySelector ? element.closest(this.boundarySelector) : null;
+            return !owner || !this.root.contains(owner) || owner === this.root;
+        }
+        const owner = this.boundarySelector ? element.closest(this.boundarySelector) : null;
+        return !owner && this.portals.some((portal) => portal.contains(element));
     }
 
     public acceptsEvent(node: Node, eventType: string): boolean {
@@ -120,17 +125,17 @@ export class DomObservationScope {
         // Mounting/removing only nested microfrontend roots contributes no nodes to this area.
         return changedNodes(record).some(
             (node) =>
-                node.nodeType !== 1 || !(node as Element).matches(MICROFRONTEND_SELECTOR),
+                node.nodeType !== 1 || !this.boundarySelector || !(node as Element).matches(this.boundarySelector),
         );
     }
 
     private changesNestedBoundary(record: MutationRecord, target: Element): boolean {
-        // Adding a marker to existing content removes that content from the enclosing area.
-        return (
-            record.type === 'attributes' &&
-            record.attributeName === 'data-mf' &&
-            target.parentElement?.closest(MICROFRONTEND_SELECTOR) === this.root
-        );
+        if (record.type !== 'attributes' || !this.boundarySelector || !this.root.contains(target)) {
+            return false;
+        }
+        const wasBoundary = this.nestedRoots.has(target);
+        const isBoundary = target.matches(this.boundarySelector);
+        return wasBoundary !== isBoundary && Boolean(target.parentElement && this.owns(target.parentElement));
     }
 
     private changesReferencedId(record: MutationRecord, target: Element): boolean {

@@ -74,9 +74,12 @@ export class MicrofrontendObserver {
         const options = {
             ...this.defaults,
             ...overrides,
-            boundarySelector: MICROFRONTEND_SELECTOR,
+            boundarySelector: overrides.boundarySelector ?? MICROFRONTEND_SELECTOR,
         };
 
+        if (!options.boundarySelector.trim()) {
+            throw new Error('Provide a non-empty microfrontend boundary selector.');
+        }
         validateObservationTiming(options);
         this.builder.validateOptions(options);
         this.stop();
@@ -85,6 +88,15 @@ export class MicrofrontendObserver {
             this.connectSharedSources(root, options, view);
         });
         this.active.set(true);
+    }
+
+    /** Discover matching roots through DOCUMENT, including roots mounted after this call. */
+    public observe(selectors: string | readonly string[], overrides: Partial<DomObservationOptions> = {}): void {
+        const selector = typeof selectors === 'string' ? selectors : selectors.join(',');
+        if (!selector.trim() || (Array.isArray(selectors) && selectors.some((item) => !item.trim()))) {
+            throw new Error('Provide at least one non-empty microfrontend selector.');
+        }
+        this.start(this.document.body, {...overrides, boundarySelector: selector});
     }
 
     /** Refresh one area, or all areas after an external layout change. */
@@ -187,9 +199,9 @@ export class MicrofrontendObserver {
 
     private reconcile(root: Element, options: DomObservationOptions): void {
         const roots = root.isConnected
-            ? [root, ...Array.from(root.querySelectorAll(MICROFRONTEND_SELECTOR))].filter(
+            ? [root, ...Array.from(root.querySelectorAll(options.boundarySelector!))].filter(
                   (element) =>
-                      element.matches(MICROFRONTEND_SELECTOR) &&
+                      element.matches(options.boundarySelector!) &&
                       !isObserverUi(element) &&
                       !isScrollDecoration(element) &&
                       (!options.ignoreSelector ||
@@ -217,7 +229,7 @@ export class MicrofrontendObserver {
 
         for (const area of this.entries.values()) {
             const name = area.root.getAttribute('data-mf') ?? '';
-            const parent = area.root.parentElement?.closest(MICROFRONTEND_SELECTOR);
+            const parent = area.root.parentElement?.closest(options.boundarySelector!);
             const parentId = parent ? (this.entries.get(parent)?.state.id ?? null) : null;
 
             if (area.parent !== area.root.parentElement) {
@@ -231,7 +243,7 @@ export class MicrofrontendObserver {
             }
         }
 
-        if (changed || !roots.length) {
+        if (changed || (!roots.length && this.current().length > 0)) {
             this.publish();
         }
     }
@@ -246,7 +258,7 @@ export class MicrofrontendObserver {
 
         const session = new DomObservationSession(root, options, this.analyzer, {
             mode: 'shared',
-            scope: new DomObservationScope(root, options.ignoreSelector),
+            scope: new DomObservationScope(root, options.ignoreSelector, options.boundarySelector),
         });
 
         const area: Area = {

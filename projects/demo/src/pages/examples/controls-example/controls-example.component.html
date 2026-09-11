@@ -21,8 +21,8 @@
         </p>
 
         <div class="workspace">
-            <section
-                #page
+            <demo-microfrontend
+                name="controls"
                 aria-labelledby="page-title"
                 data-testid="observed-page"
                 class="page"
@@ -34,9 +34,11 @@
                 >
                     Далее
                 </button>
-            </section>
+            </demo-microfrontend>
 
-            <app-observer-panel [root]="page" />
+            @if (showInspector()) {
+                <app-observer-panel selectors="demo-microfrontend" />
+            }
         </div>
     </main>
 </tui-doc-page>

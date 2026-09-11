@@ -1,7 +1,7 @@
 import {type DomSnapshot} from '../models/dom-snapshot';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
-import {type DomObservationScope} from './dom-observation-scope';
+import {DomObservationScope} from './dom-observation-scope';
 import {isObserverUi, isObserverUiMutation} from './dom-observer-ui';
 import {isScrollDecoration, SCROLL_DECORATION_SELECTOR} from './dom-scroll-decoration';
 import {resolveRelatedRoots} from './snapshot-references';
@@ -75,7 +75,8 @@ export class DomObservationSession {
     ) {
         this.document = root.ownerDocument;
         this.view = this.document.defaultView!;
-        this.scope = sources.mode === 'shared' ? sources.scope : undefined;
+        this.scope = sources.mode === 'shared' ? sources.scope
+            : new DomObservationScope(root, options.ignoreSelector, options.boundarySelector ?? '');
     }
 
     public start(snapshot: DomSnapshot, callbacks: SessionCallbacks): void {

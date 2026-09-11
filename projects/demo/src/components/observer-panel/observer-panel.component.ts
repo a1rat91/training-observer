@@ -1,8 +1,9 @@
-import {DOCUMENT, JsonPipe} from '@angular/common';
+import {JsonPipe} from '@angular/common';
 import {
     afterNextRender,
     ChangeDetectionStrategy,
     Component,
+    computed,
     effect,
     inject,
     input,
@@ -10,7 +11,7 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
-import {DomHighlighter, type DomNodeId, TrainingObserver} from '@training-observer/core';
+import {DomHighlighter, type DomNodeId, MicrofrontendObserver} from '@training-observer/core';
 
 @Component({
     selector: 'app-observer-panel',
@@ -18,14 +19,14 @@ import {DomHighlighter, type DomNodeId, TrainingObserver} from '@training-observ
     templateUrl: './observer-panel.component.html',
     styleUrl: './observer-panel.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [TrainingObserver, DomHighlighter],
-    host: {'attr.data-training-observer-ignore': ''},
+    providers: [MicrofrontendObserver, DomHighlighter],
+    host: {'data-training-observer-ignore': '', 'data-training-observer-ui': ''},
 })
 export class ObserverPanelComponent {
     private readonly highlighter = inject(DomHighlighter);
 
-    public readonly root = input.required<HTMLElement>();
-    public readonly observer = inject(TrainingObserver);
+    public readonly selectors = input.required<string | readonly string[]>();
+    public readonly observer = inject(MicrofrontendObserver);
 
     public readonly highlight = signal<{
         mode: 'all' | 'dom' | 'one';
@@ -33,12 +34,15 @@ export class ObserverPanelComponent {
     } | null>(null);
 
     public readonly error = signal('');
-    public readonly document = inject(DOCUMENT);
+    public readonly selectedId = signal('');
+    public readonly selected = computed(() => this.observer.areas().find((area) => area.id === this.selectedId())
+        ?? this.observer.areas()[0]);
+    public readonly snapshot = computed(() => this.selected()?.snapshot ?? null);
+    public readonly logicalControls = computed(() => this.selected()?.logicalControls ?? []);
     public maxNodes = 10_000;
     public maxDepth = 100;
     public batchDelayMs = 50;
     public propertyCheckIntervalMs = 500;
-    public wholeDocument = false;
     public readonly popupLabels = {
         closed: 'Закрыт',
         open: 'Открыт',
@@ -49,7 +53,7 @@ export class ObserverPanelComponent {
     constructor() {
         effect(() => {
             const selection = this.highlight();
-            const snapshot = this.observer.snapshot();
+            const snapshot = this.snapshot();
 
             if (!selection || !snapshot) {
                 this.highlighter.clear();
@@ -60,8 +64,7 @@ export class ObserverPanelComponent {
             const ids =
                 selection.mode === 'dom'
                     ? snapshot.interactiveIds
-                    : this.observer
-                          .logicalControls()
+                    : this.logicalControls()
                           .map((control) => control.targetNodeId);
 
             this.highlighter.show(
@@ -75,7 +78,7 @@ export class ObserverPanelComponent {
 
     public start(): void {
         this.run(() =>
-            this.observer.start(this.observedRoot(), {
+            this.observer.observe(this.selectors(), {
                 maxNodes: this.maxNodes,
                 maxDepth: this.maxDepth,
                 batchDelayMs: this.batchDelayMs,
@@ -85,16 +88,7 @@ export class ObserverPanelComponent {
     }
 
     public capture(): void {
-        this.run(() =>
-            this.observer.capture(this.observedRoot(), {
-                maxNodes: this.maxNodes,
-                maxDepth: this.maxDepth,
-            }),
-        );
-    }
-
-    private observedRoot(): HTMLElement {
-        return this.wholeDocument ? this.document.body : this.root();
+        this.run(() => this.observer.refresh(this.selected()?.id));
     }
 
     private run(action: () => unknown): void {
