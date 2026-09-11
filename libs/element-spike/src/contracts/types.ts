@@ -85,6 +85,16 @@ export type SemanticAction = ActionBase &
         | {kind: 'click'; targetId: string}
         | {kind: 'navigation'; pathname: string}
     );
+export interface RecorderDiagnostic {
+    timeMs: number;
+    code:
+        | 'ambiguous-owner'
+        | 'capacity-reached'
+        | 'composition-cancelled'
+        | 'unconfirmed-selection'
+        | 'unsupported-control';
+    message: string;
+}
 export interface Recording {
     kind: 'training-recording';
     version: 2;
@@ -95,6 +105,7 @@ export interface Recording {
     actions: SemanticAction[];
     /** State updates are not automatically actions or completed steps. */
     states: ObservedState[];
+    diagnostics?: RecorderDiagnostic[];
 }
 
 export type ExpectedAction =

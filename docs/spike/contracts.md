@@ -168,3 +168,11 @@ npm test
 Unit-тесты проверяют round-trip, значения, разделение режимов, секреты, ошибочные ссылки/версии/порядок, отсутствие
 живого DOM, циклы/getters, условия и ambiguous/waiting/timeout/cancelled. `npm test` запускает тесты контрактов и HTTP
 backend плеера; Playwright остаётся отдельной командой. Следующий этап — реализация recorder по этому контракту.
+
+## Диагностика записи (этап 5)
+
+В `Recording` v2 добавлено необязательное поле `diagnostics`: до 100 записей `{timeMs, code, message}`. Коды:
+`unsupported-control`, `ambiguous-owner`, `unconfirmed-selection`, `composition-cancelled`, `capacity-reached`. Запись с
+диагностикой может быть неполной и не должна автоматически считаться готовым учебным сценарием. Старые JSON v2 без
+diagnostics продолжают читаться. Старый строгий reader до этого расширения отклонит новое поле; совместимость разных
+развёрнутых версий ещё не обещается в этом spike.

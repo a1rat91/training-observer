@@ -1,0 +1,88 @@
+<header>
+    <h1>Запись процедуры</h1>
+    <p>
+        Начните запись, затем создайте и заполните процедуру. Новая запись заменяет предыдущую. Скачайте JSON перед
+        уходом со страницы.
+    </p>
+</header>
+<div class="workspace">
+    <div
+        #target
+        class="player"
+    >
+        <procedure-page />
+    </div>
+    <aside aria-label="Панель записи">
+        <h2>{{ running() ? 'Идёт запись' : 'Запись остановлена' }}</h2>
+        <label>
+            <input
+                tuiCheckbox
+                type="checkbox"
+                [disabled]="running()"
+                [(ngModel)]="captureValues"
+            />
+            Сохранять значения полей
+        </label>
+        <p>
+            Пароли, файлы и одноразовые коды скрываются. Записываются только действия внутри плеера и его связанных
+            dropdown.
+        </p>
+        <div class="actions">
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="running()"
+                (click)="start(target)"
+            >
+                Начать запись
+            </button>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="!running()"
+                (click)="stop()"
+            >
+                Остановить запись
+            </button>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="!recording() || running()"
+                (click)="download()"
+            >
+                Скачать запись
+            </button>
+        </div>
+        @if (error()) {
+            <p role="alert">{{ error() }}</p>
+        }
+        @if (recording(); as report) {
+            <p>
+                Действий: {{ report.actions.length }} · Элементов: {{ report.descriptors.length }} · Состояний:
+                {{ report.states.length }}
+            </p>
+            @for (diagnostic of report.diagnostics; track $index) {
+                <p role="alert">{{ diagnostic.message }}</p>
+            }
+            <h3>Записанные действия</h3>
+            <ol aria-label="Записанные действия">
+                @for (action of report.actions; track action.id) {
+                    <li>
+                        <strong>{{ action.kind }} · {{ name(action) }}</strong>
+                        <div class="value">{{ value(action) }}</div>
+                    </li>
+                } @empty {
+                    <li>Пока нет действий. Создайте процедуру и заполните поля.</li>
+                }
+            </ol>
+            <details>
+                <summary>Наблюдаемые состояния (последние 10)</summary>
+                <p>Изменения от сервера и пересоздание полей — состояния, а не действия пользователя.</p>
+                <pre>{{ json(report.states.slice(-10)) }}</pre>
+            </details>
+        }
+    </aside>
+</div>

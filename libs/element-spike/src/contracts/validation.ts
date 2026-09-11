@@ -305,20 +305,39 @@ const state = object({
     value: captured,
 });
 
-const recording = object({
-    kind: one('training-recording'),
-    version: one(2),
-    id,
-    mode,
-    valuePolicy: object({
-        mode: one('omit', 'capture'),
-        sensitive: one('redact'),
-        normalizers: array(one('decimal-comma-v1', 'date-dmy-v1'), 0, 2),
-    }),
-    descriptors: array(descriptor),
-    actions: array(action),
-    states: array(state),
-});
+const recording = object(
+    {
+        kind: one('training-recording'),
+        version: one(2),
+        id,
+        mode,
+        valuePolicy: object({
+            mode: one('omit', 'capture'),
+            sensitive: one('redact'),
+            normalizers: array(one('decimal-comma-v1', 'date-dmy-v1'), 0, 2),
+        }),
+        descriptors: array(descriptor),
+        actions: array(action),
+        states: array(state),
+    },
+    {
+        diagnostics: array(
+            object({
+                timeMs: nonnegative,
+                code: one(
+                    'unsupported-control',
+                    'ambiguous-owner',
+                    'unconfirmed-selection',
+                    'composition-cancelled',
+                    'capacity-reached',
+                ),
+                message: id,
+            }),
+            0,
+            100,
+        ),
+    },
+);
 
 const expectedAction = tagged('kind', {
     click: object({kind: one('click'), targetId: id}),

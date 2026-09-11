@@ -1,11 +1,12 @@
 # Training Observer
 
 Технический spike системы обучения поверх существующего Angular-приложения. Работа идёт по [плану](docs/spike/PLAN.md):
-этапы 1–4 завершены, следующий — реализация и проверка ElementRecorder.
+этапы 1–5 завершены, следующий — реализация и проверка ElementResolver.
 
-Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; черновики `libs/element-spike` и
-`projects/demo/src/pages/spike` ещё не приняты и к demo не подключены. Принятые [контракты v2](docs/spike/contracts.md)
-находятся отдельно в `libs/element-spike/src/contracts/`; старое ядро будет переведено на них следующими этапами.
+Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; старые файлы ядра в корне `libs/element-spike/src` и
+`projects/demo/src/pages/spike` остаются черновиками. Проверенный recorder находится в
+`libs/element-spike/src/recording/`. Принятые [контракты v2](docs/spike/contracts.md) находятся отдельно в
+`libs/element-spike/src/contracts/`; старое ядро будет переведено на них следующими этапами.
 
 ## Запуск demo
 
@@ -22,6 +23,7 @@ npm start
 
 | Маршрут              | Содержимое                                                                                              |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/spike/record`      | Запись администратора: действия, значения, состояния, JSON export                                       |
 | `/spike/procedure`   | Плеер динамических форм: две ветки, HTTP backend, ошибки, возврат и завершение                          |
 | `/spike/research`    | Живая форма Taiga UI 4, генерация locators по клику, проверка CSS, Driver.js, rrweb и сохранённый отчёт |
 | `/examples/controls` | Существующий пример контролов                                                                           |
@@ -34,7 +36,7 @@ npm start
 
 ```sh
 npm test
-npx playwright test tests/procedure.spec.ts tests/research.spec.ts
+npx playwright test tests/recording.spec.ts tests/procedure.spec.ts tests/research.spec.ts
 npm run research:spike
 ```
 
@@ -42,6 +44,10 @@ npm run research:spike
 взаимодействия. `research:spike` запускает сравнительный эксперимент библиотек и сохраняет результаты в
 `dist/spike-research/`. [Исследование](docs/spike/research.md) описывает методику, ограничения и версии окружения.
 
-Собственный resolver пока не измерен. Семантический recorder, сценарный runtime и общий benchmark выполняются следующими
-этапами. `npm test` запускает unit-тесты контрактов и тестового backend; `npm run test:spike` — только контракты.
-Проверки маршрутов и прохождений запускаются отдельно через Playwright.
+[Запись процедуры](http://localhost:4200/spike/record): «Начать запись» → «Новая процедура» → заполнить формы →
+«Остановить запись» → «Скачать запись». Значения видны в правой панели.
+[Описание recorder и ограничений](docs/spike/recorder.md). Страница ученика `/spike/learn` пока не реализована.
+
+Собственный resolver пока не измерен. Сценарный runtime и общий benchmark выполняются следующими этапами. `npm test`
+запускает unit-тесты контрактов, recorder и тестового backend; `npm run test:spike` — контракты и recorder. Проверки
+маршрутов и прохождений запускаются отдельно через Playwright.

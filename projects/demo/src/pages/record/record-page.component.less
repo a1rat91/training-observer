@@ -1,0 +1,64 @@
+:host {
+    display: block;
+    padding: 1rem;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: 1rem;
+    align-items: start;
+}
+
+.player {
+    min-inline-size: 0;
+}
+
+aside {
+    position: sticky;
+    top: 1rem;
+    max-block-size: calc(100vh - 3rem);
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+li {
+    margin: 0.75rem 0;
+    overflow-wrap: anywhere;
+}
+
+.value {
+    white-space: pre-wrap;
+}
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 1200px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    aside {
+        position: static;
+        grid-row: 1;
+        max-block-size: 26rem;
+    }
+}
