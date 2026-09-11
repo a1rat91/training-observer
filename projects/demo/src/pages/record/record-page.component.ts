@@ -12,9 +12,11 @@ import {TuiCheckbox} from '@taiga-ui/kit';
 
 import {
     type Recording,
+    type Resolution,
     type SemanticAction,
 } from '../../../../../libs/element-spike/src/contracts';
 import {ElementRecorder} from '../../../../../libs/element-spike/src/recording';
+import {ElementResolver} from '../../../../../libs/element-spike/src/resolution';
 import ProcedurePageComponent from '../procedure/procedure-page.component';
 
 @Component({
@@ -32,6 +34,7 @@ export default class RecordPageComponent {
 
     public readonly recording = signal<Recording | null>(null);
     public readonly running = signal(false);
+    public readonly resolutions = signal<Array<{name: string; report: Resolution}>>([]);
     public readonly error = signal('');
     public captureValues = true;
 
@@ -42,6 +45,7 @@ export default class RecordPageComponent {
     public start(root: HTMLElement): void {
         this.recorder?.stop();
         this.error.set('');
+        this.resolutions.set([]);
         this.zone.runOutsideAngular(() => {
             this.recorder = new ElementRecorder(root, {
                 valuePolicy: {
@@ -59,6 +63,34 @@ export default class RecordPageComponent {
     public stop(): void {
         this.recorder?.stop();
         this.refresh();
+    }
+
+    public check(root: HTMLElement): void {
+        const recording = this.recording();
+
+        if (!recording || this.running()) {
+            return;
+        }
+
+        const targetIds = new Set(
+            recording.actions.flatMap((action) =>
+                'targetId' in action ? [action.targetId] : [],
+            ),
+        );
+
+        const resolver = new ElementResolver();
+
+        this.resolutions.set(
+            recording.descriptors
+                .filter((descriptor) => targetIds.has(descriptor.id))
+                .map((descriptor) => ({
+                    name:
+                        descriptor.fingerprint.features.accessibleName ||
+                        descriptor.fingerprint.features.label ||
+                        descriptor.id,
+                    report: resolver.resolve(descriptor, root).report,
+                })),
+        );
     }
 
     public download(): void {

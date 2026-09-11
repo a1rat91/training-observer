@@ -220,3 +220,29 @@ test('DOM property changes appear in states without producing input actions', as
         ]),
     );
 });
+
+test('saved descriptor resolves after the player recreates the form in another layout', async ({
+    page,
+}) => {
+    await begin(page);
+    await page.getByRole('textbox', {name: 'ФИО', exact: true}).fill('Анна');
+    await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
+    const previous = await page
+        .getByRole('textbox', {name: 'ФИО', exact: true})
+        .elementHandle();
+
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
+    await select(page, 'Расположение полей', 'Другое расположение');
+    await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toHaveValue('');
+    expect(await previous.evaluate((element) => element.isConnected)).toBe(false);
+    await page.getByRole('button', {name: 'Проверить поиск', exact: true}).click();
+    await expect(page.getByRole('region', {name: 'Результаты поиска'})).toContainText(
+        'ФИО · resolved',
+    );
+    await page.getByRole('button', {name: 'Сбросить', exact: true}).click();
+    await page.getByRole('button', {name: 'Проверить поиск', exact: true}).click();
+    await expect(page.getByRole('region', {name: 'Результаты поиска'})).toContainText(
+        'ФИО · broken',
+    );
+});

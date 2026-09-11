@@ -1,12 +1,12 @@
 # Training Observer
 
 Технический spike системы обучения поверх существующего Angular-приложения. Работа идёт по [плану](docs/spike/PLAN.md):
-этапы 1–5 завершены, следующий — реализация и проверка ElementResolver.
+этапы 1–6 завершены, следующий — связка записи и прохождения на динамической процедуре.
 
 Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; старые файлы ядра в корне `libs/element-spike/src` и
 `projects/demo/src/pages/spike` остаются черновиками. Проверенный recorder находится в
 `libs/element-spike/src/recording/`. Принятые [контракты v2](docs/spike/contracts.md) находятся отдельно в
-`libs/element-spike/src/contracts/`; старое ядро будет переведено на них следующими этапами.
+`libs/element-spike/src/contracts/`; старые черновики сохраняются отдельно от принятых модулей v2.
 
 ## Запуск demo
 
@@ -48,6 +48,12 @@ npm run research:spike
 «Остановить запись» → «Скачать запись». Значения видны в правой панели.
 [Описание recorder и ограничений](docs/spike/recorder.md). Страница ученика `/spike/learn` пока не реализована.
 
-Собственный resolver пока не измерен. Сценарный runtime и общий benchmark выполняются следующими этапами. `npm test`
-запускает unit-тесты контрактов, recorder и тестового backend; `npm run test:spike` — контракты и recorder. Проверки
-маршрутов и прохождений запускаются отдельно через Playwright.
+Resolver v2 проверен unit-тестами и на пересозданной форме; полный benchmark ещё не проведён. Сценарный runtime и общий
+benchmark выполняются следующими этапами. `npm test` запускает unit-тесты контрактов, recorder, resolver и тестового
+backend; `npm run test:spike` — контракты, recorder и resolver. Проверки маршрутов и прохождений запускаются отдельно
+через Playwright.
+
+После остановки записи можно пересоздать процедуру с другим расположением и нажать **«Проверить поиск»**.
+[Алгоритм resolver и ограничения](docs/spike/resolver.md).
+[Какие контролы работают без адаптера](docs/spike/control-compatibility.md): DOM identity не зависит от Taiga;
+нормализация её числа/даты и semantic values произвольных custom controls имеют отдельные границы.

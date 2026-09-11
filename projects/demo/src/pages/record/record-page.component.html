@@ -56,6 +56,30 @@
                 Скачать запись
             </button>
         </div>
+        <button
+            size="s"
+            tuiButton
+            type="button"
+            [disabled]="running() || !recording()?.actions?.length"
+            (click)="check(target)"
+        >
+            Проверить поиск
+        </button>
+        @if (resolutions().length) {
+            <section aria-label="Результаты поиска">
+                <h3>Поиск в текущем экране</h3>
+                <p>
+                    Результат на момент проверки. Поля прошлых экранов могут отсутствовать. После изменения формы
+                    нажмите проверку снова.
+                </p>
+                @for (entry of resolutions(); track entry.report.targetId) {
+                    <details>
+                        <summary>{{ entry.name }} · {{ entry.report.status }}</summary>
+                        <pre>{{ json(entry.report) }}</pre>
+                    </details>
+                }
+            </section>
+        }
         @if (error()) {
             <p role="alert">{{ error() }}</p>
         }
