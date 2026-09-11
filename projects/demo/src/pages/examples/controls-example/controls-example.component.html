@@ -1,3 +1,42 @@
 <tui-doc-page header="Controls example">
-    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci, amet, asperiores atque aut
+    <main>
+        <div
+            data-training-observer-ignore
+            class="toolbar"
+        >
+            <button
+                appearance="flat"
+                data-training-observer-ignore
+                size="s"
+                tuiButton
+                type="button"
+                (click)="showInspector.set(!showInspector())"
+            >
+                {{ showInspector() ? 'Закрыть инспектор' : 'Открыть инспектор' }}
+            </button>
+        </div>
+        <h1>Исследуем страницу</h1>
+        <p class="intro">
+            Изменяйте форму: инспектор обновляется автоматически. Наблюдение можно остановить и продолжить.
+        </p>
+
+        <div class="workspace">
+            <section
+                #page
+                aria-labelledby="page-title"
+                data-testid="observed-page"
+                class="page"
+            >
+                <button
+                    size="m"
+                    tuiButton
+                    type="button"
+                >
+                    Далее
+                </button>
+            </section>
+
+            <app-observer-panel [root]="page" />
+        </div>
+    </main>
 </tui-doc-page>
