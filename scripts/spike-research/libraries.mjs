@@ -3,7 +3,6 @@ import {finder} from '@medv/finder';
 import {createSelectorGenerator, PLAYWRIGHT_HASH, PLAYWRIGHT_VERSION, toLocator} from '@mizchi/selector-generator';
 import {computeAccessibleName, getRole} from 'dom-accessibility-api';
 import {generateInternalSelector, generateLocators} from 'dom-to-locator';
-import {driver} from 'driver.js';
 import {record} from 'rrweb';
 
 let mizchi;
@@ -52,5 +51,4 @@ window.researchLibraries = {
         return {events, stop};
     },
     mirrorId: (element) => record.mirror.getId(element),
-    driver,
 };

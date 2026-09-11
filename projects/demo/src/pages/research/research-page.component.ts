@@ -12,7 +12,6 @@ import {
 import {finder} from '@medv/finder';
 import {TuiButton} from '@taiga-ui/core';
 import {computeAccessibleName, getRole} from 'dom-accessibility-api';
-import {type Driver} from 'driver.js';
 
 import savedReport from '../../../../../docs/spike/library-probes.json';
 import {ResearchFixtureComponent} from './research-fixture.component';
@@ -63,7 +62,6 @@ export default class ResearchPageComponent {
     });
 
     private selectedElement?: Element;
-    private driver?: Driver;
     private stopReplay?: () => void;
     private replayEvents: Array<{type: number; data: unknown}> = [];
     private generation = 0;
@@ -125,7 +123,6 @@ export default class ResearchPageComponent {
             }
 
             this.stopReplay?.();
-            this.driver?.destroy();
         });
     }
 
@@ -153,7 +150,6 @@ export default class ResearchPageComponent {
             return;
         }
 
-        this.driver?.destroy();
         const results = this.locators()
             .filter((row) => row.library.startsWith('finder') && row.locator)
             .map((row) => {
@@ -167,32 +163,6 @@ export default class ResearchPageComponent {
             });
 
         this.message.set(results.join('; ') || 'Сначала выберите элемент.');
-    }
-
-    public async highlight(): Promise<void> {
-        const selected = this.selectedElement;
-        const {driver} = await import('driver.js');
-
-        if (this.disposed || selected !== this.selectedElement) {
-            return;
-        }
-
-        if (!selected?.isConnected) {
-            this.message.set('Выбранный элемент исчез. Выберите новую цель.');
-
-            return;
-        }
-
-        this.driver?.destroy();
-        this.driver = driver({animate: false, showButtons: ['close'], allowClose: true});
-        this.driver.highlight({
-            element: selected,
-            popover: {
-                title: 'Выбранный элемент',
-                description:
-                    'Подсветка Driver.js. Служебные классы не используются как локаторы.',
-            },
-        });
     }
 
     public async startReplay(): Promise<void> {
@@ -383,7 +353,6 @@ export default class ResearchPageComponent {
     private async inspect(element: Element): Promise<void> {
         const generation = ++this.generation;
 
-        this.driver?.destroy();
         this.selectedElement = element;
         this.selection.set({
             role: getRole(element),

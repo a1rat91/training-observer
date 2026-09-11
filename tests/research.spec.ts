@@ -28,13 +28,6 @@ test('research route exposes Taiga controls, live inspection, replay and saved r
     ).toContainText('ФИО');
     await panel.getByRole('button', {name: 'Проверить CSS', exact: true}).click();
     await expect(panel.getByRole('status')).toContainText('correct');
-    await panel.getByRole('button', {name: 'Подсветить', exact: true}).click();
-    await expect(page.locator('.driver-popover')).toBeVisible();
-    await expect(fixture.getByRole('textbox', {name: 'ФИО', exact: true})).toHaveClass(
-        /driver-active-element/,
-    );
-    await page.keyboard.press('Escape');
-    await expect(page.locator('.driver-overlay')).toHaveCount(0);
     await panel.getByRole('button', {name: 'Начать запись', exact: true}).click();
     await expect(
         panel.getByRole('button', {name: 'Остановить', exact: true}),
@@ -63,7 +56,6 @@ test('research route exposes Taiga controls, live inspection, replay and saved r
     await page.getByRole('button', {name: 'Examples', exact: true}).click();
     await page.getByRole('link', {name: 'Controls example', exact: true}).click();
     await expect(research).toHaveCount(0);
-    await expect(page.locator('.driver-overlay')).toHaveCount(0);
     await page.goBack();
     await expect(page.locator('research-page')).toBeVisible();
     expect(errors).toEqual([]);

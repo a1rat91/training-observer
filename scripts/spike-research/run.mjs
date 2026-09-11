@@ -29,7 +29,6 @@ const packages = [
     'dom-accessibility-api',
     'rrweb',
     'xstate',
-    'driver.js',
     '@taiga-ui/core',
     '@taiga-ui/kit',
     '@angular/core',
@@ -72,7 +71,7 @@ for (const entry of ['fixture', 'libraries']) {
 }
 
 // Standalone minified browser payload per library; fixture and source maps excluded.
-for (const name of packages.slice(0, 7)) {
+for (const name of packages.slice(0, 6)) {
     const built = await build({
         stdin: {contents: `import * as lib from '${name}'; globalThis.measuredLibrary = lib;`, resolveDir: root},
         bundle: true,
@@ -103,7 +102,7 @@ report.bundleSizes['rrweb-record-only'] = {
     minifiedBytes: rrwebRecordBundle.outputFiles[0].contents.length,
     gzipBytes: gzipSync(rrwebRecordBundle.outputFiles[0].contents).length,
 };
-await writeFile(join(output, 'styles.css'), css + (await readFile('node_modules/driver.js/dist/driver.css', 'utf8')));
+await writeFile(join(output, 'styles.css'), css);
 const html =
     '<!doctype html><html lang="ru"><head><meta charset="utf-8"><link rel="stylesheet" href="/styles.css"></head><body><research-fixture></research-fixture><script type="module" src="/fixture.js"></script></body></html>';
 const server = createServer(async (req, res) => {
@@ -485,49 +484,10 @@ try {
         return {oldId, newId, oldDisconnected: !old.isConnected, changed: oldId !== newId && newId > 0};
     });
     assert.equal(report.checks.rrweb.mirrorLifecycle.changed, true);
-    await page.evaluate(() => {
-        window.activeDriver = window.researchLibraries.driver({allowClose: true, animate: false, showButtons: []});
-        window.activeDriver.highlight({
-            element: document.querySelector('input[name=employee]'),
-            popover: {title: 'ФИО', description: 'Заранее заданная подсказка'},
-        });
-    });
-    await page.locator('.driver-popover').waitFor();
-    report.checks.driver = await page.evaluate(() => {
-        const current = document.querySelector('input[name=employee]');
-        const before = {
-            activeElementMatches: window.activeDriver.getActiveElement() === current,
-            targetClasses: current.className,
-            popoverVisible: !!document.querySelector('.driver-popover'),
-        };
-        const replacement = current.cloneNode(true);
-
-        current.replaceWith(replacement);
-        const staleAfterReplace = window.activeDriver.getActiveElement() === current && !current.isConnected;
-
-        // A re-rendered host element starts without the previous overlay's transient class.
-        replacement.classList.remove('driver-active-element');
-        window.activeDriver.highlight({element: replacement, popover: {title: 'ФИО', description: 'Подсказка'}});
-        const reboundToReplacement = window.activeDriver.getActiveElement() === replacement;
-
-        window.activeDriver.destroy();
-
-        return {
-            ...before,
-            staleAfterReplace,
-            reboundToReplacement,
-            targetClassCleaned: !replacement.classList.contains('driver-active-element'),
-            overlayRemoved: !document.querySelector('.driver-overlay'),
-            popoverRemoved: !document.querySelector('.driver-popover'),
-        };
-    });
     report.checks.pageErrors = errors;
     assert.deepEqual(errors, [], 'Probe must not silently swallow fixture errors');
     assert.equal(report.checks.rrweb.selectedDisplay, 'Angular');
     assert.equal(report.checks.rrweb.containsUnmaskedTypedValue, false, 'Typed value must be masked');
-    assert.equal(report.checks.driver.overlayRemoved, true);
-    assert.equal(report.checks.driver.reboundToReplacement, true);
-    assert.equal(report.checks.driver.targetClassCleaned, true);
     // XState probe: guards, delayed response, cancellation of an obsolete actor.
     const machine = setup({guards: {valid: ({event}) => event.valid === true}, actors: {}}).createMachine({
         initial: 'editing',

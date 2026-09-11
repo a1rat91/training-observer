@@ -126,7 +126,6 @@
         "core-js": "3.49.0",
         "d3-hierarchy": "3.1.2",
         "dom-to-locator": "1.0.0",
-        "driver.js": "1.8.0",
         "esbuild": "0.28.0",
         "express": "4.22.2",
         "http-server": "14.1.1",
