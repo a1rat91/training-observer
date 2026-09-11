@@ -1,1 +1,1 @@
-export const DemoPath = {SimpleExample: 'examples/simple-example'} as const;
+export const DemoPath = {ControlsExample: 'examples/controls'} as const;

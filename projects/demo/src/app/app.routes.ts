@@ -4,13 +4,13 @@ import {DemoPath} from '@demo/constants';
 export const appRoutes: Routes = [
     // Examples
     {
-        path: DemoPath.SimpleExample,
+        path: DemoPath.ControlsExample,
         loadComponent: async () =>
-            import('../pages/examples/simple-example/simple-example.component'),
-        data: {title: 'Simple example'},
+            import('../pages/examples/controls-example/controls-example.component'),
+        data: {title: 'Controls example'},
     },
     {
         path: '**',
-        redirectTo: DemoPath.SimpleExample,
+        redirectTo: DemoPath.ControlsExample,
     },
 ];

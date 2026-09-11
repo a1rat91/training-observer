@@ -6,9 +6,11 @@ import {
     TUI_DOC_PAGES,
     TUI_DOC_TITLE,
 } from '@taiga-ui/addon-doc';
+import {PolymorpheusComponent} from '@taiga-ui/polymorpheus';
 import {HIGHLIGHT_OPTIONS} from 'ngx-highlightjs';
 
 import {DEMO_PAGES} from '../pages/pages';
+import {LogoComponent} from './components/logo';
 
 export const APP_PROVIDERS: Provider[] = [
     {
@@ -17,7 +19,7 @@ export const APP_PROVIDERS: Provider[] = [
     },
     {
         provide: TUI_DOC_LOGO,
-        useValue: '',
+        useValue: new PolymorpheusComponent(LogoComponent),
     },
     {
         provide: TUI_DOC_DEFAULT_TABS,
