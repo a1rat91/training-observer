@@ -1,1 +1,4 @@
-export const DemoPath = {ControlsExample: 'examples/controls'} as const;
+export const DemoPath = {
+    ControlsExample: 'examples/controls',
+    Research: 'spike/research',
+} as const;

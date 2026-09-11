@@ -1,0 +1,195 @@
+<section class="research-page">
+    <header>
+        <p class="eyebrow">TRAINING OBSERVER · ЭТАП 2</p>
+        <h1>Исследование locators</h1>
+        <p>Живые контролы Taiga UI 4.98.0 и результаты сравнительного эксперимента.</p>
+    </header>
+
+    <div class="workspace">
+        <research-fixture />
+        <aside aria-label="Панель исследования">
+            <h2>Запись значений</h2>
+            <p>
+                Нажмите «Начать запись» и заполните форму. Журнал показывает реальные DOM-значения полей, источник и
+                начальное состояние. Значения модели Angular пока не читаются.
+            </p>
+            <div class="toolbar">
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    [disabled]="recording() || replayLoading()"
+                    (click)="startReplay()"
+                >
+                    Начать запись
+                </button>
+                <button
+                    appearance="secondary"
+                    size="s"
+                    tuiButton
+                    type="button"
+                    [disabled]="!recording()"
+                    (click)="stopRecording()"
+                >
+                    Остановить
+                </button>
+                <button
+                    appearance="secondary"
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="refreshStats()"
+                >
+                    Обновить статистику
+                </button>
+            </div>
+            @if (replayStats(); as stats) {
+                <p>
+                    rrweb: {{ stats.total }} событий · {{ stats.inputs }} input updates · {{ stats.mutations }} mutation
+                    batches
+                </p>
+            }
+            <ol
+                aria-label="Журнал значений"
+                class="value-log"
+            >
+                @for (entry of valueEntries(); track entry.sequence) {
+                    <li>
+                        <strong>{{ entry.name }}</strong>
+                        <code>{{ entry.value | json }}</code>
+                        <small>{{ entry.source }} · {{ entry.event }}</small>
+                    </li>
+                } @empty {
+                    <li>Запись ещё не начата.</li>
+                }
+            </ol>
+            <details>
+                <summary>Последние native events</summary>
+                <ol>
+                    @for (event of nativeEvents(); track $index) {
+                        <li>{{ event }}</li>
+                    }
+                </ol>
+            </details>
+            <hr />
+            <h2>Осмотр элемента</h2>
+            <p>Кликните по контролу слева. Форма продолжает работать: можно вводить текст и открывать dropdown.</p>
+            <p
+                role="status"
+                class="status"
+            >
+                {{ message() }}
+            </p>
+            @if (selection(); as selected) {
+                <dl>
+                    <dt>Имя</dt>
+                    <dd>{{ selected.name || 'Нет accessible name' }}</dd>
+                    <dt>Role / tag</dt>
+                    <dd>{{ selected.role || '—' }} / {{ selected.tag }}</dd>
+                </dl>
+                <div class="toolbar">
+                    <button
+                        size="s"
+                        tuiButton
+                        type="button"
+                        (click)="highlight()"
+                    >
+                        Подсветить
+                    </button>
+                    <button
+                        appearance="secondary"
+                        size="s"
+                        tuiButton
+                        type="button"
+                        [disabled]="generatorsBusy()"
+                        (click)="checkCss()"
+                    >
+                        Проверить CSS
+                    </button>
+                </div>
+            }
+            @for (row of locators(); track row.library) {
+                <details>
+                    <summary>{{ row.library }}</summary>
+                    <pre>{{ row.error || row.locator }}</pre>
+                    @if (row.variants?.length) {
+                        <pre class="variants">{{ row.variants | json }}</pre>
+                    }
+                </details>
+            }
+        </aside>
+    </div>
+
+    <section
+        aria-label="Сохранённый отчёт"
+        class="report"
+    >
+        <h2>Сохранённый отчёт Playwright</h2>
+        <p>
+            Это результаты отдельного браузерного запуска, а не текущей формы. Новый полный прогон:
+            <code>npm run research:spike</code>
+            .
+        </p>
+        @if (report(); as snapshot) {
+            <p>
+                {{ snapshot.rows.length }} сравнений · 14 целей × 9 вариантов DOM × 4 конфигурации · Chrome
+                {{ snapshot.browser }}
+            </p>
+            <p class="timestamp">Запуск: {{ snapshot.generatedAt }}</p>
+            <p>
+                <strong>C</strong>
+                — правильная цель;
+                <strong>W</strong>
+                — чужая;
+                <strong>A</strong>
+                — неоднозначно;
+                <strong>M</strong>
+                — не найдена.
+            </p>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Вариант DOM</th>
+                            @for (library of libraries; track library) {
+                                <th scope="col">
+                                    {{ library }}
+                                    <br />
+                                    C / W / A / M
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (scenario of scenarios; track scenario.key) {
+                            <tr>
+                                <th scope="row">{{ scenario.title }}</th>
+                                @for (library of libraries; track library) {
+                                    <td>
+                                        @if (snapshot.summary[scenario.key]?.[library]; as counts) {
+                                            {{ counts.correct }} /
+                                            <span [class.wrong]="counts.wrong > 0">{{ counts.wrong }}</span>
+                                            / {{ counts.ambiguous }} / {{ counts.missing }}
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Уникальный locator может указать на чужую цель. Эти цифры характеризуют генераторы; собственный resolver
+                ещё не измерен.
+            </p>
+            <button
+                appearance="secondary"
+                tuiButton
+                type="button"
+                (click)="downloadReport()"
+            >
+                Скачать полный JSON-отчёт
+            </button>
+        }
+    </section>
+</section>

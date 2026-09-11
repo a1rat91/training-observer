@@ -6,3 +6,10 @@ declare module '*?raw' {
 
     export default result;
 }
+
+// This package exposes types only via package exports. The legacy webpack/ts-node
+// config uses node resolution; reference the installed declarations instead of duplicating its API.
+declare module '@mizchi/selector-generator' {
+    export const createSelectorGenerator: typeof import('../../../node_modules/@mizchi/selector-generator/types/index').createSelectorGenerator;
+    export const toLocator: typeof import('../../../node_modules/@mizchi/selector-generator/types/index').toLocator;
+}
