@@ -1,10 +1,11 @@
 # Training Observer
 
 Технический spike системы обучения поверх существующего Angular-приложения. Работа идёт по [плану](docs/spike/PLAN.md):
-этапы 1–3 завершены, следующий — контракты наблюдения и записи.
+этапы 1–4 завершены, следующий — реализация и проверка ElementRecorder.
 
 Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; черновики `libs/element-spike` и
-`projects/demo/src/pages/spike` ещё не приняты и к demo не подключены.
+`projects/demo/src/pages/spike` ещё не приняты и к demo не подключены. Принятые [контракты v2](docs/spike/contracts.md)
+находятся отдельно в `libs/element-spike/src/contracts/`; старое ядро будет переведено на них следующими этапами.
 
 ## Запуск demo
 
@@ -32,7 +33,7 @@ npm start
 ## Проверки
 
 ```sh
-npm run test:procedure-api
+npm test
 npx playwright test tests/procedure.spec.ts tests/research.spec.ts
 npm run research:spike
 ```
@@ -42,5 +43,5 @@ npm run research:spike
 `dist/spike-research/`. [Исследование](docs/spike/research.md) описывает методику, ограничения и версии окружения.
 
 Собственный resolver пока не измерен. Семантический recorder, сценарный runtime и общий benchmark выполняются следующими
-этапами. Прежняя команда `npm test` ссылается на удалённую библиотеку; для текущей проверки маршрута используйте команду
-Playwright выше.
+этапами. `npm test` запускает unit-тесты контрактов и тестового backend; `npm run test:spike` — только контракты.
+Проверки маршрутов и прохождений запускаются отдельно через Playwright.
