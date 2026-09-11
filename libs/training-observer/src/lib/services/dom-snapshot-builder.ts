@@ -12,6 +12,7 @@ export class DomSnapshotBuilder {
     private readonly defaults = inject(DOM_SNAPSHOT_OPTIONS);
     private readonly analyzer = inject(DomElementAnalyzer);
     private readonly ids = new WeakMap<Node, DomNodeId>();
+    private readonly bindings = new WeakMap<DomSnapshot, Map<DomNodeId, WeakRef<Node>>>();
     private nextId = 0;
 
     /** Read-only, synchronous capture of a single document's light DOM. */
@@ -26,7 +27,21 @@ export class DomSnapshotBuilder {
 
         this.validateOptions(options);
 
-        return new DomCapture(root, options, this.analyzer, (node) => this.idFor(node)).capture();
+        const bindings = new Map<DomNodeId, WeakRef<Node>>();
+        const snapshot = new DomCapture(root, options, this.analyzer, (node) => {
+            const id = this.idFor(node);
+            bindings.set(id, new WeakRef(node));
+            return id;
+        }).capture();
+        this.bindings.set(snapshot, bindings);
+        return snapshot;
+    }
+
+    /** Only original snapshots from this builder have live bindings; JSON copies do not. */
+    resolveElement(snapshot: DomSnapshot, id: DomNodeId): Element | null {
+        const node = this.bindings.get(snapshot)?.get(id)?.deref();
+        return node?.nodeType === 1 && node.isConnected && node.ownerDocument === this.document
+            ? node as Element : null;
     }
 
     private idFor(node: Node): DomNodeId {

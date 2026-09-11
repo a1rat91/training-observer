@@ -41,6 +41,8 @@ Demo: [http://127.0.0.1:4200](http://127.0.0.1:4200).
 из наблюдения. Страницы находятся в `projects/demo/src/app/pages`, инспектор —
 в `shared/observer-panel`. Библиотека от приложения demo не зависит.
 
+Подсветка контролов и DOM-узлов: [API и устройство слоя](docs/node-highlighting.md).
+
 ## API библиотеки
 
 В Angular injection context:

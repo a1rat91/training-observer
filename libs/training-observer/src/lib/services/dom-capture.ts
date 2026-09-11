@@ -1,6 +1,7 @@
 import {type DomElementSnapshot, type DomNodeId, type DomNodeSnapshot, type DomSnapshot} from '../models/dom-snapshot';
 import {type DomSnapshotOptions} from '../tokens/dom-snapshot-options';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
+import {isObserverUi} from './dom-observer-ui';
 import {DomGeometry} from './dom-geometry';
 import {findPopupRoots} from './dom-popup-roots';
 import {isScrollDecoration} from './dom-scroll-decoration';
@@ -63,6 +64,7 @@ export class DomCapture {
     }
 
     private visit(node: Node, parentId: DomNodeId | null, path: string, depth: number): DomNodeId | null {
+        if (isObserverUi(node)) return null;
         if (node.nodeType !== 1 && node.nodeType !== 3) return null;
         // Preserve check order: even a subsequently excluded node can reach the capture limit.
         if (depth > this.options.maxDepth) {

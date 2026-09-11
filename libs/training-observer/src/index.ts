@@ -1,3 +1,4 @@
+export {DomHighlighter} from './lib/services/dom-highlighter';
 export {TrainingObserver} from './lib/training-observer';
 export {MicrofrontendObserver} from './lib/microfrontend-observer';
 export type {MicrofrontendSnapshot} from './lib/models/microfrontend-snapshot';

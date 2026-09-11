@@ -7,6 +7,7 @@ import {ControlSnapshotBuilder} from './services/control-snapshot-builder';
 import {DomElementAnalyzer} from './services/dom-element-analyzer';
 import {DomObservationScope, MICROFRONTEND_SELECTOR} from './services/dom-observation-scope';
 import {DomObservationSession, PAGE_EVENTS} from './services/dom-observation-session';
+import {isObserverUi, isObserverUiMutation} from './services/dom-observer-ui';
 import {isScrollDecoration} from './services/dom-scroll-decoration';
 import {DomSnapshotBuilder} from './services/dom-snapshot-builder';
 import {snapshotFingerprint} from './services/snapshot-fingerprint';
@@ -123,7 +124,7 @@ export class MicrofrontendObserver {
 
     private reconcile(root: Element, options: DomObservationOptions): void {
         const roots = root.isConnected ? [root, ...Array.from(root.querySelectorAll(MICROFRONTEND_SELECTOR))]
-            .filter((element) => element.matches(MICROFRONTEND_SELECTOR) && !isScrollDecoration(element) &&
+            .filter((element) => element.matches(MICROFRONTEND_SELECTOR) && !isObserverUi(element) && !isScrollDecoration(element) &&
                 !(options.ignoreSelector && element.closest(options.ignoreSelector))) : [];
         const mounted = new Set(roots);
         let changed = false;
@@ -209,7 +210,7 @@ export class MicrofrontendObserver {
     }
 
     private discoveryRelevant(record: MutationRecord, ignoreSelector: string): boolean {
-        if (isScrollDecoration(record.target)) return false;
+        if (isObserverUiMutation(record) || isScrollDecoration(record.target)) return false;
         const target = record.target.nodeType === 1 ? record.target as Element : record.target.parentElement;
         const ignored = ignoreSelector ? target?.closest(ignoreSelector) : null;
         return !ignored || (record.type === 'attributes' && target === ignored);

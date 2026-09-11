@@ -5,6 +5,8 @@ import {isScrollDecoration, SCROLL_DECORATION_SELECTOR} from './dom-scroll-decor
 import {type DomObservationScope} from './dom-observation-scope';
 import {resolveRelatedRoots} from './snapshot-references';
 
+import {isObserverUi, isObserverUiMutation} from './dom-observer-ui';
+
 const PROPERTY_CONTROLS = 'input,textarea,select,option';
 export const PAGE_EVENTS = [
     'input', 'change', 'reset', 'toggle', 'focusin', 'focusout',
@@ -77,7 +79,7 @@ export class DomObservationSession {
             DECORATIVE_TRANSITION_PROPERTIES.has((event as TransitionEvent).propertyName)) return;
         const target = event.target as Node | null;
         if (target && this.scope && !this.scope.acceptsEvent(target, event.type)) return;
-        if (target && (isScrollDecoration(target) || this.excludedAncestor(target))) return;
+        if (target && (isObserverUi(target) || isScrollDecoration(target) || this.excludedAncestor(target))) return;
 
         this.schedule();
     }
@@ -188,7 +190,7 @@ export class DomObservationSession {
 
     private isRelevantMutation(record: MutationRecord): boolean {
         // Thumb position/size, hover transitions and track lifecycle are presentation only.
-        if (isScrollDecoration(record.target)) {
+        if (isObserverUiMutation(record) || isScrollDecoration(record.target)) {
             return false;
         }
 
@@ -202,11 +204,11 @@ export class DomObservationSession {
 
         if (record.type === 'childList') {
             const added = Array.from(record.addedNodes).some((node) =>
-                !isScrollDecoration(node) && !this.excludedAncestor(node));
+                !isObserverUi(node) && !isScrollDecoration(node) && !this.excludedAncestor(node));
             // A removed node may already have been moved inside an excluded subtree when this
             // callback runs. Its current ancestors must not hide removal from the observed parent.
             const removed = Array.from(record.removedNodes).some((node) =>
-                !(node.nodeType === 1 &&
+                !isObserverUi(node) && !(node.nodeType === 1 &&
                     ((node as Element).matches(SCROLL_DECORATION_SELECTOR) ||
                         (this.options.ignoreSelector && (node as Element).matches(this.options.ignoreSelector)))));
 
@@ -233,7 +235,7 @@ export class DomObservationSession {
         }
 
         for (const element of controls) {
-            if ((!this.scope || this.scope.owns(element)) && !isScrollDecoration(element) && !this.excludedAncestor(element)) {
+            if ((!this.scope || this.scope.owns(element)) && !isObserverUi(element) && !isScrollDecoration(element) && !this.excludedAncestor(element)) {
                 result.set(element, JSON.stringify(this.analyzer.state(element)));
             }
         }

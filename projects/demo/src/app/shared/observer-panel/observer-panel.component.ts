@@ -1,13 +1,13 @@
 import {DOCUMENT, JsonPipe} from '@angular/common';
-import {afterNextRender, ChangeDetectionStrategy, Component, inject, input, signal} from '@angular/core';
+import {afterNextRender, ChangeDetectionStrategy, Component, effect, inject, input, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
-import {TrainingObserver} from '@training-observer/core';
+import {DomHighlighter, type DomNodeId, TrainingObserver} from '@training-observer/core';
 
 @Component({
     selector: 'app-observer-panel',
     imports: [FormsModule, JsonPipe, TuiButton],
-    providers: [TrainingObserver],
+    providers: [TrainingObserver, DomHighlighter],
     host: {'data-training-observer-ignore': ''},
     templateUrl: './observer-panel.component.html',
     styleUrl: './observer-panel.component.less',
@@ -16,6 +16,8 @@ import {TrainingObserver} from '@training-observer/core';
 export class ObserverPanelComponent {
     readonly root = input.required<HTMLElement>();
     protected readonly observer = inject(TrainingObserver);
+    private readonly highlighter = inject(DomHighlighter);
+    protected readonly highlight = signal<{mode: 'all' | 'dom' | 'one'; nodeId?: DomNodeId} | null>(null);
     protected readonly error = signal('');
     protected readonly document = inject(DOCUMENT);
     protected maxNodes = 10_000;
@@ -26,6 +28,17 @@ export class ObserverPanelComponent {
     protected readonly popupLabels = {closed: 'Закрыт', open: 'Открыт', unresolved: 'Связанный список не найден', native: 'Native options'};
 
     constructor() {
+        effect(() => {
+            const selection = this.highlight();
+            const snapshot = this.observer.snapshot();
+            if (!selection || !snapshot) {
+                this.highlighter.clear();
+                return;
+            }
+            const ids = selection.mode === 'dom' ? snapshot.interactiveIds
+                : this.observer.logicalControls().map((control) => control.targetNodeId);
+            this.highlighter.show(snapshot, ids, selection.mode === 'one' ? selection.nodeId : undefined);
+        });
         afterNextRender(() => this.start());
     }
 

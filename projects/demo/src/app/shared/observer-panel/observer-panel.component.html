@@ -14,6 +14,11 @@
         <button tuiButton type="button" size="m" appearance="secondary" (click)="capture()">Снять снимок</button>
         <button tuiButton type="button" size="m" appearance="flat" (click)="observer.clear()">Очистить</button>
     </div>
+    <div class="actions">
+        <button tuiButton type="button" size="s" appearance="secondary" [disabled]="!observer.snapshot()" (click)="highlight.set({mode: 'all'})">Подсветить контролы</button>
+        <button tuiButton type="button" size="s" appearance="secondary" [disabled]="!observer.snapshot()" (click)="highlight.set({mode: 'dom'})">Подсветить DOM-ноды</button>
+        <button tuiButton type="button" size="s" appearance="flat" [disabled]="!highlight()" (click)="highlight.set(null)">Убрать подсветку</button>
+    </div>
     <p class="muted">
         Пересчётов: <span data-testid="scan-count">{{ observer.scanCount() }}</span> ·
         Публикаций: <span data-testid="revision">{{ observer.revision() }}</span>
@@ -86,7 +91,9 @@
                 <tbody>
                     @for (control of observer.logicalControls(); track control.id) {
                         <tr>
-                            <td><code>{{ control.kind }}</code><small>{{ control.source }}</small><small>{{ control.id }}</small></td>
+                            <td><code>{{ control.kind }}</code><small>{{ control.source }}</small><small>{{ control.id }}</small>
+                                <button tuiButton type="button" size="s" appearance="flat" (click)="highlight.set({mode: 'one', nodeId: control.targetNodeId})">Подсветить {{ $index + 1 }}</button>
+                            </td>
                             <td>
                                 {{ control.label || 'Без подписи' }}
                                 <small>{{ control.memberNodeIds.length }} DOM-узлов</small>

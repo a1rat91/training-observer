@@ -2,6 +2,8 @@ import {type DomNodeSnapshot} from '../models/dom-snapshot';
 import {type DomSnapshotOptions} from '../tokens/dom-snapshot-options';
 import {isScrollDecoration} from './dom-scroll-decoration';
 
+import {isObserverUi} from './dom-observer-ui';
+
 const POPUP_ROLES = new Set(['true', 'menu', 'listbox', 'tree', 'grid', 'dialog']);
 
 /** Follows links from the main captured tree once, without recursively discovering popup chains. */
@@ -32,5 +34,5 @@ function isExternalPopup(root: Element, element: Element, options: DomSnapshotOp
     if (options.boundarySelector && element.closest(options.boundarySelector)) return false;
     if (options.ignoreSelector && element.closest(options.ignoreSelector)) return false;
 
-    return !isScrollDecoration(element);
+    return !isScrollDecoration(element) && !isObserverUi(element);
 }
