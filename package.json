@@ -21,13 +21,15 @@
         "prepare": "husky",
         "prettier": "prettier --write !package-lock.json . --ignore-path .gitignore",
         "release": "npx syncer && npx nx run-many -t publish",
-        "start": "nx serve demo",
+        "start": "node scripts/start-demo.mjs",
         "stylelint": "stylelint '**/*.{less,css}' --config package.json",
         "stylelint:fix": "stylelint '**/*.{less,css}' --config package.json --fix",
         "test": "nx run-many --target=test --projects=training-observer",
         "test:pw": "playwright test",
         "test:pw:load": "playwright test --config=playwright.load.config.ts",
-        "research:spike": "node scripts/spike-research/run.mjs"
+        "research:spike": "node scripts/spike-research/run.mjs",
+        "procedure:server": "node scripts/procedure-server/server.mjs",
+        "test:procedure-api": "node --test scripts/procedure-server/*.test.mjs"
     },
     "commitlint": {
         "extends": [

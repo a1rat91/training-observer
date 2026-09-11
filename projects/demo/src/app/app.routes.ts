@@ -3,6 +3,11 @@ import {DemoPath} from '@demo/constants';
 
 export const appRoutes: Routes = [
     {
+        path: DemoPath.Procedure,
+        loadComponent: async () => import('../pages/procedure/procedure-page.component'),
+        data: {title: 'Плеер процедур'},
+    },
+    {
         path: DemoPath.Research,
         loadComponent: async () => import('../pages/research/research-page.component'),
         data: {title: 'Исследование locators'},
