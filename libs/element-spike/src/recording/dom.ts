@@ -21,10 +21,15 @@ export {
 } from '../dom/identity';
 
 /** Generation only. No recovery/scoring is claimed here. Existing DOM nodes are used solely to count matches. */
-export function describe(element: Element, root: Element, id: string): ElementDescriptor {
+export function describe(
+    element: Element,
+    root: Element,
+    id: string,
+    candidates = CONTROLS,
+): ElementDescriptor {
     const identity = features(element, root);
     const scope = identity.context.slice(0, 1);
-    const peers = Array.from(root.querySelectorAll(CONTROLS))
+    const peers = Array.from(root.querySelectorAll(candidates))
         .filter((node) => flags(node).visible)
         .map((node) => ({node, features: features(node, root)}));
 

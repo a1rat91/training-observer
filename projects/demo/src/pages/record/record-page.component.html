@@ -84,6 +84,12 @@
             <p role="alert">{{ error() }}</p>
         }
         @if (recording(); as report) {
+            @if (!running() && report.actions.length) {
+                <scenario-editor
+                    [recording]="report"
+                    [root]="target"
+                />
+            }
             <p>
                 Действий: {{ report.actions.length }} · Элементов: {{ report.descriptors.length }} · Состояний:
                 {{ report.states.length }}

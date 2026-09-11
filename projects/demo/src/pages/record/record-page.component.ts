@@ -18,11 +18,18 @@ import {
 import {ElementRecorder} from '../../../../../libs/element-spike/src/recording';
 import {ElementResolver} from '../../../../../libs/element-spike/src/resolution';
 import ProcedurePageComponent from '../procedure/procedure-page.component';
+import {ScenarioEditorComponent} from './scenario-editor.component';
 
 @Component({
     standalone: true,
     selector: 'record-page',
-    imports: [FormsModule, ProcedurePageComponent, TuiButton, TuiCheckbox],
+    imports: [
+        FormsModule,
+        ProcedurePageComponent,
+        ScenarioEditorComponent,
+        TuiButton,
+        TuiCheckbox,
+    ],
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,

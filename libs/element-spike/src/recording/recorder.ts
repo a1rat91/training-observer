@@ -37,6 +37,7 @@ interface Tracked {
 }
 
 interface PendingInput {
+    intentToken?: unknown;
     target: Tracked;
     value: CapturedValue;
     trigger: 'change' | 'input';
@@ -46,6 +47,7 @@ interface PendingInput {
 }
 
 interface PendingSelection {
+    intentToken?: unknown;
     target: Tracked;
     before: string;
     expected: string;
@@ -58,6 +60,14 @@ export interface RecorderOptions {
     inputIdleMs?: number;
     pollMs?: number;
     onUpdate?(): void;
+    /** Synchronous semantic intent; Element is ephemeral and never serialized. */
+    onAction?(
+        action: SemanticAction,
+        target: Element | null,
+        intentToken?: unknown,
+    ): void;
+    /** Pre-handler identity proof for delayed commits and controls removed by their own handler. */
+    onIntent?(event: Event, target: Element): unknown;
     /** Explicit test/instrumented-event mode. The browser panel never enables this. */
     acceptUntrustedEvents?: boolean;
 }
@@ -376,7 +386,7 @@ export class ElementRecorder {
         this.notify();
     }
 
-    private emit(action: ActionPayload): void {
+    private emit(action: ActionPayload, intentToken?: unknown): void {
         if (!this.running) {
             return;
         }
@@ -405,7 +415,22 @@ export class ElementRecorder {
         }
 
         this.report.actions.push(entry);
-        this.notify();
+        const target =
+            'targetId' in entry
+                ? (Array.from(this.tracked.values()).find(
+                      (item) => item.descriptor.id === entry.targetId,
+                  )?.element ?? null)
+                : null;
+
+        this.options.onAction?.(
+            JSON.parse(JSON.stringify(entry)) as SemanticAction,
+            target,
+            intentToken,
+        );
+
+        if (this.running) {
+            this.notify();
+        }
     }
 
     private flush(): void {
@@ -439,13 +464,16 @@ export class ElementRecorder {
 
         pending.target.committed = signature;
         pending.target.dirty = false;
-        this.emit({
-            kind: 'input',
-            targetId: pending.target.descriptor.id,
-            commit: pending.commit,
-            value: pending.value,
-            evidence: {trigger: pending.trigger, trusted: pending.trusted},
-        });
+        this.emit(
+            {
+                kind: 'input',
+                targetId: pending.target.descriptor.id,
+                commit: pending.commit,
+                value: pending.value,
+                evidence: {trigger: pending.trigger, trusted: pending.trusted},
+            },
+            pending.intentToken,
+        );
     }
 
     private byId(id: string): Element | null {
@@ -487,7 +515,10 @@ export class ElementRecorder {
         }
 
         this.flush();
+        const intentToken = this.options.onIntent?.(event, owner);
+
         this.choice = {
+            intentToken,
             target,
             before: JSON.stringify(
                 readValue(owner, {...this.options.valuePolicy, mode: 'capture'}),
@@ -537,13 +568,16 @@ export class ElementRecorder {
 
             choice.target.committed = JSON.stringify(value);
             this.state(choice.target, 'property-observer');
-            this.emit({
-                kind: 'select',
-                targetId: choice.target.descriptor.id,
-                commit: 'confirmed-selection',
-                value,
-                evidence: {trigger: choice.trigger, trusted: choice.trusted},
-            });
+            this.emit(
+                {
+                    kind: 'select',
+                    targetId: choice.target.descriptor.id,
+                    commit: 'confirmed-selection',
+                    value,
+                    evidence: {trigger: choice.trigger, trusted: choice.trusted},
+                },
+                choice.intentToken,
+            );
         } else if (performance.now() >= choice.deadline) {
             this.choice = undefined;
 
@@ -641,6 +675,21 @@ export class ElementRecorder {
             return;
         }
 
+        // Commit earlier interactions before proving the incoming intent's scenario step.
+        this.confirmChoice();
+
+        if (
+            this.pending &&
+            this.pending.target !== target &&
+            ['change', 'click', 'compositionend', 'compositionstart', 'input'].includes(
+                event.type,
+            )
+        ) {
+            this.flush();
+        }
+
+        const intentToken = this.options.onIntent?.(event, element);
+
         if (event.type === 'compositionstart') {
             target.composing = true;
 
@@ -650,7 +699,7 @@ export class ElementRecorder {
         if (event.type === 'compositionend') {
             target.composing = false;
             target.dirty = true;
-            this.input(target, event);
+            this.input(target, event, intentToken);
 
             return;
         }
@@ -674,15 +723,20 @@ export class ElementRecorder {
         if (event.type === 'click') {
             if (!editable(element)) {
                 this.flush();
-                this.emit({
-                    kind: 'click',
-                    targetId: target.descriptor.id,
-                    evidence: {
-                        trigger:
-                            (event as MouseEvent).detail === 0 ? 'keyboard' : 'pointer',
-                        trusted: event.isTrusted,
+                this.emit(
+                    {
+                        kind: 'click',
+                        targetId: target.descriptor.id,
+                        evidence: {
+                            trigger:
+                                (event as MouseEvent).detail === 0
+                                    ? 'keyboard'
+                                    : 'pointer',
+                            trusted: event.isTrusted,
+                        },
                     },
-                });
+                    intentToken,
+                );
             }
 
             return;
@@ -729,23 +783,26 @@ export class ElementRecorder {
             }
 
             target.committed = JSON.stringify(value);
-            this.emit({
-                kind: 'select',
-                targetId: target.descriptor.id,
-                commit: 'change',
-                value,
-                evidence: {trigger: 'change', trusted: event.isTrusted},
-            });
+            this.emit(
+                {
+                    kind: 'select',
+                    targetId: target.descriptor.id,
+                    commit: 'change',
+                    value,
+                    evidence: {trigger: 'change', trusted: event.isTrusted},
+                },
+                intentToken,
+            );
         } else if (event.type === 'input' || event.type === 'change') {
             if (event.type === 'input') {
                 target.dirty = true;
             }
 
-            this.input(target, event);
+            this.input(target, event, intentToken);
         }
     }
 
-    private input(target: Tracked, event: Event): void {
+    private input(target: Tracked, event: Event, intentToken?: unknown): void {
         if (this.pending && this.pending.target !== target) {
             this.flush();
         }
@@ -761,6 +818,7 @@ export class ElementRecorder {
         }
 
         const pending: PendingInput = {
+            intentToken,
             target,
             value,
             trusted: event.isTrusted,

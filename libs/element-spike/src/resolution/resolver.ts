@@ -6,9 +6,11 @@ import {
     type Locator,
     type Resolution,
 } from '../contracts';
-import {CONTROLS, features, flags, normalize} from '../dom/identity';
+import {CONTROLS, features, flags, normalize, OBSERVABLES} from '../dom/identity';
 
 export interface ResolverOptions {
+    includeStatic?: boolean;
+    requireEnabled?: boolean;
     /** Explicit shell route pairs. No wildcard or automatic pathname relaxation. */
     routePairs?: ReadonlyArray<{recorded: string; current: string}>;
     threshold?: number;
@@ -231,12 +233,16 @@ function visible(element: Element, root: Element): boolean {
 }
 
 export class ElementResolver {
+    private readonly includeStatic: boolean;
+    private readonly requireEnabled: boolean;
     private readonly threshold: number;
     private readonly margin: number;
     private readonly maxCandidates: number;
     private readonly routePairs: ReadonlyArray<{recorded: string; current: string}>;
 
     constructor(options: ResolverOptions = {}) {
+        this.includeStatic = options.includeStatic ?? false;
+        this.requireEnabled = options.requireEnabled ?? true;
         this.threshold = options.threshold ?? 0.9;
         this.margin = options.margin ?? 0.12;
         this.maxCandidates = options.maxCandidates ?? 2000;
@@ -295,7 +301,9 @@ export class ElementResolver {
             return broken('not-found');
         }
 
-        const elements = Array.from(root.querySelectorAll(CONTROLS));
+        const elements = Array.from(
+            root.querySelectorAll(this.includeStatic ? OBSERVABLES : CONTROLS),
+        );
 
         if (elements.length > this.maxCandidates) {
             return broken('unsupported');
@@ -316,7 +324,7 @@ export class ElementResolver {
                     features: identity,
                     report,
                     compatible,
-                    eligible: flags(element).enabled,
+                    eligible: !this.requireEnabled || flags(element).enabled,
                 };
             });
         // Scope is a boundary: moving across named business contexts is not an automatic repair.

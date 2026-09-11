@@ -1,0 +1,103 @@
+<header>
+    <h1>Прохождение обучения</h1>
+    <p>
+        Выберите условия плеера, запустите обучение и выполняйте задания справа. Для нового прогона начните обучение
+        заново.
+    </p>
+</header>
+<div class="workspace">
+    <div
+        #target
+        class="player"
+    >
+        <procedure-page />
+    </div>
+    <aside aria-label="Панель обучения">
+        <details [open]="!source">
+            <summary>Сценарий</summary>
+            <p>
+                JSON передаётся со страницы записи через локальное хранилище этого браузера. Можно вставить другой
+                сценарий.
+            </p>
+            <tui-textfield>
+                <label tuiLabel>JSON сценария</label>
+                <textarea
+                    tuiTextarea
+                    [(ngModel)]="source"
+                ></textarea>
+            </tui-textfield>
+        </details>
+        <div class="actions">
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="!source"
+                (click)="start(target)"
+            >
+                {{ current() ? 'Начать заново' : 'Начать обучение' }}
+            </button>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="!current() || current()?.status === 'stopped' || current()?.status === 'completed'"
+                (click)="stop()"
+            >
+                Остановить обучение
+            </button>
+        </div>
+        @if (error()) {
+            <p role="alert">{{ error() }}</p>
+        }
+        @if (current(); as state) {
+            <h2 aria-live="polite">{{ labels[state.status] }}</h2>
+            <p>Пройдено шагов: {{ state.completedSteps }}</p>
+            @if (state.status !== 'completed' && state.status !== 'stopped') {
+                <h3>{{ state.instruction }}</h3>
+                @if (state.hint) {
+                    <button
+                        size="s"
+                        tuiButton
+                        type="button"
+                        (click)="hintVisible.set(!hintVisible())"
+                    >
+                        Подсказка
+                    </button>
+                }
+                @if (hintVisible()) {
+                    <p>{{ state.hint }}</p>
+                }
+                @if (state.optional) {
+                    <button
+                        size="s"
+                        tuiButton
+                        type="button"
+                        (click)="skip()"
+                    >
+                        Пропустить необязательный шаг
+                    </button>
+                }
+                @if (state.status === 'timedOut' || state.status === 'broken') {
+                    <button
+                        size="s"
+                        tuiButton
+                        type="button"
+                        (click)="retry()"
+                    >
+                        Повторить ожидание
+                    </button>
+                }
+            }
+            @if (state.message) {
+                <p role="status">{{ state.message }}</p>
+            }
+            <details>
+                <summary>Диагностика обучения</summary>
+                <pre>{{ json(state) }}</pre>
+            </details>
+        } @else {
+            <p>Подготовьте сценарий на странице записи или вставьте JSON, затем нажмите «Начать обучение».</p>
+        }
+    </aside>
+</div>

@@ -5,6 +5,9 @@ import {type IdentityFeatures} from '../contracts';
 export const CONTROLS =
     'input:not([type="hidden"]),textarea,select,button,a[href],summary,[role="button"],[role="combobox"],[contenteditable="true"]';
 
+/** Observable completion targets; not necessarily interactive controls. */
+export const OBSERVABLES = `${CONTROLS},h1,h2,h3,h4,h5,h6,[role="heading"],[role="status"],[role="alert"],[role="region"],section[aria-label],form[aria-label],fieldset`;
+
 export const normalize = (text: string | null): string =>
     (text ?? '').normalize('NFC').replaceAll(/\s+/gu, ' ').trim();
 

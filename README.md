@@ -1,7 +1,7 @@
 # Training Observer
 
 Технический spike системы обучения поверх существующего Angular-приложения. Работа идёт по [плану](docs/spike/PLAN.md):
-этапы 1–6 завершены, следующий — связка записи и прохождения на динамической процедуре.
+этапы 1–7 завершены, следующий — benchmark восстановления элементов.
 
 Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; старые файлы ядра в корне `libs/element-spike/src` и
 `projects/demo/src/pages/spike` остаются черновиками. Проверенный recorder находится в
@@ -23,6 +23,7 @@ npm start
 
 | Маршрут              | Содержимое                                                                                              |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/spike/learn`       | Прохождение ученика: задания, подсказки, ожидание полей и проверка результата                           |
 | `/spike/record`      | Запись администратора: действия, значения, состояния, JSON export                                       |
 | `/spike/procedure`   | Плеер динамических форм: две ветки, HTTP backend, ошибки, возврат и завершение                          |
 | `/spike/research`    | Живая форма Taiga UI 4, генерация locators по клику, проверка CSS, Driver.js, rrweb и сохранённый отчёт |
@@ -36,7 +37,7 @@ npm start
 
 ```sh
 npm test
-npx playwright test tests/recording.spec.ts tests/procedure.spec.ts tests/research.spec.ts
+npx playwright test tests/learning.spec.ts tests/recording.spec.ts tests/procedure.spec.ts tests/research.spec.ts
 npm run research:spike
 ```
 
@@ -46,11 +47,13 @@ npm run research:spike
 
 [Запись процедуры](http://localhost:4200/spike/record): «Начать запись» → «Новая процедура» → заполнить формы →
 «Остановить запись» → «Скачать запись». Значения видны в правой панели.
-[Описание recorder и ограничений](docs/spike/recorder.md). Страница ученика `/spike/learn` пока не реализована.
+[Описание recorder и ограничений](docs/spike/recorder.md). После остановки записи выберите признак результата в плеере,
+создайте и проверьте JSON-сценарий, затем нажмите «Сохранить и открыть прохождение». На `/spike/learn` выберите другой
+layout и нажмите «Начать обучение». [Полный цикл и ограничения authoring/runtime](docs/spike/scenario-runtime.md).
 
-Resolver v2 проверен unit-тестами и на пересозданной форме; полный benchmark ещё не проведён. Сценарный runtime и общий
-benchmark выполняются следующими этапами. `npm test` запускает unit-тесты контрактов, recorder, resolver и тестового
-backend; `npm run test:spike` — контракты, recorder и resolver. Проверки маршрутов и прохождений запускаются отдельно
+Resolver v2 и сценарный runtime проверены unit-тестами и прохождением в новом документе; полный benchmark ещё не
+проведён. `npm test` запускает unit-тесты контрактов, recorder, resolver, runtime и тестового backend;
+`npm run test:spike` — контракты, recorder, resolver и runtime. Проверки маршрутов и прохождений запускаются отдельно
 через Playwright.
 
 После остановки записи можно пересоздать процедуру с другим расположением и нажать **«Проверить поиск»**.
