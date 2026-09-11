@@ -42,10 +42,3 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
-
-# cypress
-**/cypress/**/screenshots/**
-
-.ssl
-.nx
-.angular
