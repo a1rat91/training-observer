@@ -76,7 +76,8 @@ IME; синхронную маску; combobox popup; submit без blur; unmoun
 
 ```mermaid
 flowchart TD
-    Host[Внешний интерфейс: DOM-root и browser events] --> Recorder[ElementRecorder]
+    Host[Внешний интерфейс: DOM-root и browser events] --> Hub[DocumentEventHub]
+    Hub --> Recorder[ElementRecorder]
     Identity[DOM identity: role, name, attributes, context] --> Recorder
     Recorder --> Recording[Recording: actions, states, descriptors]
     Recording --> Authoring[draftScenario и проверка автором]
@@ -85,6 +86,9 @@ flowchart TD
     Recorder -->|Подтверждённое действие и intent token| Runtime
     Host --> Registry[AreaRegistry: границы и ownership]
     Registry --> Facade[AreaRegistryService: readonly signals]
+    Registry --> Recorder
+    Session[RecordingSessionService] --> Recorder
+    Session --> Resolver
     Host --> Resolver[ElementResolver]
     Identity --> Resolver
     Resolver -->|Element либо ambiguous / broken| Runtime
@@ -93,7 +97,8 @@ flowchart TD
     Runtime --> Snapshot[Snapshot и события для приложения]
 ```
 
-Registry уже доступен для диагностики через Angular service; его подключение к recorder/resolver ещё впереди.
+Registry подключён к recorder и поиску целей текущего сеанса через RecordingSessionService. Привязки target → area ещё
+не сериализуются в v2; learner пока использует прежний runtime без registry.
 
 Contracts/validation ограничивают данные на границах импорта, authoring и runtime. Стрелки описывают передачу данных, а
 не наследование классов. Во время прохождения runtime владеет экземпляром recorder. Панель вызывает команды и показывает
@@ -149,10 +154,11 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 
 ## Следующий цикл и границы
 
-[План multi-MF](docs/implementation-plan.md): AreaRegistry и Angular facade реализованы, общий EventHub, выбор
-наблюдаемых областей и ObservationSession ещё запланированы. Обновление Angular отложено: начинаем на текущей 19.2.25;
-новая библиотечная обвязка должна следовать указанным в плане Angular-практикам. Саму demo-форму специально
-оптимизировать или переводить на zoneless не требуется. Driver.js не используется.
+[План multi-MF](docs/implementation-plan.md): AreaRegistry и Angular facade реализованы, EventHub и выбор областей
+записи подключены через RecordingSessionService. Новая версия wire-контракта для переноса привязок областей ещё
+запланирована. Обновление Angular отложено: начинаем на текущей 19.2.25; новая библиотечная обвязка должна следовать
+указанным в плане Angular-практикам. Саму demo-форму специально оптимизировать или переводить на zoneless не требуется.
+Driver.js не используется.
 
 [Benchmark](docs/spike/benchmark.md) подтвердил 368/369 восстановлений доступных различимых целей на тестовой матрице.
 Подмена бизнес-сущности при одинаковом DOM дала один false accept: DOM-only алгоритм не видит скрытой смены сущности.

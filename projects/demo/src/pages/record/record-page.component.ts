@@ -2,9 +2,8 @@ import {
     afterNextRender,
     ChangeDetectionStrategy,
     Component,
-    DestroyRef,
+    computed,
     inject,
-    NgZone,
     signal,
     viewChild,
 } from '@angular/core';
@@ -12,15 +11,16 @@ import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
 import {
-    ElementRecorder,
-    ElementResolver,
     parseRecording,
     type Recording,
     type Resolution,
     type SemanticAction,
     serializeRecording,
 } from '@training-observer/core';
-import {AreaRegistryService} from '@training-observer/core/angular';
+import {
+    AreaRegistryService,
+    RecordingSessionService,
+} from '@training-observer/core/angular';
 
 import {RECORDING_IMPORT_KEY} from '../scenario-storage';
 import {DEMO_AREAS} from '../workspace/area-definitions';
@@ -40,17 +40,19 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [AreaRegistryService],
+    providers: [AreaRegistryService, RecordingSessionService],
 })
 export default class RecordPageComponent {
-    private readonly zone = inject(NgZone);
-    private readonly destroyRef = inject(DestroyRef);
-    private recorder?: ElementRecorder;
+    private readonly session = inject(RecordingSessionService);
+    private readonly importedRecording = signal<Recording | null>(null);
     private readonly workspace = viewChild.required(ProcedureShellComponent);
 
     public readonly areaRegistry = inject(AreaRegistryService);
-    public readonly recording = signal<Recording | null>(null);
-    public readonly running = signal(false);
+    public readonly recording = computed(
+        () => this.session.recording() ?? this.importedRecording(),
+    );
+
+    public readonly running = this.session.running;
     public readonly resolutions = signal<Array<{name: string; report: Resolution}>>([]);
     public readonly error = signal('');
     public captureValues = true;
@@ -71,7 +73,7 @@ export default class RecordPageComponent {
                 const recording = parseRecording(source);
 
                 sessionStorage.removeItem(RECORDING_IMPORT_KEY);
-                this.recording.set(recording);
+                this.importedRecording.set(recording);
                 this.imported.set(true);
             }
         } catch (error: unknown) {
@@ -81,35 +83,25 @@ export default class RecordPageComponent {
                     : 'Не удалось импортировать запись',
             );
         }
-
-        this.destroyRef.onDestroy(() => this.recorder?.stop());
     }
 
     public start(root: HTMLElement): void {
-        this.recorder?.stop();
         this.error.set('');
         this.imported.set(false);
+        this.importedRecording.set(null);
         this.resolutions.set([]);
-        this.zone.runOutsideAngular(() => {
-            this.recorder = new ElementRecorder(root, {
-                valuePolicy: {
-                    mode: this.captureValues ? 'capture' : 'omit',
-                    sensitive: 'redact',
-                    normalizers: ['decimal-comma-v1', 'date-dmy-v1'],
-                },
-                onUpdate: () => this.zone.run(() => this.refresh()),
-            });
-            this.recorder.start();
+        this.session.start(root, {
+            mode: this.captureValues ? 'capture' : 'omit',
+            sensitive: 'redact',
+            normalizers: ['decimal-comma-v1', 'date-dmy-v1'],
         });
-        this.refresh();
     }
 
     public stop(): void {
-        this.recorder?.stop();
-        this.refresh();
+        this.session.stop();
     }
 
-    public check(root: HTMLElement): void {
+    public check(): void {
         const recording = this.recording();
 
         if (!recording || this.running()) {
@@ -122,8 +114,6 @@ export default class RecordPageComponent {
             ),
         );
 
-        const resolver = new ElementResolver();
-
         this.resolutions.set(
             recording.descriptors
                 .filter((descriptor) => targetIds.has(descriptor.id))
@@ -132,7 +122,7 @@ export default class RecordPageComponent {
                         descriptor.fingerprint.features.accessibleName ||
                         descriptor.fingerprint.features.label ||
                         descriptor.id,
-                    report: resolver.resolve(descriptor, root).report,
+                    report: this.session.resolve(descriptor),
                 })),
         );
     }
@@ -198,10 +188,5 @@ export default class RecordPageComponent {
 
     public json(value: unknown): string {
         return JSON.stringify(value, null, 2);
-    }
-
-    private refresh(): void {
-        this.recording.set(this.recorder?.snapshot() ?? null);
-        this.running.set(this.recorder?.running ?? false);
     }
 }

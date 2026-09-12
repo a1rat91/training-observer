@@ -15,7 +15,7 @@ import {
 @Injectable()
 export class AreaRegistryService {
     private readonly document = inject(DOCUMENT);
-    private registry?: AreaRegistry;
+    private currentRegistry?: AreaRegistry;
     private unsubscribe?: () => void;
     private readonly state = signal<readonly AreaSnapshot[]>([]);
 
@@ -34,7 +34,7 @@ export class AreaRegistryService {
 
         const registry = new AreaRegistry(definitions);
 
-        this.registry = registry;
+        this.currentRegistry = registry;
         this.unsubscribe = registry.subscribe(() => this.state.set(registry.snapshots()));
         registry.start(scope);
         this.state.set(registry.snapshots());
@@ -42,11 +42,23 @@ export class AreaRegistryService {
         return registry;
     }
 
+    public boundary(): AreaRegistry {
+        if (!this.currentRegistry) {
+            throw new Error('Connect the area registry before starting observation');
+        }
+
+        return this.currentRegistry;
+    }
+
+    public setObserved(key: string, observe: boolean): void {
+        this.boundary().setObserved(key, observe);
+    }
+
     public disconnect(): void {
         this.unsubscribe?.();
         this.unsubscribe = undefined;
-        this.registry?.stop();
-        this.registry = undefined;
+        this.currentRegistry?.stop();
+        this.currentRegistry = undefined;
         this.state.set([]);
     }
 }

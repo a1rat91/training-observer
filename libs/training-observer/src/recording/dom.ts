@@ -32,11 +32,12 @@ export function describe(
     root: Element,
     id: string,
     candidates = CONTROLS,
+    accepts: (element: Element) => boolean = () => true,
 ): ElementDescriptor {
     const identity = features(element, root);
     const scope = identity.context.slice(0, 1);
     const peers = Array.from(root.querySelectorAll(candidates))
-        .filter((node) => flags(node).visible)
+        .filter((node) => accepts(node) && flags(node).visible)
         .map((node) => ({node, features: features(node, root)}));
 
     const scoped = peers.filter((peer) =>
@@ -103,7 +104,10 @@ export function describe(
             attr: (name) => ['alt', 'name', 'title', 'type'].includes(name),
         });
 
-        add({kind: 'css', value}, root.querySelectorAll(value).length);
+        add(
+            {kind: 'css', value},
+            Array.from(root.querySelectorAll(value)).filter(accepts).length,
+        );
     } catch {
         /* Semantic candidates can stand alone when a CSS generator has no result. */
     }

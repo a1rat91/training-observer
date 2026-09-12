@@ -3,8 +3,10 @@
  * Алгоритм: создаёт inventory и descriptors, принимает capture events, сопоставляет intent с контролом,
  * подтверждает input/select через DOM-значение и сохраняет действия отдельно от фоновых state updates.
  * Мутации и sampling properties обновляют inventory; dropdown требует доказанного owner.
- * Stop снимает listeners/observer/timer. Angular model, HTTP payload и setters не используются.
+ * AreaRegistry ограничивает inventory/values и поколения pending действий; EventHub разделяет capture listeners.
+ * Stop освобождает подписку, observers и timer. Angular model, HTTP payload и setters не используются.
  */
+import {type AreaRegistry} from '../areas';
 import {
     type CapturedValue,
     type ElementDescriptor,
@@ -15,6 +17,7 @@ import {
     serializeRecording,
     type ValuePolicy,
 } from '../contracts';
+import {DocumentEventHub} from '../observation/event-hub';
 import {
     accessibleName,
     CONTROLS,
@@ -35,6 +38,7 @@ type ActionPayload = {
 }[SemanticAction['kind']];
 
 interface Tracked {
+    area?: {key: string; generation: number};
     element: Element;
     descriptor: ElementDescriptor;
     stateSignature: string;
@@ -64,6 +68,8 @@ interface PendingSelection {
 }
 export interface RecorderOptions {
     valuePolicy: ValuePolicy;
+    /** Optional area boundary. Registry lifecycle belongs to the observation session. */
+    areas?: AreaRegistry;
     inputIdleMs?: number;
     pollMs?: number;
     onUpdate?(): void;
@@ -85,7 +91,9 @@ export class ElementRecorder {
     private readonly tracked = new Map<Element, Tracked>();
     private readonly syntheticClicks = new WeakSet<Element>();
     private readonly cleanup: Array<() => void> = [];
-    private observer?: MutationObserver;
+    private readonly observers = new Map<Element, MutationObserver>();
+    private readonly targetAreas = new Map<string, string>();
+    private synchronizing = false;
     private pending?: PendingInput;
     private choice?: PendingSelection;
     private notification?: ReturnType<typeof setTimeout>;
@@ -115,34 +123,17 @@ export class ElementRecorder {
         this.running = true;
         this.startedAt = performance.now();
         this.lastPath = this.document.location.pathname;
-        const listener = (event: Event): void => this.observe(event);
+        this.cleanup.push(
+            DocumentEventHub.forDocument(this.document).subscribe((event) =>
+                this.observe(event),
+            ),
+        );
 
-        for (const type of [
-            'click',
-            'keydown',
-            'input',
-            'change',
-            'blur',
-            'compositionstart',
-            'compositionend',
-        ]) {
-            this.document.addEventListener(type, listener, true);
-            this.cleanup.push(() =>
-                this.document.removeEventListener(type, listener, true),
-            );
+        if (this.options.areas) {
+            this.cleanup.push(this.options.areas.subscribe(() => this.syncAreas()));
         }
 
-        this.observer = new MutationObserver(() => {
-            if (this.running) {
-                this.reconcile('mutation');
-            }
-        });
-        this.observer.observe(this.root, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            characterData: true,
-        });
+        this.syncAreas();
         const interval = setInterval(() => {
             if (!this.running) {
                 return;
@@ -196,11 +187,16 @@ export class ElementRecorder {
         return serializeRecording(this.report);
     }
 
+    public areaForTarget(id: string): string | undefined {
+        return this.targetAreas.get(id);
+    }
+
     private reset(): void {
         this.generation++;
         this.tracked.clear();
         this.pending = undefined;
         this.choice = undefined;
+        this.targetAreas.clear();
         this.descriptorSequence = 0;
         this.size = 0;
         this.report = {
@@ -221,7 +217,12 @@ export class ElementRecorder {
     private shutdown(): void {
         this.running = false;
         this.generation++;
-        this.observer?.disconnect();
+
+        for (const observer of this.observers.values()) {
+            observer.disconnect();
+        }
+
+        this.observers.clear();
         this.cleanup.splice(0).forEach((dispose) => dispose());
         clearTimeout(this.notification);
         this.notification = undefined;
@@ -281,13 +282,148 @@ export class ElementRecorder {
         }, 50);
     }
 
+    private roots(): Element[] {
+        const areas = this.options.areas;
+
+        return areas
+            ? areas
+                  .snapshots()
+                  .filter((area) => area.observe && area.status === 'resolved')
+                  .map((area) => areas.root(area.key))
+                  .filter((root): root is Element => !!root && this.root.contains(root))
+            : [this.root];
+    }
+
+    private accepts(element: Element): boolean {
+        return (
+            this.root.contains(element) &&
+            (!this.options.areas || this.options.areas.owner(element).status === 'owned')
+        );
+    }
+
+    private current(target: Tracked): boolean {
+        if (!this.options.areas) {
+            return true;
+        }
+
+        const owner = this.options.areas.owner(target.element);
+
+        return (
+            owner.status === 'owned' &&
+            owner.area.key === target.area?.key &&
+            owner.area.generation === target.area.generation
+        );
+    }
+
+    private discard(target: Tracked): void {
+        if (!target.element.isConnected) {
+            const state: ObservedState = {
+                targetId: target.descriptor.id,
+                timeMs: this.time(),
+                source: 'mutation',
+                connected: false,
+                visible: null,
+                enabled: null,
+                readOnly: null,
+                value: {status: 'unavailable', reason: 'detached'},
+            };
+
+            if (this.reserve(state)) {
+                this.report.states.push(state);
+                this.notify();
+            }
+        }
+
+        if (this.pending?.target === target || this.choice?.target === target) {
+            this.diagnostic(
+                'unsupported-control',
+                'Неподтверждённое действие отменено: область выключена или её экземпляр изменился.',
+            );
+        }
+
+        if (this.pending?.target === target) {
+            this.pending = undefined;
+        }
+
+        if (this.choice?.target === target) {
+            this.choice = undefined;
+        }
+
+        this.tracked.delete(target.element);
+    }
+
+    private syncAreas(): void {
+        if (!this.running || this.synchronizing) {
+            return;
+        }
+
+        this.synchronizing = true;
+
+        try {
+            for (const target of this.tracked.values()) {
+                if (!this.current(target)) {
+                    this.discard(target);
+                }
+            }
+
+            for (const observer of this.observers.values()) {
+                observer.disconnect();
+            }
+
+            this.observers.clear();
+
+            for (const root of this.roots()) {
+                const observer = new MutationObserver((records) => {
+                    if (
+                        this.running &&
+                        records.some(
+                            (record) =>
+                                record.target.nodeType !== 1 ||
+                                this.accepts(record.target as Element),
+                        )
+                    ) {
+                        this.reconcile('mutation');
+                    }
+                });
+
+                observer.observe(root, {
+                    subtree: true,
+                    childList: true,
+                    attributes: true,
+                    characterData: true,
+                });
+                this.observers.set(root, observer);
+            }
+
+            this.reconcile('snapshot');
+        } finally {
+            this.synchronizing = false;
+        }
+    }
+
     private track(element: Element, refresh = false): Tracked | undefined {
-        const existing = this.tracked.get(element);
+        if (!this.accepts(element)) {
+            return undefined;
+        }
+
+        const owner = this.options.areas?.owner(element);
+        const area =
+            owner?.status === 'owned'
+                ? {key: owner.area.key, generation: owner.area.generation}
+                : undefined;
+
+        const contextRoot = area ? this.options.areas!.root(area.key)! : this.root;
+        let existing = this.tracked.get(element);
+
+        if (existing && !this.current(existing)) {
+            this.discard(existing);
+            existing = undefined;
+        }
 
         if (existing) {
             const unchanged =
                 !refresh ||
-                (JSON.stringify(features(element, this.root)) ===
+                (JSON.stringify(features(element, contextRoot)) ===
                     JSON.stringify(existing.descriptor.fingerprint.features) &&
                     existing.descriptor.scope.pathname ===
                         this.document.location.pathname);
@@ -306,15 +442,22 @@ export class ElementRecorder {
         try {
             const descriptor = describe(
                 element,
-                this.root,
+                contextRoot,
                 `target-${++this.descriptorSequence}`,
+                CONTROLS,
+                (candidate) => !area || this.options.areas!.accepts(area.key, candidate),
             );
 
             if (!this.reserve(descriptor)) {
                 return undefined;
             }
 
+            if (area) {
+                this.targetAreas.set(descriptor.id, area.key);
+            }
+
             const target: Tracked = {
+                area,
                 element,
                 descriptor,
                 stateSignature: '',
@@ -338,12 +481,19 @@ export class ElementRecorder {
     }
 
     private reconcile(source: ObservedState['source']): void {
-        for (const element of this.root.querySelectorAll(CONTROLS)) {
+        const elements = new Set(
+            this.roots().flatMap((root) => [...root.querySelectorAll(CONTROLS)]),
+        );
+
+        for (const element of elements) {
             if (!this.running) {
                 return;
             }
 
-            if (!element.closest('[aria-hidden="true"],script,style')) {
+            if (
+                this.accepts(element) &&
+                !element.closest('[aria-hidden="true"],script,style')
+            ) {
                 this.track(element);
             }
         }
@@ -351,6 +501,11 @@ export class ElementRecorder {
         for (const target of this.tracked.values()) {
             if (!this.running) {
                 return;
+            }
+
+            if (!this.current(target)) {
+                this.discard(target);
+                continue;
             }
 
             this.state(target, source);
@@ -366,6 +521,10 @@ export class ElementRecorder {
     }
 
     private state(target: Tracked, source: ObservedState['source']): void {
+        if (!this.current(target)) {
+            return;
+        }
+
         const state = {
             ...flags(target.element),
             value: readValue(target.element, this.options.valuePolicy),
@@ -446,6 +605,12 @@ export class ElementRecorder {
         this.pending = undefined;
 
         if (!pending) {
+            return;
+        }
+
+        if (!this.current(pending.target)) {
+            this.discard(pending.target);
+
             return;
         }
 
@@ -549,6 +714,12 @@ export class ElementRecorder {
             return;
         }
 
+        if (!this.current(choice.target)) {
+            this.discard(choice.target);
+
+            return;
+        }
+
         if (!choice.target.element.isConnected) {
             this.choice = undefined;
             this.diagnostic(
@@ -634,9 +805,11 @@ export class ElementRecorder {
             return;
         }
 
-        const element = path.find(
-            (node) => this.root.contains(node) && node.matches(CONTROLS),
-        );
+        if (path[0] && !this.accepts(path[0])) {
+            return;
+        }
+
+        const element = path.find((node) => this.accepts(node) && node.matches(CONTROLS));
 
         if (!element) {
             return;
@@ -836,7 +1009,7 @@ export class ElementRecorder {
 
         this.pending = pending;
         this.afterEvent(() => {
-            if (this.pending !== pending) {
+            if (this.pending !== pending || !this.current(target)) {
                 return;
             }
 

@@ -16,7 +16,7 @@ import {
   parseScenario,
 } from '@training-observer/core';
 
-import {AreaRegistryService} from '@training-observer/core/angular';
+import {AreaRegistryService, RecordingSessionService} from '@training-observer/core/angular';
 ```
 
 Первый entry point не загружает Angular и может импортироваться без document. Для работы DOM-механизмам нужен
@@ -32,6 +32,12 @@ areas(). При уничтожении injector ресурсы освобожд�
 Scope принадлежит интеграции. Целевые MF обнаруживаются внутри него по существующим host-тегам и необязательному
 контексту предка. Удаление самого scope требует disconnect. Вынесенные portals пока не входят в ownership registry.
 
+Для записи предоставляйте также RecordingSessionService. После connect registry вызовите session.start(scope,
+valuePolicy). Readonly recording()/running() отражают сеанс; setObserved(key, boolean) у registry facade действует без
+перезапуска. При выключении области pending input/selection отменяется, завершённые действия сохраняются.
+session.resolve(descriptor) использует key, сохранённый recorder в памяти; неизвестный key, missing/ambiguous root или
+observe=false дают отказ.
+
 ## Ответственность API
 
 - `ElementRecorder` — start/stop, действия и наблюдаемые состояния; ресурсы нужно освобождать при завершении сеанса.
@@ -45,7 +51,11 @@ Scope принадлежит интеграции. Целевые MF обнар�
 
 ## Границы текущей реализации
 
-Runtime пока последовательный; свободный порядок и blur-only находятся в плане. AreaRegistry ещё не ограничивает
-recorder/resolver автоматически: его accepts() будет подключён к общему dispatch и пулу кандидатов следующим этапом.
-Angular-сервис управляет только registry, не всем training runtime. Сохранение сценариев и UI приложений не входят в
-пакет.
+Runtime пока последовательный; свободный порядок и blur-only находятся в плане. RecorderOptions.areas ограничивает
+чтение и запись выбранными областями. ResolverOptions.accepts фильтрует кандидатов до извлечения identity; Angular-сеанс
+задаёт predicate по key цели. EventHub разделяет document listeners между подписчиками одного экземпляра пакета;
+независимые копии пакета в разных bundle должны разделять этот экземпляр через интеграцию.
+
+Привязка target → area пока живёт в памяти сеанса. Recording v2 сохраняет журнал, но не эту привязку. Для переноса
+областей между админкой и учеником нужна новая версия контракта; текущий learner ещё не использует registry. Сохранение
+сценариев и UI приложений не входят в пакет.

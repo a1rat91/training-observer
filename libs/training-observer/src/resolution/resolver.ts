@@ -17,6 +17,8 @@ import {CONTROLS, features, flags, normalize, OBSERVABLES} from '../dom/identity
 
 export interface ResolverOptions {
     includeStatic?: boolean;
+    /** Membership is checked before visibility, identity extraction and scoring. */
+    accepts?(element: Element): boolean;
     requireEnabled?: boolean;
     /** Explicit shell route pairs. No wildcard or automatic pathname relaxation. */
     routePairs?: ReadonlyArray<{recorded: string; current: string}>;
@@ -240,6 +242,7 @@ function visible(element: Element, root: Element): boolean {
 }
 
 export class ElementResolver {
+    private readonly accepts: (element: Element) => boolean;
     private readonly includeStatic: boolean;
     private readonly requireEnabled: boolean;
     private readonly threshold: number;
@@ -248,6 +251,7 @@ export class ElementResolver {
     private readonly routePairs: ReadonlyArray<{recorded: string; current: string}>;
 
     constructor(options: ResolverOptions = {}) {
+        this.accepts = options.accepts ?? (() => true);
         this.includeStatic = options.includeStatic ?? false;
         this.requireEnabled = options.requireEnabled ?? true;
         this.threshold = options.threshold ?? 0.9;
@@ -312,11 +316,13 @@ export class ElementResolver {
             root.querySelectorAll(this.includeStatic ? OBSERVABLES : CONTROLS),
         );
 
-        if (elements.length > this.maxCandidates) {
+        const allowedElements = elements.filter(this.accepts);
+
+        if (allowedElements.length > this.maxCandidates) {
             return broken('unsupported');
         }
 
-        const pool: Candidate[] = elements
+        const pool: Candidate[] = allowedElements
             .filter((element) => visible(element, root))
             .map((element, index) => {
                 const identity = features(element, root);

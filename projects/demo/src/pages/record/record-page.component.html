@@ -13,10 +13,20 @@
     <aside aria-label="Панель записи">
         <details aria-label="Границы микрофронтов">
             <summary>Границы микрофронтов</summary>
-            <p>Проверка registry. Выбор областей ещё не подключён к записи.</p>
+            <p>Выберите MF для наблюдения. Изменения применяются и во время записи.</p>
+            <p>Выбор микрофронтов пока не переносится при экспорте. Проверка границ работает для текущей записи.</p>
             <ul>
                 @for (area of areaRegistry.areas(); track area.key) {
                     <li>
+                        <label>
+                            <input
+                                tuiCheckbox
+                                type="checkbox"
+                                [ngModel]="area.observe"
+                                (ngModelChange)="areaRegistry.setObserved(area.key, $event)"
+                            />
+                            Наблюдать {{ area.key }}
+                        </label>
                         {{ area.key }} · {{ area.status }} · экземпляров: {{ area.matches }} · поколение:
                         {{ area.generation }}
                     </li>
@@ -78,7 +88,7 @@
             tuiButton
             type="button"
             [disabled]="running() || !recording()?.actions?.length"
-            (click)="check(workspace.surface().nativeElement)"
+            (click)="check()"
         >
             Проверить поиск
         </button>
