@@ -6,6 +6,9 @@
 [ограничения](docs/spike/limitations.md) и backlog пилота зафиксированы. Отдельный production MFE, редактор без JSON и
 серверное хранение ещё не реализованы.
 
+Следующий цикл: [план наблюдения за несколькими микрофронтами](docs/spike/microfrontend-plan.md) — выбор областей,
+lifecycle, portals и оптимизация; блокировка взаимодействий выделена в отдельное расширение. Реализация не начата.
+
 Angular 19, Nx 20, Taiga UI **4.98.0**. Прежняя библиотека удалена; старые файлы ядра в корне `libs/element-spike/src` и
 `projects/demo/src/pages/spike` остаются черновиками. Проверенный recorder находится в
 `libs/element-spike/src/recording/`. Принятые [контракты v2](docs/spike/contracts.md) находятся отдельно в
