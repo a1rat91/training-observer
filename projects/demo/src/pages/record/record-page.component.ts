@@ -11,17 +11,17 @@ import {
 import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
-
-import {AreaRegistryService} from '../../../../../libs/element-spike/src/areas/area-registry.service';
 import {
+    ElementRecorder,
+    ElementResolver,
     parseRecording,
     type Recording,
     type Resolution,
     type SemanticAction,
     serializeRecording,
-} from '../../../../../libs/element-spike/src/contracts';
-import {ElementRecorder} from '../../../../../libs/element-spike/src/recording';
-import {ElementResolver} from '../../../../../libs/element-spike/src/resolution';
+} from '@training-observer/core';
+import {AreaRegistryService} from '@training-observer/core/angular';
+
 import {RECORDING_IMPORT_KEY} from '../scenario-storage';
 import {DEMO_AREAS} from '../workspace/area-definitions';
 import {ProcedureShellComponent} from '../workspace/procedure-shell.component';

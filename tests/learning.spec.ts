@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises';
 
 import {expect, type Page, test} from '@playwright/test';
 
-import {parseRecording, parseScenario} from '../libs/element-spike/src/contracts';
+import {parseRecording, parseScenario} from '../libs/training-observer/src/contracts';
 
 async function select(page: Page, name: string, option: string): Promise<void> {
     await page.getByRole('combobox', {name, exact: true}).click();

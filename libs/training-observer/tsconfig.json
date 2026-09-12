@@ -9,7 +9,11 @@
         "skipLibCheck": true,
         "types": ["jest", "node"],
         "noEmit": true,
-        "allowJs": true
+        "allowJs": true,
+        "baseUrl": "../..",
+        "paths": {
+            "@training-observer/core": ["libs/training-observer/src/index.ts"]
+        }
     },
     "include": ["src/**/*.ts", "tests/**/*.ts"]
 }

@@ -168,9 +168,9 @@ try {
         'scripts/spike-benchmark/browser.mjs',
         'scripts/spike-benchmark/run.mjs',
         'scripts/spike-benchmark/metrics.mjs',
-        'libs/element-spike/src/resolution/resolver.ts',
-        'libs/element-spike/src/recording/dom.ts',
-        'libs/element-spike/src/dom/identity.ts',
+        'libs/training-observer/src/resolution/resolver.ts',
+        'libs/training-observer/src/recording/dom.ts',
+        'libs/training-observer/src/dom/identity.ts',
     ]) {
         hashes[file] = createHash('sha256')
             .update(await readFile(file))

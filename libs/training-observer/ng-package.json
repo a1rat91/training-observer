@@ -1,0 +1,12 @@
+{
+    "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
+    "allowedNonPeerDependencies": [
+        "@medv/finder",
+        "dom-accessibility-api",
+        "xstate"
+    ],
+    "dest": "../../dist/training-observer",
+    "lib": {
+        "entryFile": "src/index.ts"
+    }
+}

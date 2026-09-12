@@ -1,3 +1,9 @@
+/**
+ * Общий слой identity для записи и разрешения DOM-целей.
+ * Получает role и accessible name, нормализует текст/атрибуты и собирает контекст предков.
+ * Проверяет видимость и доступность отдельно от идентичности; значения полей не включаются
+ * в признаки цели. Работает с существующим DOM, не добавляя метки и не читая Angular-модель.
+ */
 import {computeAccessibleName, getRole, isInaccessible} from 'dom-accessibility-api';
 
 import {type IdentityFeatures} from '../contracts';

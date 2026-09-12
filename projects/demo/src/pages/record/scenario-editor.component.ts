@@ -11,16 +11,16 @@ import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiTextarea} from '@taiga-ui/kit';
-
 import {
+    describeElement,
+    draftScenario,
     type ElementDescriptor,
+    isObservableElement,
     parseScenario,
     type Recording,
     serializeScenario,
-} from '../../../../../libs/element-spike/src/contracts';
-import {OBSERVABLES} from '../../../../../libs/element-spike/src/dom/identity';
-import {describe} from '../../../../../libs/element-spike/src/recording/dom';
-import {draftScenario} from '../../../../../libs/element-spike/src/runtime';
+} from '@training-observer/core';
+
 import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
 
 @Component({
@@ -161,9 +161,7 @@ export class ScenarioEditorComponent {
                 .composedPath()
                 .find(
                     (node): node is Element =>
-                        node instanceof Element &&
-                        root.contains(node) &&
-                        node.matches(OBSERVABLES),
+                        node instanceof Element && isObservableElement(node, root),
                 );
 
             if (!element) {
@@ -175,7 +173,9 @@ export class ScenarioEditorComponent {
 
             try {
                 this.finish.set(
-                    describe(element, root, `finish-${Date.now()}`, OBSERVABLES),
+                    describeElement(element, root, `finish-${Date.now()}`, {
+                        includeStatic: true,
+                    }),
                 );
             } catch {
                 this.error.set(

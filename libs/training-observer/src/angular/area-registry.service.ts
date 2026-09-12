@@ -6,9 +6,11 @@
  */
 import {DOCUMENT} from '@angular/common';
 import {DestroyRef, inject, Injectable, signal} from '@angular/core';
-
-import {AreaRegistry} from './registry';
-import {type AreaDefinition, type AreaSnapshot} from './types';
+import {
+    type AreaDefinition,
+    AreaRegistry,
+    type AreaSnapshot,
+} from '@training-observer/core';
 
 @Injectable()
 export class AreaRegistryService {

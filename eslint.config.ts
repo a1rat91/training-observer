@@ -3,6 +3,23 @@ import taiga from '@taiga-ui/eslint-plugin-experience-next';
 export default [
     ...taiga.configs.recommended,
     {
+        files: ['projects/demo/src/**/*.ts'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: ['**/libs/**/src/**'],
+                            message:
+                                'Use @training-observer/core or @training-observer/core/angular public API.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
         files: ['**/legacy/**/*.ts'],
         rules: {'@angular-eslint/prefer-standalone': 'off'},
     },

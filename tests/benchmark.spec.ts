@@ -7,7 +7,7 @@ import {build} from 'esbuild';
 import {
     type ElementDescriptor,
     type LiveResolution,
-} from '../libs/element-spike/src/contracts';
+} from '../libs/training-observer/src/contracts';
 
 declare global {
     interface Window {

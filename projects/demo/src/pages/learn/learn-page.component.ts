@@ -10,16 +10,14 @@ import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiTextarea} from '@taiga-ui/kit';
-
 import {
     parseRecording,
     parseScenario,
     type Recording,
-} from '../../../../../libs/element-spike/src/contracts';
-import {
     type RuntimeSnapshot,
     ScenarioRuntime,
-} from '../../../../../libs/element-spike/src/runtime';
+} from '@training-observer/core';
+
 import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
 import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 

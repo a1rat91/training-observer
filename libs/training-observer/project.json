@@ -1,0 +1,22 @@
+{
+    "name": "training-observer",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/training-observer/src",
+    "projectType": "library",
+    "tags": ["type:library"],
+    "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-observer"],
+            "options": {
+                "project": "libs/training-observer/ng-package.json",
+                "tsConfig": "libs/training-observer/tsconfig.lib.json"
+            },
+            "defaultConfiguration": "production",
+            "configurations": {
+                "production": {},
+                "development": {}
+            }
+        }
+    }
+}

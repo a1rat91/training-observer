@@ -1,6 +1,6 @@
-import {describe} from '../../libs/element-spike/src/recording/dom';
-import {CONTROLS} from '../../libs/element-spike/src/dom/identity';
-import {ElementResolver} from '../../libs/element-spike/src/resolution/resolver';
+import {describe} from '../../libs/training-observer/src/recording/dom';
+import {CONTROLS} from '../../libs/training-observer/src/dom/identity';
+import {ElementResolver} from '../../libs/training-observer/src/resolution/resolver';
 
 let sequence = 0;
 

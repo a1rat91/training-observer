@@ -1,4 +1,4 @@
-import {type AreaDefinition} from '../../../../../libs/element-spike/src/areas';
+import {type AreaDefinition} from '@training-observer/core';
 
 export const DEMO_AREAS: readonly AreaDefinition[] = [
     {key: 'procedure-search', hostTag: 'procedure-search-mf', observe: true},

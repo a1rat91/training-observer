@@ -1,4 +1,4 @@
-/** Accepted wire contract. Draft model.ts v1 is intentionally not migrated implicitly. */
+/** Wire-контракт v2. Неподдержанные версии требуют явной миграции перед использованием. */
 export type AttributeName = 'alt' | 'autocomplete' | 'href' | 'name' | 'title' | 'type';
 export interface IdentityFeatures {
     tag: string;

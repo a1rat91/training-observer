@@ -1,0 +1,17 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ES2022",
+        "moduleResolution": "node",
+        "declaration": true,
+        "declarationMap": true,
+        "inlineSources": true,
+        "types": [],
+        "noEmit": false,
+        "experimentalDecorators": true
+    },
+    "angularCompilerOptions": {"compilationMode": "partial"},
+    "include": ["src/**/*.ts"],
+    "exclude": ["**/*.spec.ts"]
+}

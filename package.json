@@ -24,16 +24,18 @@
         "start": "node scripts/start-demo.mjs",
         "stylelint": "stylelint '**/*.{less,css}' --config package.json",
         "stylelint:fix": "stylelint '**/*.{less,css}' --config package.json --fix",
-        "test": "npm run test:spike && npm run test:spike:angular && npm run test:procedure-api",
+        "test": "npm run test:core && npm run test:angular && npm run test:procedure-api",
         "test:pw": "playwright test",
         "test:pw:load": "playwright test --config=playwright.load.config.ts",
         "research:spike": "node scripts/spike-research/run.mjs",
         "procedure:server": "node scripts/procedure-server/server.mjs",
         "test:procedure-api": "node --test scripts/procedure-server/*.test.mjs",
-        "test:spike": "jest --config libs/element-spike/jest.config.cjs --runInBand",
         "benchmark:spike": "node scripts/spike-benchmark/all.mjs",
         "test:benchmark": "node --test scripts/spike-benchmark/metrics.test.mjs",
-        "test:spike:angular": "jest --config libs/element-spike/jest.angular.config.cjs --runInBand"
+        "test:core": "jest --config libs/training-observer/jest.config.cjs --runInBand",
+        "test:angular": "jest --config libs/training-observer/jest.angular.config.cjs --runInBand",
+        "build:library": "nx build training-observer",
+        "test:package": "npm run build:library && node scripts/check-library-package.mjs"
     },
     "commitlint": {
         "extends": [

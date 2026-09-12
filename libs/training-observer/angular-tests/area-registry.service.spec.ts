@@ -1,7 +1,7 @@
 import {DOCUMENT} from '@angular/common';
 import {TestBed} from '@angular/core/testing';
 
-import {AreaRegistryService} from '../src/areas/area-registry.service';
+import {AreaRegistryService} from '../src/angular/area-registry.service';
 
 const definitions = [{key: 'player', hostTag: 'player-mf', observe: true}] as const;
 let scope: HTMLElement;

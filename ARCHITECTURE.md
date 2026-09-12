@@ -101,25 +101,26 @@ snapshot; она не должна дублировать алгоритм вы�
 
 ## Модули и ответственность
 
-Все указанные пути находятся внутри `libs/element-spike/src`.
+Все указанные пути находятся внутри `libs/training-observer/src`.
 
-| Модуль                                                                  | Назначение и основные точки входа                                                                    |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [areas](libs/element-spike/src/areas/)                                  | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
-| [contracts](libs/element-spike/src/contracts/)                          | Recording/Scenario/Resolution v2, parse/read/serialize и строгая validation                          |
-| [dom/identity.ts](libs/element-spike/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
-| [recording/dom.ts](libs/element-spike/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
-| [recording/recorder.ts](libs/element-spike/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
-| [resolution/resolver.ts](libs/element-spike/src/resolution/resolver.ts) | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
-| [runtime/authoring.ts](libs/element-spike/src/runtime/authoring.ts)     | `draftScenario`: линейный черновик из записи и выбранного признака результата                        |
-| [runtime/conditions.ts](libs/element-spike/src/runtime/conditions.ts)   | Проверка условий по текущему DOM и committed value текущего шага                                     |
-| [runtime/runtime.ts](libs/element-spike/src/runtime/runtime.ts)         | `ScenarioRuntime`: start/stop/retry/skip, поколения шага и snapshots                                 |
+| Модуль                                                                      | Назначение и основные точки входа                                                                    |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [areas](libs/training-observer/src/areas/)                                  | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
+| [contracts](libs/training-observer/src/contracts/)                          | Recording/Scenario/Resolution v2, parse/read/serialize и строгая validation                          |
+| [dom/identity.ts](libs/training-observer/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
+| [recording/dom.ts](libs/training-observer/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
+| [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
+| [resolution/resolver.ts](libs/training-observer/src/resolution/resolver.ts) | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
+| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)     | `draftScenario`: линейный черновик из записи и выбранного признака результата                        |
+| [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)   | Проверка условий по текущему DOM и committed value текущего шага                                     |
+| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)         | `ScenarioRuntime`: start/stop/retry/skip, поколения шага и snapshots                                 |
 
-Это рабочие модули v2. Старые файлы непосредственно в корне `libs/element-spike/src` — черновики, а не стабильный
-публичный barrel нового пакета. Изолированная Angular-библиотека и её packaging ещё не выделены: текущие панели
-расположены в demo. Выделение Angular services и API без UI запланировано отдельным циклом.
+Это единственные рабочие модули библиотеки; прежние дублирующие реализации удалены. Пакет собирается ng-packagr в
+dist/training-observer. Публичный API — @training-observer/core; Angular facade экспортируется отдельно из
+@training-observer/core/angular. Demo не импортирует внутренние файлы. Сервис находится в src/angular и зависит от
+основного entry point; ядро не зависит от Angular. Исследовательские отчёты сохранены как исторические данные.
 
-## Алгоритм существующего прототипа
+## Алгоритм текущего runtime
 
 1. Recorder строит inventory выбранного root и описания целей. Capture events дают намерение пользователя;
    MutationObserver и sampling properties дают наблюдаемые состояния. State update сам по себе не является действием.
@@ -148,7 +149,7 @@ snapshot; она не должна дублировать алгоритм вы�
 
 ## Следующий цикл и границы
 
-[План multi-MF](docs/spike/microfrontend-plan.md): AreaRegistry и Angular facade реализованы, общий EventHub, выбор
+[План multi-MF](docs/implementation-plan.md): AreaRegistry и Angular facade реализованы, общий EventHub, выбор
 наблюдаемых областей и ObservationSession ещё запланированы. Обновление Angular отложено: начинаем на текущей 19.2.25;
 новая библиотечная обвязка должна следовать указанным в плане Angular-практикам. Саму demo-форму специально
 оптимизировать или переводить на zoneless не требуется. Driver.js не используется.
@@ -156,4 +157,4 @@ snapshot; она не должна дублировать алгоритм вы�
 [Benchmark](docs/spike/benchmark.md) подтвердил 368/369 восстановлений доступных различимых целей на тестовой матрице.
 Подмена бизнес-сущности при одинаковом DOM дала один false accept: DOM-only алгоритм не видит скрытой смены сущности.
 [Архитектурные решения MVP](docs/spike/architecture.md), [ограничения](docs/spike/limitations.md),
-[проверки ядра](libs/element-spike/tests/) и [browser tests](tests/) уточняют область доказанных возможностей.
+[проверки ядра](libs/training-observer/tests/) и [browser tests](tests/) уточняют область доказанных возможностей.
