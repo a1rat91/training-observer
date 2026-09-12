@@ -11,6 +11,9 @@ async function select(page: Page, name: string, option: string): Promise<void> {
 
 async function begin(page: Page, alternate = false, capture = true): Promise<void> {
     await page.goto('/spike/record');
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
 
     if (alternate) {
         await select(page, 'Расположение полей', 'Другое расположение');

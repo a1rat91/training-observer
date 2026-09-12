@@ -20,13 +20,13 @@ import {
     type RuntimeSnapshot,
     ScenarioRuntime,
 } from '../../../../../libs/element-spike/src/runtime';
-import ProcedurePageComponent from '../procedure/procedure-page.component';
 import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
+import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 
 @Component({
     standalone: true,
     selector: 'learn-page',
-    imports: [FormsModule, ProcedurePageComponent, TuiButton, TuiTextarea, TuiTextfield],
+    imports: [FormsModule, ProcedureShellComponent, TuiButton, TuiTextarea, TuiTextfield],
     templateUrl: './learn-page.component.html',
     styleUrl: '../record/record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,

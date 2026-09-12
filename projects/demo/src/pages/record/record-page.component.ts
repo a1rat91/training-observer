@@ -19,8 +19,8 @@ import {
 } from '../../../../../libs/element-spike/src/contracts';
 import {ElementRecorder} from '../../../../../libs/element-spike/src/recording';
 import {ElementResolver} from '../../../../../libs/element-spike/src/resolution';
-import ProcedurePageComponent from '../procedure/procedure-page.component';
 import {RECORDING_IMPORT_KEY} from '../scenario-storage';
+import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
 @Component({
@@ -28,7 +28,7 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     selector: 'record-page',
     imports: [
         FormsModule,
-        ProcedurePageComponent,
+        ProcedureShellComponent,
         ScenarioEditorComponent,
         TuiButton,
         TuiCheckbox,

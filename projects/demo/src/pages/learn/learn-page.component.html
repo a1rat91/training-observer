@@ -1,17 +1,15 @@
 <header>
     <h1>Прохождение обучения</h1>
     <p>
-        Выберите условия плеера, запустите обучение и выполняйте задания справа. Для нового прогона начните обучение
-        заново.
+        Это диагностический режим spike: запустите обучение, выберите процедуру в поиске и выполняйте задания.
+        Автоматический старт и свободный порядок заполнения будут добавлены в следующем этапе runtime.
     </p>
 </header>
 <div class="workspace">
-    <div
-        #target
+    <procedure-shell
+        #workspace
         class="player"
-    >
-        <procedure-page />
-    </div>
+    />
     <aside aria-label="Панель обучения">
         <details [open]="!source || !!error()">
             <summary>Сценарий</summary>
@@ -34,7 +32,7 @@
                 tuiButton
                 type="button"
                 [disabled]="!source"
-                (click)="start(target)"
+                (click)="start(workspace.surface().nativeElement)"
             >
                 {{ current() ? 'Начать заново' : 'Начать обучение' }}
             </button>

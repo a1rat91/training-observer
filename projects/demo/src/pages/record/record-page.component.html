@@ -1,17 +1,15 @@
 <header>
     <h1>Запись процедуры</h1>
     <p>
-        Начните запись, затем создайте и заполните процедуру. Новая запись заменяет предыдущую. Скачайте JSON перед
-        уходом со страницы.
+        Начните запись, затем найдите процедуру, выберите её и заполните открывшуюся форму. Новая запись заменяет
+        предыдущую. Скачайте JSON перед уходом со страницы.
     </p>
 </header>
 <div class="workspace">
-    <div
-        #target
+    <procedure-shell
+        #workspace
         class="player"
-    >
-        <procedure-page />
-    </div>
+    />
     <aside aria-label="Панель записи">
         <h2>{{ running() ? 'Идёт запись' : 'Запись остановлена' }}</h2>
         @if (imported()) {
@@ -39,7 +37,7 @@
                 tuiButton
                 type="button"
                 [disabled]="running()"
-                (click)="start(target)"
+                (click)="start(workspace.surface().nativeElement)"
             >
                 Начать запись
             </button>
@@ -68,7 +66,7 @@
             tuiButton
             type="button"
             [disabled]="running() || !recording()?.actions?.length"
-            (click)="check(target)"
+            (click)="check(workspace.surface().nativeElement)"
         >
             Проверить поиск
         </button>
@@ -94,7 +92,7 @@
             @if (!running() && report.actions.length) {
                 <scenario-editor
                     [recording]="report"
-                    [root]="target"
+                    [root]="workspace.surface().nativeElement"
                 />
             }
             <p>

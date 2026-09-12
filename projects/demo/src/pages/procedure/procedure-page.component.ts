@@ -5,6 +5,8 @@ import {
     Component,
     DestroyRef,
     inject,
+    input,
+    type OnInit,
     signal,
 } from '@angular/core';
 import {
@@ -47,13 +49,15 @@ const API = 'http://127.0.0.1:4310/api/procedures';
     styleUrl: './procedure-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class ProcedurePageComponent {
+export default class ProcedurePageComponent implements OnInit {
     private readonly http = inject(HttpClient);
     private readonly destroyRef = inject(DestroyRef);
     private request?: Subscription;
     private generation = 0;
     private retryAttempt?: {url: string; body: ProcedureAction | {profile: string}};
 
+    public readonly autoStart = input(false);
+    public readonly initialProfile = input('Обычный ответ');
     public readonly session = signal<ProcedureResponse | null>(null);
     public readonly pending = signal(false);
     public readonly error = signal('');
@@ -75,6 +79,13 @@ export default class ProcedurePageComponent {
 
     constructor() {
         this.destroyRef.onDestroy(() => this.cancel());
+    }
+
+    public ngOnInit(): void {
+        if (this.autoStart()) {
+            this.profile = this.initialProfile();
+            this.start();
+        }
     }
 
     public start(): void {

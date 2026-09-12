@@ -50,6 +50,9 @@ async function complete(page: Page): Promise<void> {
 
 async function recordScenario(page: Page, isExternal = false): Promise<void> {
     await page.goto('/spike/record');
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
     await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
     await identity(page, isExternal);
@@ -79,6 +82,9 @@ async function recordScenario(page: Page, isExternal = false): Promise<void> {
 
 async function startLearner(page: Page, profile: string): Promise<void> {
     await page.goto('/spike/learn');
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await select(page, 'Расположение полей', 'Другое расположение');
     await select(page, 'Поведение сервера', profile);
     await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
@@ -262,6 +268,9 @@ test('recording JSON pasted into learner can be prepared without recording actio
     page,
 }) => {
     await page.goto('/spike/record');
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
     await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
     await identity(page);
@@ -278,6 +287,9 @@ test('recording JSON pasted into learner can be prepared without recording actio
     );
 
     await page.goto('/spike/learn');
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await page
         .getByRole('textbox', {name: 'JSON сценария', exact: true})
         .fill(JSON.stringify(recording));
@@ -297,6 +309,7 @@ test('recording JSON pasted into learner can be prepared without recording actio
         page.getByRole('list', {name: 'Записанные действия'}).getByRole('listitem'),
     ).toHaveCount(recording.actions.length);
     // Recreate only the visible success evidence; the imported action log remains untouched.
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
     await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
     await identity(page);
     await next(page);
@@ -323,6 +336,8 @@ test('recording JSON pasted into learner can be prepared without recording actio
     await page
         .getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true})
         .click();
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
     await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
     await expect(
         page.getByRole('heading', {name: 'Выполните задание', exact: true}),
