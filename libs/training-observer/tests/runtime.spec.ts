@@ -69,6 +69,8 @@ function enter(value: string): void {
 
     input.value = value;
     input.dispatchEvent(new Event('input', {bubbles: true}));
+    jest.advanceTimersByTime(0);
+    input.dispatchEvent(new Event('blur'));
     jest.advanceTimersByTime(500);
 }
 
@@ -265,7 +267,7 @@ test('authoring draft requires explicit final evidence and captures expected val
     });
 });
 
-test('an input replaced by its own handler uses pre-handler identity and committed event value', () => {
+test('an input removed by its own input handler cannot complete without blur', () => {
     const value = scenario();
 
     value.startStepId = 'input';
@@ -275,7 +277,8 @@ test('an input replaced by its own handler uses pre-handler identity and committ
         root.innerHTML = '<h2>Готово</h2>';
     });
     enter('Анна');
-    expect(runtime!.snapshot().status).toBe('completed');
+    expect(runtime!.snapshot().completedSteps).toBe(0);
+    expect(runtime!.snapshot().status).not.toBe('completed');
 });
 
 test('waiting for a user is not a missing-target timeout', () => {
@@ -301,6 +304,8 @@ test('late input commit from a skipped step cannot satisfy the next step even on
     input.dispatchEvent(new Event('input', {bubbles: true}));
     runtime!.skip();
     input.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowLeft', bubbles: true}));
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+    input.dispatchEvent(new Event('blur'));
     jest.advanceTimersByTime(500);
     expect(runtime!.snapshot()).toMatchObject({
         stepId: 'input',
@@ -342,4 +347,55 @@ test('delayed dropdown confirmation is processed before capturing the next butto
         status: 'confirming',
         completedSteps: 1,
     });
+});
+
+test('typing a correct or wrong value does not advance or show an error before blur', () => {
+    const value = scenario();
+
+    value.startStepId = 'input';
+    root.innerHTML = '<label>Имя<input></label><h2>Готово</h2>';
+    start(value);
+    const input = root.querySelector('input')!;
+
+    input.value = 'wrong';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    jest.advanceTimersByTime(2000);
+    expect(runtime!.snapshot()).toMatchObject({
+        stepId: 'input',
+        completedSteps: 0,
+        message: '',
+        uncommittedInput: true,
+    });
+    input.value = 'Анна';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    jest.advanceTimersByTime(2000);
+    expect(runtime!.snapshot().status).not.toBe('completed');
+    input.dispatchEvent(new Event('blur'));
+    jest.advanceTimersByTime(0);
+    expect(runtime!.snapshot().status).toBe('completed');
+});
+
+test('an unblurred edit blocks final completion even after the last expected click', () => {
+    const value = scenario();
+
+    value.steps = [value.steps[0]!];
+    value.steps[0]!.nextStepId = null;
+    value.steps[0]!.completion = {kind: 'visible', targetId: 'name', expected: true};
+    root.innerHTML = '<button>Начать</button><label>Имя<input></label>';
+    start(value);
+    root.querySelector('button')!.click();
+    expect(runtime!.snapshot().status).toBe('finalizing');
+    const input = root.querySelector('input')!;
+
+    input.value = 'Анна';
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    root.insertAdjacentHTML('beforeend', '<h2>Готово</h2>');
+    jest.advanceTimersByTime(100);
+    expect(runtime!.snapshot()).toMatchObject({
+        status: 'finalizing',
+        uncommittedInput: true,
+    });
+    input.dispatchEvent(new Event('blur'));
+    jest.advanceTimersByTime(0);
+    expect(runtime!.snapshot().status).toBe('completed');
 });

@@ -107,6 +107,9 @@ test('IME intermediate text is not committed by idle timer', () => {
 
     event(input, 'compositionend');
     advance();
+    expect(recorder.snapshot().actions).toHaveLength(0);
+    event(input, 'blur');
+    advance();
     expect(recorder.snapshot().actions).toHaveLength(1);
     expect(recorder.snapshot().actions[0]).toMatchObject({value: {raw: '你'}});
 });
@@ -127,7 +130,7 @@ test('unfinished composition is diagnosed on stop', () => {
 for (const mode of ['omit', 'capture'] as const) {
     test(`policy ${mode} never persists secrets`, () => {
         setup('<label>Секрет<input type="password"></label>', true, {...policy, mode});
-        enter('secret-value');
+        event(enter('secret-value'), 'blur');
         advance();
         const report = recorder.export();
 
@@ -140,7 +143,7 @@ for (const mode of ['omit', 'capture'] as const) {
 
 test('omit policy excludes ordinary values from actions and snapshots', () => {
     setup('<label>Имя<input></label>', true, {...policy, mode: 'omit'});
-    enter('private-value');
+    event(enter('private-value'), 'blur');
     advance();
     expect(recorder.export()).not.toContain('private-value');
     expect(recorder.snapshot().actions[0]).toMatchObject({value: {status: 'omitted'}});
@@ -223,7 +226,7 @@ test('new controls discovered after replacement; side panel excluded; restart cl
         .dispatchEvent(new MouseEvent('click', {bubbles: true}));
     root.innerHTML = '<label>Новое поле<input></label>';
     advance();
-    enter('value');
+    event(enter('value'), 'blur');
     advance();
     expect(recorder.snapshot().actions).toHaveLength(1);
     recorder.stop();
@@ -231,7 +234,7 @@ test('new controls discovered after replacement; side panel excluded; restart cl
     advance();
     expect(recorder.snapshot().actions).toHaveLength(1);
     recorder.start();
-    enter('next');
+    event(enter('next'), 'blur');
     advance();
     expect(recorder.snapshot().actions).toHaveLength(1);
     recorder.stop();
@@ -305,6 +308,8 @@ test('post-event formatting is captured but subsequent server updates do not ove
         input.value = '1 000';
     });
     enter('1000');
+    event(input, 'blur');
+    jest.advanceTimersByTime(0);
     input.value = '2 000';
     advance();
     expect(recorder.snapshot().actions[0]).toMatchObject({

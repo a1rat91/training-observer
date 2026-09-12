@@ -1,7 +1,8 @@
 /**
  * ElementRecorder — записывает подтверждённые действия и изменения состояния внутри переданного DOM-root.
  * Алгоритм: создаёт inventory и descriptors, принимает capture events, сопоставляет intent с контролом,
- * подтверждает input/select через DOM-значение и сохраняет действия отдельно от фоновых state updates.
+ * подтверждает текст только после blur, select — после изменения/выбора через DOM-значение.
+ * Действия сохраняются отдельно от фоновых state updates.
  * Мутации и sampling properties обновляют inventory; dropdown требует доказанного owner.
  * AreaRegistry ограничивает inventory/values и поколения pending действий; EventHub разделяет capture listeners.
  * Stop освобождает подписку, observers и timer. Angular model, HTTP payload и setters не используются.
@@ -29,6 +30,7 @@ import {
     readValue,
     selection,
 } from './dom';
+import {sameInputValue} from './input-value';
 
 type ActionPayload = {
     [K in SemanticAction['kind']]: Omit<
@@ -53,8 +55,7 @@ interface PendingInput {
     value: CapturedValue;
     trigger: 'change' | 'input';
     trusted: boolean;
-    deadline: number;
-    commit: 'blur' | 'change' | 'idle';
+    blurred: boolean;
 }
 
 interface PendingSelection {
@@ -70,7 +71,6 @@ export interface RecorderOptions {
     valuePolicy: ValuePolicy;
     /** Optional area boundary. Registry lifecycle belongs to the observation session. */
     areas?: AreaRegistry;
-    inputIdleMs?: number;
     pollMs?: number;
     onUpdate?(): void;
     /** Synchronous semantic intent; Element is ephemeral and never serialized. */
@@ -114,6 +114,11 @@ export class ElementRecorder {
         this.reset();
     }
 
+    /** Черновик не является действием; runtime не завершает сценарий до его подтверждения. */
+    public get hasUncommittedInput(): boolean {
+        return !!this.pending;
+    }
+
     public start(): void {
         if (this.running) {
             return;
@@ -142,14 +147,6 @@ export class ElementRecorder {
             this.reconcile('property-observer');
             this.confirmChoice();
 
-            if (
-                this.pending &&
-                !this.pending.target.composing &&
-                performance.now() >= this.pending.deadline
-            ) {
-                this.flush();
-            }
-
             this.navigation();
         }, this.options.pollMs ?? 100);
 
@@ -172,7 +169,8 @@ export class ElementRecorder {
             );
         }
 
-        this.flush();
+        this.commitBlurredInput();
+        this.cancelInput('Запись остановлена до выхода из поля.');
         this.navigation();
         this.reconcile('property-observer');
         this.shutdown();
@@ -456,7 +454,7 @@ export class ElementRecorder {
             }
 
             if (this.pending?.target === existing) {
-                this.flush();
+                this.cancelInput('Описание поля изменилось до выхода из него.');
             }
 
             this.tracked.delete(element);
@@ -535,7 +533,7 @@ export class ElementRecorder {
 
             if (!target.element.isConnected || !this.root.contains(target.element)) {
                 if (this.pending?.target === target) {
-                    this.flush();
+                    this.cancelInput('Поле удалено до выхода из него.');
                 }
 
                 this.tracked.delete(target.element);
@@ -622,14 +620,14 @@ export class ElementRecorder {
         }
     }
 
-    private flush(): void {
+    private commitBlurredInput(): void {
         const pending = this.pending;
 
-        this.pending = undefined;
-
-        if (!pending) {
+        if (!pending?.blurred) {
             return;
         }
+
+        this.pending = undefined;
 
         if (!this.current(pending.target)) {
             this.discard(pending.target);
@@ -644,6 +642,11 @@ export class ElementRecorder {
             );
 
             return;
+        }
+
+        if (pending.target.element.isConnected) {
+            pending.value = readValue(pending.target.element, this.options.valuePolicy);
+            this.state(pending.target, 'native-event');
         }
 
         const signature = JSON.stringify(pending.value);
@@ -663,11 +666,26 @@ export class ElementRecorder {
             {
                 kind: 'input',
                 targetId: pending.target.descriptor.id,
-                commit: pending.commit,
+                commit: 'blur',
                 value: pending.value,
                 evidence: {trigger: pending.trigger, trusted: pending.trusted},
             },
             pending.intentToken,
+        );
+    }
+
+    private cancelInput(message: string): void {
+        if (!this.pending) {
+            return;
+        }
+
+        const composing = this.pending.target.composing;
+
+        this.pending.target.dirty = false;
+        this.pending = undefined;
+        this.diagnostic(
+            composing ? 'composition-cancelled' : 'unsupported-control',
+            composing ? 'Незавершённый IME-ввод сохранён только как состояние.' : message,
         );
     }
 
@@ -709,7 +727,13 @@ export class ElementRecorder {
             return;
         }
 
-        this.flush();
+        this.commitBlurredInput();
+
+        // Confirmed option selection supersedes the search draft in this same combobox.
+        if (this.pending?.target === target) {
+            this.pending = undefined;
+        }
+
         const intentToken = this.options.onIntent?.(event, owner);
 
         this.choice = {
@@ -878,7 +902,7 @@ export class ElementRecorder {
             return;
         }
 
-        // Commit earlier interactions before proving the incoming intent's scenario step.
+        // Only an actual blur can confirm text before proving the next action's intent.
         this.confirmChoice();
 
         if (
@@ -888,7 +912,7 @@ export class ElementRecorder {
                 event.type,
             )
         ) {
-            this.flush();
+            this.commitBlurredInput();
         }
 
         const intentToken = this.options.onIntent?.(event, element);
@@ -901,8 +925,10 @@ export class ElementRecorder {
 
         if (event.type === 'compositionend') {
             target.composing = false;
-            target.dirty = true;
-            this.input(target, event, intentToken);
+
+            if (this.pending?.target === target) {
+                this.input(target, event, intentToken);
+            }
 
             return;
         }
@@ -925,7 +951,7 @@ export class ElementRecorder {
 
         if (event.type === 'click') {
             if (!editable(element)) {
-                this.flush();
+                this.commitBlurredInput();
                 this.emit(
                     {
                         kind: 'click',
@@ -946,13 +972,32 @@ export class ElementRecorder {
         }
 
         if (event.type === 'blur') {
-            if (this.pending?.target === target && !target.composing) {
-                this.pending.commit = 'blur';
-                const pending = this.pending;
+            const pending = this.pending;
 
+            if (pending?.target === target) {
+                if (target.composing) {
+                    this.cancelInput('Незавершённый IME-ввод.');
+
+                    return;
+                }
+
+                if (
+                    !sameInputValue(
+                        readValue(element, this.options.valuePolicy),
+                        pending.value,
+                    )
+                ) {
+                    this.cancelInput(
+                        'Значение поля изменено без input до выхода из него.',
+                    );
+
+                    return;
+                }
+
+                pending.blurred = true;
                 this.afterEvent(() => {
-                    if (this.pending === pending) {
-                        this.flush();
+                    if (this.pending === pending && this.current(target)) {
+                        this.commitBlurredInput();
                     }
                 });
             }
@@ -961,6 +1006,21 @@ export class ElementRecorder {
         }
 
         if (!editable(element)) {
+            return;
+        }
+
+        if (element.matches('[role="combobox"]')) {
+            if (this.choice?.target === target) {
+                this.confirmChoice();
+            } else if (
+                event.type === 'input' ||
+                (event.type === 'change' && this.pending?.target === target)
+            ) {
+                if (!flags(element).readOnly) {
+                    this.input(target, event, intentToken);
+                }
+            }
+
             return;
         }
 
@@ -975,7 +1035,7 @@ export class ElementRecorder {
                 return;
             }
 
-            this.flush();
+            this.commitBlurredInput();
             const value = readValue(element, this.options.valuePolicy);
 
             if (
@@ -1006,11 +1066,23 @@ export class ElementRecorder {
     }
 
     private input(target: Tracked, event: Event, intentToken?: unknown): void {
+        this.commitBlurredInput();
+
         if (this.pending && this.pending.target !== target) {
-            this.flush();
+            this.cancelInput('Начат ввод в другом поле без подтверждения предыдущего.');
         }
 
         const value = readValue(target.element, this.options.valuePolicy);
+
+        if (
+            event.type === 'change' &&
+            this.pending?.target === target &&
+            !sameInputValue(value, this.pending.value)
+        ) {
+            this.cancelInput('Значение поля изменено без input до выхода из него.');
+
+            return;
+        }
 
         if (
             event.type === 'change' &&
@@ -1021,13 +1093,15 @@ export class ElementRecorder {
         }
 
         const pending: PendingInput = {
-            intentToken,
+            intentToken:
+                event.type !== 'input' && this.pending?.target === target
+                    ? this.pending.intentToken
+                    : intentToken,
             target,
             value,
             trusted: event.isTrusted,
             trigger: event.type === 'change' ? 'change' : 'input',
-            commit: event.type === 'change' ? 'change' : 'idle',
-            deadline: performance.now() + (this.options.inputIdleMs ?? 400),
+            blurred: false,
         };
 
         this.pending = pending;
@@ -1039,10 +1113,6 @@ export class ElementRecorder {
             // Sample synchronous formatting in this event turn, not arbitrary later backend updates.
             pending.value = readValue(target.element, this.options.valuePolicy);
             this.state(target, 'native-event');
-
-            if (event.type === 'change' && !target.composing) {
-                this.flush();
-            }
         });
     }
 
@@ -1053,7 +1123,8 @@ export class ElementRecorder {
             return;
         }
 
-        this.flush();
+        this.commitBlurredInput();
+        this.cancelInput('Навигация произошла до выхода из поля.');
         this.lastPath = pathname;
         this.emit({
             kind: 'navigation',

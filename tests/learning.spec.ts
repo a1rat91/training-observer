@@ -169,6 +169,7 @@ test('wrong value and server 422 cannot advance the learner; correction complete
         .getByRole('textbox', {name: 'Организатор', exact: true})
         .fill('Учебный центр');
     await learner.getByRole('textbox', {name: 'Стоимость', exact: true}).fill('50000');
+    await learner.getByRole('textbox', {name: 'Стоимость', exact: true}).press('Tab');
     await expect(
         learner.getByText('Значение не соответствует заданию.', {exact: true}),
     ).toBeVisible();
@@ -184,6 +185,7 @@ test('wrong value and server 422 cannot advance the learner; correction complete
         .getByRole('textbox', {name: 'Дата начала', exact: true})
         .fill('15.02.2027');
     await learner.getByRole('textbox', {name: 'Обоснование', exact: true}).fill(reason);
+    await learner.getByRole('textbox', {name: 'Обоснование', exact: true}).press('Tab');
     await expect(
         learner.getByRole('heading', {name: 'Нажмите «Продолжить»', exact: true}),
     ).toBeVisible();

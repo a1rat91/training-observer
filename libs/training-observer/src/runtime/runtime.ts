@@ -67,6 +67,7 @@ export interface RuntimeSnapshot {
     completedSteps: number;
     message: string;
     resolution: Resolution | null;
+    uncommittedInput: boolean;
 }
 export interface RuntimeOptions extends ResolverOptions {
     areas?: AreaRegistry;
@@ -227,6 +228,7 @@ export class ScenarioRuntime {
             completedSteps: this.completedSteps,
             message: this.message,
             resolution: this.resolution,
+            uncommittedInput: this.recorder.hasUncommittedInput,
         };
     }
 
@@ -260,7 +262,10 @@ export class ScenarioRuntime {
             return;
         }
 
-        this.tick();
+        if (!['change', 'compositionend', 'input'].includes(event.type)) {
+            this.tick();
+        }
+
         const step = this.step;
 
         if (!step || step.action.kind === 'navigation') {
@@ -396,6 +401,14 @@ export class ScenarioRuntime {
         if (!this.step) {
             this.actor.send({type: 'FINALIZE'});
 
+            if (this.recorder.hasUncommittedInput) {
+                this.message = 'Завершите ввод: выйдите из поля.';
+
+                return;
+            }
+
+            this.message = '';
+
             if (this.conditions.evaluate(this.scenario.completion) === 'true') {
                 this.actor.send({type: 'COMPLETE'});
                 this.active = false;
@@ -437,6 +450,12 @@ export class ScenarioRuntime {
 
         if (this.armed) {
             this.actor.send({type: 'CONFIRM'});
+
+            if (this.recorder.hasUncommittedInput) {
+                this.message = 'Завершите ввод: выйдите из поля.';
+
+                return;
+            }
 
             if (
                 this.conditions.evaluate(this.step.completion, this.committed) !== 'true'

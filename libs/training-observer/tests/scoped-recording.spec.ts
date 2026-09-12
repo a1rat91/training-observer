@@ -68,7 +68,11 @@ it('enabling starts a baseline and preserves the other area pending action and g
     input('alpha-mf input', 'A');
     input('beta-mf input', 'previous');
     areas.setObserved('b', true);
+    root.querySelector('alpha-mf input')!.dispatchEvent(new Event('blur'));
+    await Promise.resolve();
     input('beta-mf input', 'B', 'change');
+    await Promise.resolve();
+    root.querySelector('beta-mf input')!.dispatchEvent(new Event('blur'));
     await Promise.resolve();
     recorder.stop();
     const report = recorder.snapshot();
@@ -109,6 +113,8 @@ it('late mount is discovered and navigation is emitted once across areas', async
     );
     await Promise.resolve();
     input('alpha-mf input', 'late', 'change');
+    await Promise.resolve();
+    root.querySelector('alpha-mf input')!.dispatchEvent(new Event('blur'));
     await Promise.resolve();
     history.replaceState({}, '', '/other');
     recorder.stop();
