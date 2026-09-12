@@ -4,10 +4,6 @@ import {TuiButton} from '@taiga-ui/core';
 
 import {DemoMicrofrontendComponent} from '../../../components/demo-microfrontend/demo-microfrontend.component';
 
-/**
- * Исходная страница-пример в навигационной оболочке Taiga UI.
- * Алгоритм: отображает TuiDocPage с заголовком Controls example; собственного состояния и записи событий нет.
- */
 @Component({
     standalone: true,
     selector: 'controls-example',

@@ -23,12 +23,6 @@ import {
 import ProcedurePageComponent from '../procedure/procedure-page.component';
 import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
 
-/**
- * Страница ученика: связывает плеер и ScenarioRuntime с панелью заданий и текстовых подсказок.
- * Алгоритм: загружает JSON, различает Recording и Scenario; запись направляет в подготовку,
- * для сценария запускает runtime на root плеера и отражает его snapshots в UI.
- * Команды панели управляют stop/retry/skip; новый старт заменяет runtime, уничтожение страницы останавливает его.
- */
 @Component({
     standalone: true,
     selector: 'learn-page',

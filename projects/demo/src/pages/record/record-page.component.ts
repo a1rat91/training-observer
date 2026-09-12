@@ -23,12 +23,6 @@ import ProcedurePageComponent from '../procedure/procedure-page.component';
 import {RECORDING_IMPORT_KEY} from '../scenario-storage';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
-/**
- * Страница администратора: показывает плеер рядом с записью действий и подготовкой сценария.
- * Алгоритм: принимает импортированную запись либо запускает ElementRecorder для root плеера;
- * обновляет журнал из snapshots, после остановки разрешает экспорт, проверку целей и создание сценария.
- * При уничтожении страницы останавливает recorder; поля и HTTP-модель плеера напрямую не читает.
- */
 @Component({
     standalone: true,
     selector: 'record-page',

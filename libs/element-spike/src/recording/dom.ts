@@ -1,3 +1,9 @@
+/**
+ * DOM-утилиты записи: описание identity и чтение значения с заданной политикой.
+ * Алгоритм describe: извлекает признаки/контекст, считает совпадения semantic locators и добавляет CSS fallback.
+ * Алгоритм readValue: применяет redaction/omit, читает raw property и разрешённую нормализацию number/date.
+ * Значение не включается в identity. DOM не изменяется; состояние Angular недоступно этому модулю.
+ */
 import {finder} from '@medv/finder';
 
 import {

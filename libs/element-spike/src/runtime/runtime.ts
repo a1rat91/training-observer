@@ -1,3 +1,10 @@
+/**
+ * ScenarioRuntime — управляет прохождением валидированного Scenario внутри выбранного DOM-root.
+ * Алгоритм: разрешает цель текущего шага, связывает intent и commit с поколением шага,
+ * проверяет ожидаемое действие и отдельное completion, затем выбирает ветку либо ждёт изменения DOM.
+ * XState отражает фазу; Conditions вычисляет true/false/unknown. Конец графа требует глобального completion.
+ * Skip/retry/переход инвалидируют старые tokens; stop освобождает recorder, observer и timer.
+ */
 import {createActor, createMachine} from 'xstate';
 
 import {

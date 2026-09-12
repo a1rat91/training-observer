@@ -21,12 +21,6 @@ import {
 } from '../../../../../libs/element-spike/src';
 import {fixtureTargets, mutateFixture} from './fixtures';
 
-/**
- * Ранняя панель чернового observer, не участвующая в действующих маршрутах и runtime v2.
- * Алгоритм: запускает DomMonitor, записывает действия, сохраняет descriptors и проверяет их после мутаций fixture;
- * дополнительно умеет сверять последовательность действий. При уничтожении останавливает запись, monitor и ожидания.
- * Этот прототип не следует использовать как образец новой Angular-архитектуры.
- */
 @Component({
     standalone: true,
     selector: 'spike-panel',

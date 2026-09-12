@@ -30,13 +30,6 @@ import {type FieldValue, ProcedureFieldComponent} from './procedure-field.compon
 
 const API = 'http://127.0.0.1:4310/api/procedures';
 
-/**
- * Тестовый плеер динамической процедуры: отображает формы, которые определяет HTTP backend.
- * Алгоритм: создаёт сеанс, отправляет значения текущей формы и применяет ответ к FormRecord;
- * append обновляет состав полей, replace пересоздаёт controls и представление. Ошибки и retry отражаются в UI.
- * Reset/новый запуск отменяют ожидание; поколение запроса защищает от применения устаревшего ответа.
- * Это целевое приложение demo, а не часть библиотеки наблюдения.
- */
 @Component({
     standalone: true,
     selector: 'procedure-page',

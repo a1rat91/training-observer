@@ -12,11 +12,7 @@ import {
     TuiTextarea,
 } from '@taiga-ui/kit';
 
-/**
- * Обычная форма Taiga UI 4 для проверки генераторов locators и наблюдения значений.
- * Алгоритм: привязывает controls к локальным значениям через формы Angular и отображает варианты выбора.
- * Не вызывает recorder и не передаёт ему модель; наблюдение выполняет соседняя исследовательская панель.
- */
+/** Ordinary Taiga form, intentionally independent of the research panel. */
 @Component({
     standalone: true,
     selector: 'research-fixture',

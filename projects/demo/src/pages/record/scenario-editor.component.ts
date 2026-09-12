@@ -23,12 +23,6 @@ import {describe} from '../../../../../libs/element-spike/src/recording/dom';
 import {draftScenario} from '../../../../../libs/element-spike/src/runtime';
 import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
 
-/**
- * Преобразует запись действий в проверяемый учебный сценарий и предоставляет JSON-редактор.
- * Алгоритм: принимает Recording и root плеера, даёт выбрать существующий признак результата,
- * строит линейный черновик, валидирует отредактированный JSON и сохраняет либо скачивает Scenario.
- * Выбор признака временно перехватывает выбранный клик; listener снимается при отмене и уничтожении.
- */
 @Component({
     standalone: true,
     selector: 'scenario-editor',

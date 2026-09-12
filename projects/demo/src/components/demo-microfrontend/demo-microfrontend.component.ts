@@ -1,10 +1,6 @@
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 
-/**
- * Ранняя демонстрационная обёртка для проецируемого содержимого микрофронта.
- * Алгоритм: принимает name, отображает ng-content и отражает имя в существующем data-mf.
- * Не реализует lifecycle отдельного приложения; этот атрибут не является контрактом нового AreaRegistry.
- */
+/** Demo stand-in for a foreign microfrontend root. No observer integration is required. */
 @Component({
     standalone: true,
     selector: 'demo-microfrontend',

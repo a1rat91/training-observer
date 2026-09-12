@@ -1,3 +1,10 @@
+/**
+ * ElementRecorder — записывает подтверждённые действия и изменения состояния внутри переданного DOM-root.
+ * Алгоритм: создаёт inventory и descriptors, принимает capture events, сопоставляет intent с контролом,
+ * подтверждает input/select через DOM-значение и сохраняет действия отдельно от фоновых state updates.
+ * Мутации и sampling properties обновляют inventory; dropdown требует доказанного owner.
+ * Stop снимает listeners/observer/timer. Angular model, HTTP payload и setters не используются.
+ */
 import {
     type CapturedValue,
     type ElementDescriptor,

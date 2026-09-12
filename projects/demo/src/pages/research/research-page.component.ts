@@ -45,12 +45,6 @@ interface ResearchReport {
     summary: Record<string, Record<string, Counts>>;
 }
 
-/**
- * Исследовательская панель: осмотр DOM-целей, сравнение locators и диагностика изменений значений.
- * Алгоритм: по событиям формы определяет цель, генерирует locators и проверяет CSS; по команде
- * запускает rrweb и объединяет ограниченный журнал snapshot/native/rrweb с отдельным сохранённым отчётом.
- * Собственные элементы панели исключаются из записи; при уничтожении снимаются listeners и останавливается replay.
- */
 @Component({
     standalone: true,
     selector: 'research-page',

@@ -9,11 +9,7 @@ import {
     TuiSwitch,
 } from '@taiga-ui/kit';
 
-/**
- * Ранняя тестовая форма со смесью native и Taiga controls; не финальная матрица benchmark.
- * Алгоритм: шаблон отображает controls и повторяющиеся контексты, обработчики изменяют локальные значения.
- * Наблюдатель не вызывается из формы; компонент остаётся частью неподключённого черновика.
- */
+/** Ordinary application controls: no observer hooks, directives or identity markers. */
 @Component({
     standalone: true,
     selector: 'spike-target',
