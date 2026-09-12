@@ -4,6 +4,11 @@ import {RouterLink} from '@angular/router';
 import {SpikePanelComponent} from './panel.component';
 import {SpikeTargetComponent} from './target.component';
 
+/**
+ * Ранняя страница чернового spike; в действующие маршруты не включена.
+ * Алгоритм: размещает тестовую форму и старую панель наблюдения рядом, предоставляет ссылку на плеер.
+ * Не является реализацией нового multi-area shell.
+ */
 @Component({
     standalone: true,
     imports: [RouterLink, SpikePanelComponent, SpikeTargetComponent],

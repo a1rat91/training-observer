@@ -4,6 +4,11 @@ import {TuiButton} from '@taiga-ui/core';
 
 import report from '../../../../../docs/spike/benchmark/summary.json';
 
+/**
+ * Показывает сохранённые результаты benchmark и ссылки на полные JSON/CSV-отчёты.
+ * Алгоритм: преобразует импортированную сводку в строки таблиц методов, мутаций DOM и переходов процедуры.
+ * Сам benchmark, запись действий и изменение целевой формы на этой странице не запускаются.
+ */
 @Component({
     standalone: true,
     selector: 'benchmark-page',

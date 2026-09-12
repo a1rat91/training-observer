@@ -17,6 +17,11 @@ import {type ProcedureField} from './procedure-contract';
 
 export type FieldValue = TuiDay | boolean | number | string | null;
 
+/**
+ * Отображает одно поле серверной схемы подходящим контролом Taiga UI 4.
+ * Алгоритм: получает описание поля, FormControl и ошибку; вычисляет подписи options,
+ * выбирает шаблон по виду поля и связывает ввод с переданным control. HTTP-запросы и запись событий не выполняет.
+ */
 @Component({
     standalone: true,
     selector: 'procedure-field',
