@@ -8,6 +8,47 @@
 подключать/отключать наблюдение, а позднее — при необходимости блокировать взаимодействие с отдельными MF. Driver.js не
 используется. Формы demo остаются на Taiga UI 4. Новые tracking-атрибуты/hooks в целевые формы не добавляются.
 
+## Angular 21 и обязательный подход к реализации
+
+Обновление проекта до Angular 21 выполняет пользователь. До начала реализации этапа 1 проверить фактические версии,
+bootstrap/change detection, совместимость Nx, TypeScript, Taiga UI 4 и test tooling. Самостоятельную миграцию Angular в
+этот план не включаем. Применять API, доступные именно в установленной 21.x, а не копировать примеры из latest-доков.
+
+- Standalone components/directives, `OnPush` для собственной UI-композиции, `input()`/`output()`, signal queries,
+  встроенные `@if`/`@for` с устойчивым track. MF и формы создаются Angular templates, не через innerHTML/ручной DOM.
+- Состояние панели и policies — `signal`, производные значения — `computed`, наружу readonly signals. `effect` только
+  для синхронизации с внешним API и с cleanup; не строить цепочки копирования производного состояния.
+- Registry, EventHub и coordinator — Angular services с `inject()` и типизированными DI tokens конфигурации.
+  Session-scoped providers на уровне training shell/маршрута; один EventHub на document в пределах этой интеграции.
+  `providedIn: 'root'` сам по себе не обеспечивает singleton между независимыми Angular applications/MF.
+- `DestroyRef` и `takeUntilDestroyed` для соответствующего lifecycle. Отключение области освобождает ресурсы сразу, не
+  только при уничтожении всего Angular injector. Явные команды start/stop/enable/disable остаются необходимыми.
+- RxJS для потоков событий, HTTP и отмены; `toSignal`/`toObservable` на границах с UI, без повторных subscriptions из
+  getters/templates и без превращения каждого DOM event в обновление всей панели. XState остаётся источником состояния
+  сценария, Angular facade предоставляет его snapshot; не дублировать машину второй системой signals.
+- Собственные формы — typed Reactive Forms и `HttpClient`; экспериментальные формы/API не вводить ради новизны.
+  DOM-наблюдатель не читает FormGroup соседнего MF. Обновления формы, отражаемые в UI, явно уведомляют Angular.
+- Цель — zoneless-compatible реализация. После пользовательского обновления проверить реальный bootstrap и Taiga, а не
+  считать, что версия сама убрала ZoneJS. Не использовать `NgZone.onStable` как наблюдатель чужого MF, `setTimeout` для
+  ожидания Angular render и ручной detectChanges как стандартный способ обновления UI.
+- Для готовности собственного DOM — render callbacks (`afterNextRender`), `ElementRef`/queries и `DOCUMENT` через DI.
+  Для чужого DOM — изолированный browser adapter с MutationObserver, capture listeners и sampling properties: lifecycle
+  одного Angular MF не сообщает обо всех изменениях соседнего. Native API здесь обоснован задачей; механическая замена
+  на Renderer2 не делает наблюдение надёжнее. Новые directives/hooks на чужие поля не добавляются.
+- Чистые matching/scoring и wire validation остаются TypeScript-функциями; Angular управляет композиционной частью,
+  зависимостями и ресурсами. Не превращать каждый алгоритм в service без необходимости.
+- Проверки Angular services/components — TestBed с настоящим DI/lifecycle и целевым режимом change detection; Playwright
+  — браузерная семантика portals, MF и forms. Тест не должен маскировать отсутствие уведомления Angular принудительным
+  detectChanges после каждой мутации. Прежние чистые unit tests resolver сохраняются.
+
+Это условия приёмки каждого этапа, а не отдельная последующая «ангуляризация» готового JavaScript решения. Архитектура
+предыдущего spike описывает существующий прототип; этот раздел определяет подход к новой реализации.
+
+Основания: [Angular DOM APIs](https://angular.dev/guide/components/dom-apis),
+[signals](https://angular.dev/guide/signals), [zoneless](https://angular.dev/guide/zoneless),
+[style guide](https://angular.dev/style-guide). Документация latest может описывать более новую версию: совместимость
+каждого используемого API сверяется с установленной Angular 21.
+
 ## Приоритет
 
 Сначала надёжная принадлежность элемента микрофронту, ограничение работы выбранными областями и lifecycle. Существующий
