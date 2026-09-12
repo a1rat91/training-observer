@@ -374,7 +374,7 @@ export class ScenarioRuntime {
 
     private evaluate(): void {
         if (!this.root.isConnected) {
-            this.message = 'Плеер удалён со страницы.';
+            this.message = 'Область наблюдения удалена со страницы.';
             this.stop();
 
             return;
