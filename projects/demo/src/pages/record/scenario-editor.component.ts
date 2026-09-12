@@ -20,6 +20,7 @@ import {
     type Recording,
     serializeScenario,
 } from '@training-observer/core';
+import {AreaRegistryService} from '@training-observer/core/angular';
 
 import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
 
@@ -117,6 +118,8 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ScenarioEditorComponent {
+    private readonly areas = inject(AreaRegistryService);
+    private finishAreaKey?: string;
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
     private cleanup?: () => void;
@@ -139,6 +142,7 @@ export class ScenarioEditorComponent {
                 this.recordingId = id;
                 this.cancelPick();
                 this.finish.set(null);
+                this.finishAreaKey = undefined;
                 this.source = '';
                 this.error.set('');
             }
@@ -172,9 +176,20 @@ export class ScenarioEditorComponent {
             event.stopImmediatePropagation();
 
             try {
+                const registry = this.areas.boundary();
+                const owner = registry.owner(element);
+
+                if (owner.status !== 'owned') {
+                    throw new Error('Выберите признак в наблюдаемом MF.');
+                }
+
+                const areaRoot = registry.root(owner.area.key)!;
+
+                this.finishAreaKey = owner.area.key;
                 this.finish.set(
-                    describeElement(element, root, `finish-${Date.now()}`, {
+                    describeElement(element, areaRoot, `finish-${Date.now()}`, {
                         includeStatic: true,
+                        accepts: (target) => registry.accepts(owner.area.key, target),
                     }),
                 );
             } catch {
@@ -194,7 +209,7 @@ export class ScenarioEditorComponent {
     public build(): void {
         try {
             this.source = JSON.stringify(
-                draftScenario(this.recording(), this.finish()!),
+                draftScenario(this.recording(), this.finish()!, this.finishAreaKey),
                 null,
                 2,
             );
@@ -213,7 +228,7 @@ export class ScenarioEditorComponent {
             const anchor = document.createElement('a');
 
             anchor.href = url;
-            anchor.download = 'training-scenario-v2.json';
+            anchor.download = `training-scenario-v${parseScenario(this.source).version}.json`;
             anchor.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             this.error.set('');

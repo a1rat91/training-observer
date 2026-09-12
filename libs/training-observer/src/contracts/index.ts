@@ -1,3 +1,4 @@
+export {bindRecordingAreas, bindScenarioAreas} from './binding';
 export type * from './types';
 export {
     ContractError,

@@ -16,6 +16,7 @@ import {
     type Resolution,
     type SemanticAction,
     serializeRecording,
+    TargetResolver,
 } from '@training-observer/core';
 import {
     AreaRegistryService,
@@ -108,23 +109,38 @@ export default class RecordPageComponent {
             return;
         }
 
-        const targetIds = new Set(
-            recording.actions.flatMap((action) =>
-                'targetId' in action ? [action.targetId] : [],
-            ),
-        );
+        try {
+            const resolver = new TargetResolver(
+                recording,
+                this.workspace().surface().nativeElement,
+                {},
+                this.areaRegistry.boundary(),
+            );
 
-        this.resolutions.set(
-            recording.descriptors
-                .filter((descriptor) => targetIds.has(descriptor.id))
-                .map((descriptor) => ({
-                    name:
-                        descriptor.fingerprint.features.accessibleName ||
-                        descriptor.fingerprint.features.label ||
-                        descriptor.id,
-                    report: this.session.resolve(descriptor),
-                })),
-        );
+            const targetIds = new Set(
+                recording.actions.flatMap((action) =>
+                    'targetId' in action ? [action.targetId] : [],
+                ),
+            );
+
+            this.resolutions.set(
+                recording.descriptors
+                    .filter((descriptor) => targetIds.has(descriptor.id))
+                    .map((descriptor) => ({
+                        name:
+                            descriptor.fingerprint.features.accessibleName ||
+                            descriptor.fingerprint.features.label ||
+                            descriptor.id,
+                        report: resolver.resolve(descriptor).report,
+                    })),
+            );
+            this.error.set('');
+        } catch (error: unknown) {
+            this.resolutions.set([]);
+            this.error.set(
+                error instanceof Error ? error.message : 'Не удалось проверить запись',
+            );
+        }
     }
 
     public download(): void {
@@ -140,7 +156,7 @@ export default class RecordPageComponent {
             const anchor = document.createElement('a');
 
             anchor.href = url;
-            anchor.download = 'training-recording-v2.json';
+            anchor.download = `training-recording-v${recording!.version}.json`;
             anchor.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (error: unknown) {

@@ -15,7 +15,11 @@ import {
 } from '../contracts';
 
 /** Reviewable linear draft, not automatic inference of business completion. */
-export function draftScenario(input: Recording, finish: ElementDescriptor): Scenario {
+export function draftScenario(
+    input: Recording,
+    finish: ElementDescriptor,
+    finishAreaKey?: string,
+): Scenario {
     const recording = readRecording(input);
 
     if (!recording.actions.length) {
@@ -97,7 +101,20 @@ export function draftScenario(input: Recording, finish: ElementDescriptor): Scen
 
     return readScenario({
         kind: 'training-scenario',
-        version: 2,
+        version: recording.version,
+        ...(recording.version === 3
+            ? {
+                  areas: {
+                      definitions: recording.areas.definitions,
+                      targets: [
+                          ...recording.areas.targets.filter((entry) =>
+                              used.has(entry.targetId),
+                          ),
+                          {targetId: finish.id, areaKey: finishAreaKey},
+                      ],
+                  },
+              }
+            : {}),
         id: `scenario-${recording.id}`,
         mode: {kind: 'dom-only'},
         descriptors: descriptors.filter((item) => used.has(item.id)),

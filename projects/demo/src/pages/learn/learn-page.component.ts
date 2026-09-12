@@ -17,8 +17,10 @@ import {
     type RuntimeSnapshot,
     ScenarioRuntime,
 } from '@training-observer/core';
+import {AreaRegistryService} from '@training-observer/core/angular';
 
 import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
+import {DEMO_AREAS} from '../workspace/area-definitions';
 import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 
 @Component({
@@ -28,8 +30,10 @@ import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
     templateUrl: './learn-page.component.html',
     styleUrl: '../record/record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [AreaRegistryService],
 })
 export default class LearnPageComponent {
+    private readonly areas = inject(AreaRegistryService);
     private readonly zone = inject(NgZone);
     private readonly destroyRef = inject(DestroyRef);
     private runtime?: ScenarioRuntime;
@@ -88,8 +92,27 @@ export default class LearnPageComponent {
 
             const scenario = parseScenario(this.source);
 
+            if (scenario.version === 2) {
+                throw new Error(
+                    'Сценарий v2 требует явной привязки целей к микрофронтам. Используйте bindScenarioAreas или создайте новую запись.',
+                );
+            }
+
+            const required = new Set(
+                scenario.areas.targets.map((entry) => entry.areaKey),
+            );
+
+            const registry = this.areas.connect(
+                root,
+                DEMO_AREAS.map((definition) => ({
+                    ...definition,
+                    observe: required.has(definition.key),
+                })),
+            );
+
             this.zone.runOutsideAngular(() => {
                 this.runtime = new ScenarioRuntime(root, scenario, {
+                    areas: registry,
                     routePairs: [{recorded: '/spike/record', current: '/spike/learn'}],
                     onUpdate: (snapshot) =>
                         this.zone.run(() => {

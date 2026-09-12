@@ -127,6 +127,13 @@ export class AreaRegistry {
         return this.entries.map((entry) => entry.snapshot);
     }
 
+    /** Detached JSON definitions; live roots and generations never cross the wire boundary. */
+    public definitions(): AreaDefinition[] {
+        return this.entries.map(
+            ({definition}) => JSON.parse(JSON.stringify(definition)) as AreaDefinition,
+        );
+    }
+
     public setObserved(key: string, observe: boolean): void {
         this.flush();
         const entry = this.entries.find((item) => item.definition.key === key);

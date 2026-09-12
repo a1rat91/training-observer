@@ -67,3 +67,47 @@ test('enabling a neighboring MF records new edits in the same journal', async ({
     await expect(list).not.toContainText('BEFORE_ENABLE');
     await expect(list).not.toContainText('AFTER_DISABLE');
 });
+
+test('v3 carries search and late player bindings into a new learner document', async ({
+    page,
+    context,
+}) => {
+    await page.goto('/spike/record');
+    await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
+    await page.getByRole('combobox', {name: 'Поиск процедуры', exact: true}).click();
+    await page.getByRole('option', {name: 'Заявка на обучение', exact: true}).click();
+    await page.getByRole('textbox', {name: 'ФИО', exact: true}).fill('Анна');
+    await page.getByRole('textbox', {name: 'ФИО', exact: true}).press('Tab');
+    await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
+    await page
+        .getByRole('button', {name: 'Выбрать признак завершения', exact: true})
+        .click();
+    // This test checks a two-area exercise, not submission of the entire procedure.
+    await page.getByRole('heading', {name: 'Данные сотрудника', exact: true}).click();
+    await page
+        .getByRole('button', {name: 'Создать черновик сценария', exact: true})
+        .click();
+    await page
+        .getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true})
+        .click();
+    const learner = await context.newPage();
+
+    await page.close();
+    await learner.goto('/spike/learn');
+    await expect(learner.getByRole('textbox', {name: 'ФИО', exact: true})).toHaveCount(0);
+    await learner.getByRole('button', {name: 'Начать обучение', exact: true}).click();
+    await expect(
+        learner.getByRole('heading', {name: 'Заполните «Поиск процедуры»', exact: true}),
+    ).toBeVisible();
+    await learner.getByRole('combobox', {name: 'Поиск процедуры', exact: true}).click();
+    await learner.getByRole('option', {name: 'Заявка на обучение', exact: true}).click();
+    await expect(
+        learner.getByRole('heading', {name: 'Заполните «ФИО»', exact: true}),
+    ).toBeVisible();
+    await learner.getByRole('textbox', {name: 'ФИО', exact: true}).fill('Анна');
+    await learner.getByRole('textbox', {name: 'ФИО', exact: true}).press('Tab');
+    await expect(
+        learner.getByRole('heading', {name: 'Обучение завершено', exact: true}),
+    ).toBeVisible();
+    await expect(learner.getByRole('alert')).toHaveCount(0);
+});

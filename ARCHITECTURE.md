@@ -89,7 +89,9 @@ flowchart TD
     Registry --> Recorder
     Session[RecordingSessionService] --> Recorder
     Session --> Resolver
-    Host --> Resolver[ElementResolver]
+    Registry --> Targets[TargetResolver: область из wire v3]
+    Targets --> Resolver[ElementResolver]
+    Host --> Targets
     Identity --> Resolver
     Resolver -->|Element либо ambiguous / broken| Runtime
     Resolver --> Conditions[Conditions: true / false / unknown]
@@ -97,8 +99,8 @@ flowchart TD
     Runtime --> Snapshot[Snapshot и события для приложения]
 ```
 
-Registry подключён к recorder и поиску целей текущего сеанса через RecordingSessionService. Привязки target → area ещё
-не сериализуются в v2; learner пока использует прежний runtime без registry.
+Registry подключён к recorder и поиску целей текущего сеанса через RecordingSessionService. Привязки target → area
+сериализуются в Recording/Scenario v3; learner подключает registry и TargetResolver.
 
 Contracts/validation ограничивают данные на границах импорта, authoring и runtime. Стрелки описывают передачу данных, а
 не наследование классов. Во время прохождения runtime владеет экземпляром recorder. Панель вызывает команды и показывает
@@ -111,7 +113,7 @@ snapshot; она не должна дублировать алгоритм вы�
 | Модуль                                                                      | Назначение и основные точки входа                                                                    |
 | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | [areas](libs/training-observer/src/areas/)                                  | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
-| [contracts](libs/training-observer/src/contracts/)                          | Recording/Scenario/Resolution v2, parse/read/serialize и строгая validation                          |
+| [contracts](libs/training-observer/src/contracts/)                          | Recording/Scenario v2/v3, Resolution v2, parse/read/serialize и строгая validation                   |
 | [dom/identity.ts](libs/training-observer/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
 | [recording/dom.ts](libs/training-observer/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
 | [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
@@ -155,10 +157,10 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 ## Следующий цикл и границы
 
 [План multi-MF](docs/implementation-plan.md): AreaRegistry и Angular facade реализованы, EventHub и выбор областей
-записи подключены через RecordingSessionService. Новая версия wire-контракта для переноса привязок областей ещё
-запланирована. Обновление Angular отложено: начинаем на текущей 19.2.25; новая библиотечная обвязка должна следовать
-указанным в плане Angular-практикам. Саму demo-форму специально оптимизировать или переводить на zoneless не требуется.
-Driver.js не используется.
+записи подключены через RecordingSessionService. Wire v3 переносит привязки областей в learner через TargetResolver.
+Свободный порядок, blur-only и автоматический запуск остаются следующими изменениями. Обновление Angular отложено:
+начинаем на текущей 19.2.25; новая библиотечная обвязка должна следовать указанным в плане Angular-практикам. Саму
+demo-форму специально оптимизировать или переводить на zoneless не требуется. Driver.js не используется.
 
 [Benchmark](docs/spike/benchmark.md) подтвердил 368/369 восстановлений доступных различимых целей на тестовой матрице.
 Подмена бизнес-сущности при одинаковом DOM дала один false accept: DOM-only алгоритм не видит скрытой смены сущности.

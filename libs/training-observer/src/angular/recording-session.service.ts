@@ -2,16 +2,16 @@
  * RecordingSessionService — Angular-владелец одного сеанса записи без UI.
  * start подключает recorder к уже настроенному registry и публикует readonly signals журнала/статуса.
  * Изменения observe применяются внутри recorder без его перезапуска. resolve использует сохранённый
- * в памяти key цели и текущую границу области; отсутствие key/root означает отказ, не глобальный поиск.
- * stop сохраняет журнал; DestroyRef освобождает ресурсы. Wire v2 пока не сохраняет привязку target → area.
+ * в документе key цели и текущую границу области; отсутствие key/root означает отказ, не глобальный поиск.
+ * stop сохраняет журнал; DestroyRef освобождает ресурсы. Wire v3 сохраняет привязку target → area.
  */
 import {DestroyRef, inject, Injectable, signal} from '@angular/core';
 import {
     type ElementDescriptor,
     ElementRecorder,
-    ElementResolver,
     type Recording,
     type Resolution,
+    TargetResolver,
     type ValuePolicy,
 } from '@training-observer/core';
 
@@ -21,6 +21,7 @@ import {AreaRegistryService} from './area-registry.service';
 export class RecordingSessionService {
     private readonly areas = inject(AreaRegistryService);
     private recorder?: ElementRecorder;
+    private root?: HTMLElement;
     private readonly report = signal<Recording | null>(null);
     private readonly active = signal(false);
 
@@ -33,6 +34,7 @@ export class RecordingSessionService {
 
     public start(root: HTMLElement, valuePolicy: ValuePolicy): void {
         this.recorder?.stop();
+        this.root = root;
         this.recorder = new ElementRecorder(root, {
             valuePolicy,
             areas: this.areas.boundary(),
@@ -48,12 +50,13 @@ export class RecordingSessionService {
     }
 
     public resolve(descriptor: ElementDescriptor): Resolution {
-        const key = this.recorder?.areaForTarget(descriptor.id);
-        const areas = this.areas.boundary();
-        const root = key ? areas.root(key) : null;
+        const recording = this.report();
 
-        return !key || !root || !areas.accepts(key, root)
-            ? {
+        return recording && this.root
+            ? new TargetResolver(recording, this.root, {}, this.areas.boundary()).resolve(
+                  descriptor,
+              ).report
+            : {
                   kind: 'element-resolution',
                   version: 2,
                   targetId: descriptor.id,
@@ -61,10 +64,7 @@ export class RecordingSessionService {
                   attempts: [],
                   status: 'broken',
                   reason: 'unsupported',
-              }
-            : new ElementResolver({
-                  accepts: (element) => areas.accepts(key, element),
-              }).resolve(descriptor, root).report;
+              };
     }
 
     private refresh(): void {

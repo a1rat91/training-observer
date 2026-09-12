@@ -4,6 +4,7 @@
  * Для текущего шага может использовать его committed value; недоступные данные дают unknown.
  * Raw и normalized сравниваются по явному правилу. Условия сами не продвигают шаги и не изменяют DOM.
  */
+import {type AreaRegistry} from '../areas';
 import {
     type CapturedValue,
     type Condition,
@@ -11,7 +12,7 @@ import {
     type ValueCondition,
 } from '../contracts';
 import {readValue} from '../recording/dom';
-import {ElementResolver, type ResolverOptions} from '../resolution';
+import {type ResolverOptions, TargetResolver} from '../resolution';
 
 export type Truth = 'false' | 'true' | 'unknown';
 export function valueMatches(value: CapturedValue, condition: ValueCondition): boolean {
@@ -62,18 +63,24 @@ export function actionValueMatches(
         : true;
 }
 export class Conditions {
-    private readonly resolver: ElementResolver;
+    private readonly resolver: TargetResolver;
 
     constructor(
         private readonly scenario: Scenario,
         private readonly root: Element,
         private readonly options: ResolverOptions = {},
+        areas?: AreaRegistry,
     ) {
-        this.resolver = new ElementResolver({
-            ...options,
-            requireEnabled: false,
-            includeStatic: true,
-        });
+        this.resolver = new TargetResolver(
+            scenario,
+            root,
+            {
+                ...options,
+                requireEnabled: false,
+                includeStatic: true,
+            },
+            areas,
+        );
     }
 
     public pathname(path: string): boolean {
@@ -118,7 +125,7 @@ export class Conditions {
             return 'unknown';
         }
 
-        const result = this.resolver.resolve(descriptor, this.root);
+        const result = this.resolver.resolve(descriptor);
 
         if (result.report.status !== 'resolved' || !result.element) {
             if (

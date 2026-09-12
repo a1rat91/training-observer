@@ -180,11 +180,34 @@ export class ElementRecorder {
     }
 
     public snapshot(): Recording {
-        return JSON.parse(JSON.stringify(this.report)) as Recording;
+        const report = JSON.parse(JSON.stringify(this.report)) as Recording;
+
+        if (!this.options.areas) {
+            return report;
+        }
+
+        const targets = [...this.targetAreas].map(([targetId, areaKey]) => ({
+            targetId,
+            areaKey,
+        }));
+
+        return {
+            ...report,
+            version: 3,
+            areas: {
+                definitions: this.options.areas.definitions().map((definition) => ({
+                    ...definition,
+                    observe:
+                        definition.observe ||
+                        targets.some((target) => target.areaKey === definition.key),
+                })),
+                targets,
+            },
+        };
     }
 
     public export(): string {
-        return serializeRecording(this.report);
+        return serializeRecording(this.snapshot());
     }
 
     public areaForTarget(id: string): string | undefined {

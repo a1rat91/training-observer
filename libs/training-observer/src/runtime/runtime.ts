@@ -2,11 +2,13 @@
  * ScenarioRuntime — управляет прохождением валидированного Scenario внутри выбранного DOM-root.
  * Алгоритм: разрешает цель текущего шага, связывает intent и commit с поколением шага,
  * проверяет ожидаемое действие и отдельное completion, затем выбирает ветку либо ждёт изменения DOM.
+ * TargetResolver ограничивает action и completion областью из wire v3; remount владельца отменяет intent.
  * XState отражает фазу; Conditions вычисляет true/false/unknown. Конец графа требует глобального completion.
  * Skip/retry/переход инвалидируют старые tokens; stop освобождает recorder, observer и timer.
  */
 import {createActor, createMachine} from 'xstate';
 
+import {type AreaRegistry} from '../areas';
 import {
     type CapturedValue,
     readScenario,
@@ -17,7 +19,7 @@ import {
 } from '../contracts';
 import {flags} from '../dom/identity';
 import {ElementRecorder} from '../recording';
-import {ElementResolver, type ResolverOptions} from '../resolution';
+import {type ResolverOptions, TargetResolver} from '../resolution';
 import {actionValueMatches, Conditions} from './conditions';
 
 const machine = createMachine({
@@ -67,6 +69,7 @@ export interface RuntimeSnapshot {
     resolution: Resolution | null;
 }
 export interface RuntimeOptions extends ResolverOptions {
+    areas?: AreaRegistry;
     timeoutMs?: number;
     onUpdate?(snapshot: RuntimeSnapshot): void;
     /** Test fixtures only, never enabled in the learner page. */
@@ -75,7 +78,8 @@ export interface RuntimeOptions extends ResolverOptions {
 export class ScenarioRuntime {
     private readonly scenario: Scenario;
     private readonly actor = createActor(machine);
-    private readonly resolver: ElementResolver;
+    private readonly resolver: TargetResolver;
+    private unsubscribeAreas?: () => void;
     private readonly conditions: Conditions;
     private readonly recorder: ElementRecorder;
     private observer?: MutationObserver;
@@ -91,6 +95,7 @@ export class ScenarioRuntime {
     private resolution: Resolution | null = null;
     private signature = '';
     private evaluating = false;
+    private areaUnavailable = false;
 
     constructor(
         private readonly root: HTMLElement,
@@ -113,8 +118,8 @@ export class ScenarioRuntime {
         this.step = this.scenario.steps.find(
             (item) => item.id === this.scenario.startStepId,
         )!;
-        this.resolver = new ElementResolver(options);
-        this.conditions = new Conditions(this.scenario, root, options);
+        this.resolver = new TargetResolver(this.scenario, root, options, options.areas);
+        this.conditions = new Conditions(this.scenario, root, options, options.areas);
         this.recorder = new ElementRecorder(root, {
             valuePolicy: {
                 mode: 'capture',
@@ -122,6 +127,7 @@ export class ScenarioRuntime {
                 normalizers: ['decimal-comma-v1', 'date-dmy-v1'],
             },
             acceptUntrustedEvents: options.acceptUntrustedEvents,
+            areas: options.areas,
             onAction: (action, element, intentToken) =>
                 this.action(action, element, intentToken),
             onIntent: (event, element) => this.capture(event, element),
@@ -137,6 +143,31 @@ export class ScenarioRuntime {
         this.actor.start();
         this.deadline = performance.now() + (this.options.timeoutMs ?? 15000);
         this.recorder.start();
+        let previousAreas = this.options.areas?.snapshots() ?? [];
+
+        this.unsubscribeAreas = this.options.areas?.subscribe(() => {
+            const currentAreas = this.options.areas!.snapshots();
+            const action = this.step?.action;
+            const key =
+                action && 'targetId' in action && this.scenario.version === 3
+                    ? this.scenario.areas.targets.find(
+                          (target) => target.targetId === action.targetId,
+                      )?.areaKey
+                    : undefined;
+
+            if (
+                key &&
+                previousAreas.find((area) => area.key === key)?.generation !==
+                    currentAreas.find((area) => area.key === key)?.generation
+            ) {
+                this.generation++;
+                this.armed = false;
+                this.committed = undefined;
+            }
+
+            previousAreas = currentAreas;
+            this.tick();
+        });
         this.observer = new MutationObserver(() => this.tick());
         this.observer.observe(this.root, {
             subtree: true,
@@ -200,6 +231,8 @@ export class ScenarioRuntime {
     }
 
     private dispose(): void {
+        this.unsubscribeAreas?.();
+        this.unsubscribeAreas = undefined;
         clearInterval(this.interval);
         this.observer?.disconnect();
         this.recorder.stop();
@@ -239,7 +272,7 @@ export class ScenarioRuntime {
             (item) => item.id === targetId,
         )!;
 
-        const result = this.resolver.resolve(descriptor, this.root);
+        const result = this.resolver.resolve(descriptor);
 
         return result.report.status === 'resolved' &&
             result.element === element &&
@@ -372,6 +405,36 @@ export class ScenarioRuntime {
             return;
         }
 
+        if (this.step.action.kind !== 'navigation') {
+            const areaStatus = this.resolver.areaStatus(this.step.action.targetId);
+
+            if (!['resolved', 'unscoped'].includes(areaStatus)) {
+                this.areaUnavailable = true;
+                this.resolution = null;
+                this.message =
+                    areaStatus === 'missing'
+                        ? 'Ожидаем появления микрофронта.'
+                        : 'Микрофронт недоступен или неоднозначен.';
+
+                if (areaStatus === 'missing') {
+                    this.actor.send({type: 'WAIT'});
+                } else {
+                    this.actor.send({
+                        type: ['ambiguous', 'conflict'].includes(areaStatus)
+                            ? 'AMBIGUOUS'
+                            : 'BROKEN',
+                    });
+                }
+
+                return;
+            }
+        }
+
+        if (this.areaUnavailable) {
+            this.areaUnavailable = false;
+            this.message = '';
+        }
+
         if (this.armed) {
             this.actor.send({type: 'CONFIRM'});
 
@@ -423,7 +486,7 @@ export class ScenarioRuntime {
             (item) => item.id === targetId,
         )!;
 
-        const result = this.resolver.resolve(descriptor, this.root);
+        const result = this.resolver.resolve(descriptor);
 
         this.resolution = result.report;
 

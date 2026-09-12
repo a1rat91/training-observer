@@ -1,4 +1,12 @@
-/** Wire-контракт v2. Неподдержанные версии требуют явной миграции перед использованием. */
+/** Wire v3 сохраняет логические области; v2 читается отдельно, без автоматического назначения MF. */
+import {type AreaDefinition} from '../areas/types';
+
+export interface AreaBindings {
+    definitions: AreaDefinition[];
+    targets: Array<{targetId: string; areaKey: string}>;
+}
+
+type DocumentScope = {version: 2} | {version: 3; areas: AreaBindings};
 export type AttributeName = 'alt' | 'autocomplete' | 'href' | 'name' | 'title' | 'type';
 export interface IdentityFeatures {
     tag: string;
@@ -95,9 +103,9 @@ export interface RecorderDiagnostic {
         | 'unsupported-control';
     message: string;
 }
-export interface Recording {
+
+interface RecordingContent {
     kind: 'training-recording';
-    version: 2;
     id: string;
     mode: ObservationMode;
     valuePolicy: ValuePolicy;
@@ -107,6 +115,8 @@ export interface Recording {
     states: ObservedState[];
     diagnostics?: RecorderDiagnostic[];
 }
+
+export type Recording = DocumentScope & RecordingContent;
 
 export type ExpectedAction =
     | {kind: 'click' | 'input' | 'select'; targetId: string}
@@ -131,9 +141,9 @@ export interface ScenarioStep {
     /** Taken when no branch matches, or when an optional step is explicitly skipped. */
     nextStepId: string | null;
 }
-export interface Scenario {
+
+interface ScenarioContent {
     kind: 'training-scenario';
-    version: 2;
     id: string;
     mode: ObservationMode;
     descriptors: ElementDescriptor[];
@@ -142,6 +152,8 @@ export interface Scenario {
     completion: Condition;
     steps: ScenarioStep[];
 }
+
+export type Scenario = DocumentScope & ScenarioContent;
 
 export type EvidenceGroup = 'attributes' | 'context' | 'naming' | 'role-type';
 export interface CandidateEvidence {

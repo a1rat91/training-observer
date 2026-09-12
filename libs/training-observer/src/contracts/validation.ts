@@ -5,6 +5,7 @@
  * Некорректные документы отклоняются через ContractError с путём ошибки; неизвестные поля не игнорируются.
  */
 import {
+    type AreaBindings,
     type CapturedValue,
     type ElementDescriptor,
     type Recording,
@@ -311,39 +312,117 @@ const state = object({
     value: captured,
 });
 
-const recording = object(
-    {
-        kind: one('training-recording'),
-        version: one(2),
-        id,
-        mode,
-        valuePolicy: object({
-            mode: one('omit', 'capture'),
-            sensitive: one('redact'),
-            normalizers: array(one('decimal-comma-v1', 'date-dmy-v1'), 0, 2),
-        }),
-        descriptors: array(descriptor),
-        actions: array(action),
-        states: array(state),
-    },
-    {
-        diagnostics: array(
-            object({
-                timeMs: nonnegative,
-                code: one(
-                    'unsupported-control',
-                    'ambiguous-owner',
-                    'unconfirmed-selection',
-                    'composition-cancelled',
-                    'capacity-reached',
-                ),
-                message: id,
-            }),
-            0,
-            100,
+const hostTag: Check = (value, path) => {
+    id(value, path);
+
+    if (!/^[a-z][a-z0-9-]*$/.test(value as string)) {
+        fail(path, 'expected a tag name, not a selector');
+    }
+};
+
+const contextAttributes: Check = (value, path) => {
+    const attributes = record(value, path);
+
+    if (Object.keys(attributes).length > 32) {
+        fail(path, 'too many context attributes');
+    }
+
+    for (const [name, entry] of Object.entries(attributes)) {
+        if (!/^[a-z_][\w.:-]*$/i.test(name)) {
+            fail(path, 'invalid attribute name');
+        }
+
+        text(entry, `${path}.${name}`);
+    }
+};
+
+const areaBindings = object({
+    definitions: array(
+        object(
+            {key: id, hostTag, observe: bool},
+            {context: object({ancestorTag: hostTag, attributes: contextAttributes})},
         ),
-    },
-);
+        1,
+        100,
+    ),
+    targets: array(object({targetId: id, areaKey: id})),
+});
+
+function versioned(shape: (version: 2 | 3) => Check): Check {
+    return (value, path) => {
+        const version = record(value, path).version;
+
+        one(2, 3)(version, `${path}.version`);
+        shape(version as 2 | 3)(value, path);
+    };
+}
+
+function bindingsValid(areas: AreaBindings, ids: Set<string>): void {
+    const keys = unique(
+        areas.definitions.map((entry) => entry.key),
+        '$.areas.definitions',
+    );
+
+    const targets = unique(
+        areas.targets.map((entry) => entry.targetId),
+        '$.areas.targets',
+    );
+
+    for (const [index, entry] of areas.targets.entries()) {
+        targetExists(entry.targetId, ids, `$.areas.targets[${index}].targetId`);
+
+        if (!keys.has(entry.areaKey)) {
+            fail(`$.areas.targets[${index}].areaKey`, 'unknown area');
+        }
+
+        if (
+            !areas.definitions.find((definition) => definition.key === entry.areaKey)!
+                .observe
+        ) {
+            fail(`$.areas.targets[${index}].areaKey`, 'target area must be enabled');
+        }
+    }
+
+    if (targets.size !== ids.size) {
+        fail('$.areas.targets', 'every descriptor requires exactly one area');
+    }
+}
+
+const recordingShape = (version: 2 | 3): Check =>
+    object(
+        {
+            kind: one('training-recording'),
+            version: one(version),
+            ...(version === 3 ? {areas: areaBindings} : {}),
+            id,
+            mode,
+            valuePolicy: object({
+                mode: one('omit', 'capture'),
+                sensitive: one('redact'),
+                normalizers: array(one('decimal-comma-v1', 'date-dmy-v1'), 0, 2),
+            }),
+            descriptors: array(descriptor),
+            actions: array(action),
+            states: array(state),
+        },
+        {
+            diagnostics: array(
+                object({
+                    timeMs: nonnegative,
+                    code: one(
+                        'unsupported-control',
+                        'ambiguous-owner',
+                        'unconfirmed-selection',
+                        'composition-cancelled',
+                        'capacity-reached',
+                    ),
+                    message: id,
+                }),
+                0,
+                100,
+            ),
+        },
+    );
 
 const expectedAction = tagged('kind', {
     click: object({kind: one('click'), targetId: id}),
@@ -378,16 +457,18 @@ const step = object({
     nextStepId: nullable(id),
 });
 
-const scenario = object({
-    kind: one('training-scenario'),
-    version: one(2),
-    id,
-    mode,
-    descriptors: array(descriptor),
-    startStepId: id,
-    completion: condition,
-    steps: array(step, 1, 1000),
-});
+const scenarioShape = (version: 2 | 3): Check =>
+    object({
+        kind: one('training-scenario'),
+        version: one(version),
+        ...(version === 3 ? {areas: areaBindings} : {}),
+        id,
+        mode,
+        descriptors: array(descriptor),
+        startStepId: id,
+        completion: condition,
+        steps: array(step, 1, 1000),
+    });
 
 const candidate = object({
     id,
@@ -620,8 +701,12 @@ function checkValue(value: CapturedValue, document: Recording, targetId: string)
 }
 
 export function readRecording(value: unknown): Recording {
-    return read<Recording>(value, recording, (document) => {
+    return read<Recording>(value, versioned(recordingShape), (document) => {
         const ids = descriptorsValid(document.descriptors);
+
+        if (document.version === 3) {
+            bindingsValid(document.areas, ids);
+        }
 
         unique(
             document.actions.map((entry) => entry.id),
@@ -669,8 +754,13 @@ export function readRecording(value: unknown): Recording {
     });
 }
 export function readScenario(value: unknown): Scenario {
-    return read<Scenario>(value, scenario, (document) => {
+    return read<Scenario>(value, versioned(scenarioShape), (document) => {
         const ids = descriptorsValid(document.descriptors);
+
+        if (document.version === 3) {
+            bindingsValid(document.areas, ids);
+        }
+
         const steps = unique(
             document.steps.map((entry) => entry.id),
             '$.steps',

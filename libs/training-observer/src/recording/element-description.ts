@@ -15,13 +15,17 @@ export function describeElement(
     element: Element,
     root: Element,
     id: string,
-    options: {includeStatic?: boolean} = {},
+    options: {includeStatic?: boolean; accepts?(element: Element): boolean} = {},
 ): ElementDescriptor {
     const selector = options.includeStatic ? OBSERVABLES : CONTROLS;
 
-    if (!root.contains(element) || !element.matches(selector)) {
+    if (
+        !root.contains(element) ||
+        !element.matches(selector) ||
+        options.accepts?.(element) === false
+    ) {
         throw new Error('Target is outside the supported observable DOM');
     }
 
-    return describe(element, root, id, selector);
+    return describe(element, root, id, selector, options.accepts);
 }
