@@ -10,7 +10,7 @@ import {
 import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
-import {TuiTextarea} from '@taiga-ui/kit';
+import {TuiCheckbox, TuiDataListWrapper, TuiSelect, TuiTextarea} from '@taiga-ui/kit';
 import {
     describeElement,
     draftScenario,
@@ -18,6 +18,7 @@ import {
     isObservableElement,
     parseScenario,
     type Recording,
+    type SemanticAction,
     serializeScenario,
 } from '@training-observer/core';
 import {AreaRegistryService} from '@training-observer/core/angular';
@@ -27,7 +28,15 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
 @Component({
     standalone: true,
     selector: 'scenario-editor',
-    imports: [FormsModule, TuiButton, TuiTextarea, TuiTextfield],
+    imports: [
+        FormsModule,
+        TuiButton,
+        TuiCheckbox,
+        TuiDataListWrapper,
+        TuiSelect,
+        TuiTextarea,
+        TuiTextfield,
+    ],
     template: `
         <h3>Подготовка сценария</h3>
         <p>
@@ -55,6 +64,43 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
             </button>
         }
         @if (finish(); as descriptor) {
+            <details>
+                <summary>Группы и переходы</summary>
+                <p>
+                    По умолчанию задания независимы внутри одной группы. Отметьте
+                    действия, которые переводят в следующую группу, и проверьте цель
+                    подтверждения. Открытие справки может остаться обычным заданием.
+                </p>
+                @for (action of recording().actions; track action.id) {
+                    @if (action.kind !== 'input') {
+                        <label>
+                            <input
+                                tuiCheckbox
+                                type="checkbox"
+                                [attr.aria-label]="'Переход ' + action.id"
+                                [ngModel]="!!boundaries()[action.id]"
+                                (ngModelChange)="toggleBoundary(action, $event)"
+                            />
+                            {{ action.sequence }}. {{ actionName(action) }}
+                        </label>
+                        @if (boundaries()[action.id]) {
+                            <tui-textfield [stringify]="targetName">
+                                <label tuiLabel>Цель после {{ action.id }}</label>
+                                <input
+                                    tuiSelect
+                                    [ngModel]="boundaryTarget(action.id)"
+                                    (ngModelChange)="setBoundary(action.id, $event)"
+                                />
+                                <tui-data-list-wrapper
+                                    *tuiTextfieldDropdown
+                                    [itemContent]="targetName"
+                                    [items]="recording().descriptors.concat(descriptor)"
+                                />
+                            </tui-textfield>
+                        }
+                    }
+                }
+            </details>
             <p>
                 Признак:
                 {{
@@ -74,14 +120,15 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
         }
         @if (source) {
             <p>
-                Проверьте задания, значения и completion каждого клика. Черновик
-                предполагает, что клик должен сделать доступной цель следующего действия.
+                Проверьте группы, ожидаемые значения и условия переходов. Требования
+                открыть справку или выполнить другое действие раньше задаются через
+                requires.
             </p>
             <details>
                 <summary>Редактор JSON сценария</summary>
                 <p>
-                    Здесь редактируются instruction, hint, optional, branches, completion
-                    и ожидаемые значения.
+                    Здесь редактируются instruction, hint, optional, when, requires,
+                    transitions, completion и ожидаемые значения.
                 </p>
                 <tui-textfield>
                     <label tuiLabel>JSON сценария</label>
@@ -132,6 +179,7 @@ export class ScenarioEditorComponent {
     public readonly error = signal('');
     public readonly picking = signal(false);
     public source = '';
+    public readonly boundaries = signal<Record<string, string>>({});
 
     constructor() {
         this.destroyRef.onDestroy(() => this.cancelPick());
@@ -144,9 +192,60 @@ export class ScenarioEditorComponent {
                 this.finish.set(null);
                 this.finishAreaKey = undefined;
                 this.source = '';
+                this.boundaries.set({});
                 this.error.set('');
             }
         });
+    }
+
+    public readonly targetName = (target: ElementDescriptor): string =>
+        `${target.fingerprint.features.accessibleName || target.fingerprint.features.label || target.id} (${target.id})`;
+
+    public actionName(action: SemanticAction): string {
+        return action.kind === 'navigation'
+            ? action.pathname
+            : this.targetName(
+                  this.recording().descriptors.find(
+                      (target) => target.id === action.targetId,
+                  )!,
+              );
+    }
+
+    public boundaryTarget(id: string): ElementDescriptor | null {
+        return (
+            [...this.recording().descriptors, this.finish()!].find(
+                (target) => target.id === this.boundaries()[id],
+            ) ?? null
+        );
+    }
+
+    public setBoundary(id: string, target: ElementDescriptor | null): void {
+        if (target) {
+            this.source = '';
+            this.boundaries.update((entries) => ({...entries, [id]: target.id}));
+        }
+    }
+
+    public toggleBoundary(action: SemanticAction, enabled: boolean): void {
+        this.source = '';
+        const entries = {...this.boundaries()};
+        const next =
+            this.recording().actions[this.recording().actions.indexOf(action) + 1];
+
+        if (enabled) {
+            entries[action.id] =
+                next && 'targetId' in next ? next.targetId : this.finish()!.id;
+        } else {
+            this.boundaries.set(
+                Object.fromEntries(
+                    Object.entries(entries).filter(([id]) => id !== action.id),
+                ),
+            );
+
+            return;
+        }
+
+        this.boundaries.set(entries);
     }
 
     public cancelPick(): void {
@@ -209,7 +308,15 @@ export class ScenarioEditorComponent {
     public build(): void {
         try {
             this.source = JSON.stringify(
-                draftScenario(this.recording(), this.finish()!, this.finishAreaKey),
+                draftScenario(
+                    this.recording(),
+                    this.finish()!,
+                    this.finishAreaKey,
+                    Object.entries(this.boundaries()).map(([actionId, nextTargetId]) => ({
+                        actionId,
+                        nextTargetId,
+                    })),
+                ),
                 null,
                 2,
             );

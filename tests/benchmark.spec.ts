@@ -127,6 +127,9 @@ for (const external of [false, true]) {
               ];
 
         await page.goto('/spike/record');
+        await select(page, 'Поиск процедуры', 'Заявка на обучение');
+        await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+        await page.getByText('Условия тестового прохождения', {exact: true}).click();
         await page.addScriptTag({path: bundle});
         await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
         const first = await capture(page, identityCases);
@@ -151,6 +154,11 @@ for (const external of [false, true]) {
 
         await page.close();
         await pupil.goto('/spike/record');
+        await select(pupil, 'Поиск процедуры', 'Заявка на обучение');
+        await expect(
+            pupil.getByRole('textbox', {name: 'ФИО', exact: true}),
+        ).toBeVisible();
+        await pupil.getByText('Условия тестового прохождения', {exact: true}).click();
         await pupil.addScriptTag({path: bundle});
         await select(pupil, 'Расположение полей', 'Другое расположение');
         await pupil.getByRole('button', {name: 'Новая процедура', exact: true}).click();

@@ -1,4 +1,4 @@
-import {type ElementDescriptor, type Scenario} from '../src/contracts';
+import {type ElementDescriptor, type LegacyScenario as Scenario} from '../src/contracts';
 import {OBSERVABLES} from '../src/dom/identity';
 import {ElementRecorder} from '../src/recording';
 import {describe} from '../src/recording/dom';
@@ -247,6 +247,10 @@ test('authoring draft requires explicit final evidence and captures expected val
     enter('Анна');
     recorder.stop();
     const draft = draftScenario(recorder.snapshot(), value.descriptors[2]!);
+
+    if (draft.version === 4) {
+        throw new Error('Expected legacy draft');
+    }
 
     expect(draft.steps[1]!.completion).toMatchObject({
         kind: 'value',

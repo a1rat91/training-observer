@@ -30,13 +30,17 @@ try {
     await writeFile(
         source,
         `
-        import {AreaRegistry, describeElement, ElementResolver, type AreaDefinition} from '@training-observer/core';
+        import {AreaRegistry, describeElement, ElementResolver, ScenarioRuntime, type GroupedScenario, type AreaDefinition} from '@training-observer/core';
         import {AreaRegistryService} from '@training-observer/core/angular';
         declare const root: HTMLElement;
         declare const service: AreaRegistryService;
         const areas: AreaDefinition[] = [{key: 'player', hostTag: 'procedure-mf', observe: true}];
         const registry: AreaRegistry = service.connect(root, areas);
         registry.accepts('player', root);
+        declare const scenario: GroupedScenario;
+        const runtime = new ScenarioRuntime(root, scenario, {areas: registry});
+        runtime.snapshot().expectations?.map((expectation) => expectation.status);
+        runtime.skip('optional-expectation');
         new ElementResolver().resolve(describeElement(root, root, 'target', {includeStatic: true}), root);
     `,
     );

@@ -7,7 +7,9 @@
 import {
     type AreaBindings,
     type CapturedValue,
+    type Condition,
     type ElementDescriptor,
+    type GroupedScenario,
     type Recording,
     type Resolution,
     type Scenario,
@@ -457,6 +459,43 @@ const step = object({
     nextStepId: nullable(id),
 });
 
+const groupAction = {
+    id,
+    instruction: id,
+    hint: nullable(text),
+    when: nullable(condition),
+    requires: array(id, 0, 1000),
+    action: tagged('kind', {
+        click: object({kind: one('click'), targetId: id}),
+        input: object({kind: one('input'), targetId: id, value: valueCondition}),
+        select: object({kind: one('select'), targetId: id, value: valueCondition}),
+        navigation: object({kind: one('navigation'), pathname}),
+    }),
+    completion: condition,
+};
+
+const groupedScenario = object({
+    kind: one('training-scenario'),
+    version: one(4),
+    id,
+    mode,
+    areas: areaBindings,
+    descriptors: array(descriptor),
+    startGroupId: id,
+    completion: condition,
+    groups: array(
+        object({
+            id,
+            title: id,
+            entry: condition,
+            expectations: array(object({...groupAction, optional: bool}), 0, 1000),
+            transitions: array(object({...groupAction, toGroupId: nullable(id)}), 0, 32),
+        }),
+        1,
+        100,
+    ),
+});
+
 const scenarioShape = (version: 2 | 3): Check =>
     object({
         kind: one('training-scenario'),
@@ -754,55 +793,155 @@ export function readRecording(value: unknown): Recording {
     });
 }
 export function readScenario(value: unknown): Scenario {
-    return read<Scenario>(value, versioned(scenarioShape), (document) => {
-        const ids = descriptorsValid(document.descriptors);
+    return read<Scenario>(
+        value,
+        (entry, path) => {
+            if (record(entry, path).version === 4) {
+                groupedScenario(entry, path);
+            } else {
+                versioned(scenarioShape)(entry, path);
+            }
+        },
+        (document) => {
+            const ids = descriptorsValid(document.descriptors);
 
-        if (document.version === 3) {
-            bindingsValid(document.areas, ids);
+            if (document.version === 3) {
+                bindingsValid(document.areas, ids);
+            }
+
+            if (document.version === 4) {
+                bindingsValid(document.areas, ids);
+                checkGroups(document, ids);
+
+                return;
+            }
+
+            const steps = unique(
+                document.steps.map((entry) => entry.id),
+                '$.steps',
+            );
+
+            if (!steps.has(document.startStepId)) {
+                fail('$.startStepId', 'unknown start step');
+            }
+
+            const checkCondition = (entry: Condition): void => {
+                if ('targetId' in entry) {
+                    targetExists(entry.targetId, ids, '$.steps.completion');
+                }
+
+                if ('conditions' in entry) {
+                    entry.conditions.forEach(checkCondition);
+                }
+            };
+
+            checkCondition(document.completion);
+
+            for (const entry of document.steps) {
+                if ('targetId' in entry.action) {
+                    targetExists(entry.action.targetId, ids, '$.steps.action');
+                }
+
+                checkCondition(entry.completion);
+
+                if (entry.nextStepId !== null && !steps.has(entry.nextStepId)) {
+                    fail('$.steps.nextStepId', 'unknown next step');
+                }
+
+                for (const branch of entry.branches) {
+                    checkCondition(branch.when);
+
+                    if (!steps.has(branch.nextStepId)) {
+                        fail('$.steps.branches', 'unknown branch step');
+                    }
+                }
+            }
+        },
+    );
+}
+
+function checkGroups(document: GroupedScenario, targets: Set<string>): void {
+    const groups = unique(
+        document.groups.map((group) => group.id),
+        '$.groups',
+    );
+
+    if (!groups.has(document.startGroupId)) {
+        fail('$.startGroupId', 'unknown group');
+    }
+
+    const checkCondition = (entry: Condition): void => {
+        if ('targetId' in entry) {
+            targetExists(entry.targetId, targets, '$.groups.condition');
         }
 
-        const steps = unique(
-            document.steps.map((entry) => entry.id),
-            '$.steps',
+        if ('conditions' in entry) {
+            entry.conditions.forEach(checkCondition);
+        }
+    };
+
+    checkCondition(document.completion);
+
+    for (const group of document.groups) {
+        checkCondition(group.entry);
+        const entries = [...group.expectations, ...group.transitions];
+
+        unique(
+            entries.map((entry) => entry.id),
+            '$.groups.actions',
+        );
+        const expectations = new Map(
+            group.expectations.map((entry) => [entry.id, entry]),
         );
 
-        if (!steps.has(document.startStepId)) {
-            fail('$.startStepId', 'unknown start step');
-        }
-
-        const checkCondition = (entry: Scenario['steps'][number]['completion']): void => {
-            if ('targetId' in entry) {
-                targetExists(entry.targetId, ids, '$.steps.completion');
-            }
-
-            if ('conditions' in entry) {
-                entry.conditions.forEach(checkCondition);
-            }
-        };
-
-        checkCondition(document.completion);
-
-        for (const entry of document.steps) {
+        for (const entry of entries) {
             if ('targetId' in entry.action) {
-                targetExists(entry.action.targetId, ids, '$.steps.action');
+                targetExists(entry.action.targetId, targets, '$.groups.action');
+            }
+
+            if (entry.when) {
+                checkCondition(entry.when);
             }
 
             checkCondition(entry.completion);
+            unique(entry.requires, '$.groups.requires');
 
-            if (entry.nextStepId !== null && !steps.has(entry.nextStepId)) {
-                fail('$.steps.nextStepId', 'unknown next step');
-            }
-
-            for (const branch of entry.branches) {
-                checkCondition(branch.when);
-
-                if (!steps.has(branch.nextStepId)) {
-                    fail('$.steps.branches', 'unknown branch step');
+            for (const dependency of entry.requires) {
+                if (!expectations.has(dependency)) {
+                    fail('$.groups.requires', 'unknown expectation');
                 }
             }
+
+            if (
+                'toGroupId' in entry &&
+                entry.toGroupId !== null &&
+                !groups.has(entry.toGroupId)
+            ) {
+                fail('$.groups.toGroupId', 'unknown group');
+            }
         }
-    });
+
+        const visited = new Set<string>();
+        const visiting = new Set<string>();
+        const visit = (id: string): void => {
+            if (visiting.has(id)) {
+                fail('$.groups.requires', 'cyclic dependency');
+            }
+
+            if (visited.has(id)) {
+                return;
+            }
+
+            visiting.add(id);
+            expectations.get(id)!.requires.forEach(visit);
+            visiting.delete(id);
+            visited.add(id);
+        };
+
+        group.expectations.forEach((entry) => visit(entry.id));
+    }
 }
+
 export function readResolution(value: unknown): Resolution {
     return read<Resolution>(value, resolution, (report) => {
         const ids = unique(

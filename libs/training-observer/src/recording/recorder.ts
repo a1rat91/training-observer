@@ -81,6 +81,8 @@ export interface RecorderOptions {
     ): void;
     /** Pre-handler identity proof for delayed commits and controls removed by their own handler. */
     onIntent?(event: Event, target: Element): unknown;
+    /** По умолчанию одинаковые commits сворачиваются. Runtime перепроверяет каждый blur после редактирования. */
+    deduplicateInputs?: boolean;
     /** Explicit test/instrumented-event mode. The browser panel never enables this. */
     acceptUntrustedEvents?: boolean;
 }
@@ -117,6 +119,11 @@ export class ElementRecorder {
     /** Черновик не является действием; runtime не завершает сценарий до его подтверждения. */
     public get hasUncommittedInput(): boolean {
         return !!this.pending;
+    }
+
+    /** Проверяет владельца текущего черновика при подтверждении перехода через blur этого поля. */
+    public isInputPending(element: Element): boolean {
+        return this.pending?.target.element === element;
     }
 
     public start(): void {
@@ -652,6 +659,7 @@ export class ElementRecorder {
         const signature = JSON.stringify(pending.value);
 
         if (
+            this.options.deduplicateInputs !== false &&
             pending.value.status === 'captured' &&
             signature === pending.target.committed
         ) {
@@ -902,8 +910,17 @@ export class ElementRecorder {
             return;
         }
 
-        // Only an actual blur can confirm text before proving the next action's intent.
+        // A value event produced while confirming an option is part of that selection, not a new text draft.
+        const confirmingSelection =
+            this.choice?.target === target && ['change', 'input'].includes(event.type);
+
         this.confirmChoice();
+
+        if (confirmingSelection) {
+            return;
+        }
+
+        // Only an actual blur can confirm text before proving the next action's intent.
 
         if (
             this.pending &&

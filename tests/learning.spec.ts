@@ -48,6 +48,33 @@ async function complete(page: Page): Promise<void> {
     ).toBeVisible();
 }
 
+async function groupBoundaries(page: Page): Promise<void> {
+    const downloaded = page.waitForEvent('download');
+
+    await page.getByRole('button', {name: 'Скачать запись', exact: true}).click();
+    const recording = parseRecording(
+        await readFile(await (await downloaded).path(), 'utf8'),
+    );
+
+    await page.getByText('Группы и переходы', {exact: true}).click();
+
+    // These are explicit boundaries of this fixture, never a library heuristic.
+    for (const action of recording.actions.filter((entry) => entry.kind === 'click')) {
+        await page
+            .getByRole('checkbox', {name: `Переход ${action.id}`, exact: true})
+            .check();
+    }
+}
+
+async function identityReverse(page: Page): Promise<void> {
+    await select(page, 'Вид обучения', 'Внутренний курс');
+    await page
+        .getByRole('textbox', {name: 'Рабочая почта', exact: true})
+        .fill('anna@example.test');
+    await page.getByRole('textbox', {name: 'ФИО', exact: true}).fill('Анна Смирнова');
+    await page.getByRole('textbox', {name: 'ФИО', exact: true}).press('Tab');
+}
+
 async function recordScenario(page: Page, isExternal = false): Promise<void> {
     await page.goto('/spike/record');
     await select(page, 'Поиск процедуры', 'Заявка на обучение');
@@ -71,6 +98,7 @@ async function recordScenario(page: Page, isExternal = false): Promise<void> {
         .getByRole('button', {name: 'Выбрать признак завершения', exact: true})
         .click();
     await page.getByRole('heading', {name: 'Заявка принята', exact: true}).click();
+    await groupBoundaries(page);
     await page
         .getByRole('button', {name: 'Создать черновик сценария', exact: true})
         .click();
@@ -89,7 +117,9 @@ async function startLearner(page: Page, profile: string): Promise<void> {
     await select(page, 'Поведение сервера', profile);
     await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
     await expect(
-        page.getByRole('heading', {name: 'Нажмите «Новая процедура»', exact: true}),
+        page
+            .getByRole('list', {name: 'Переходы группы'})
+            .getByText(/Выполните переход: «Новая процедура»/),
     ).toBeVisible();
     await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();
 }
@@ -107,7 +137,7 @@ for (const profile of ['Медленный ответ', 'Потеря ответ
         learner.on('pageerror', (error) => errors.push(error.message));
         await page.close();
         await startLearner(learner, profile);
-        await identity(learner);
+        await identityReverse(learner);
         let release!: () => void;
         const gate = new Promise<void>((resolve) => {
             release = resolve;
@@ -122,7 +152,9 @@ for (const profile of ['Медленный ответ', 'Потеря ответ
             learner.getByRole('heading', {name: 'Ожидаем подтверждение', exact: true}),
         ).toBeVisible();
         await expect(
-            learner.getByRole('heading', {name: 'Нажмите «Продолжить»', exact: true}),
+            learner
+                .getByRole('list', {name: 'Переходы группы'})
+                .getByText(/Выполните переход: «Продолжить»/),
         ).toBeVisible();
         release();
 
@@ -131,7 +163,9 @@ for (const profile of ['Медленный ответ', 'Потеря ответ
                 learner.getByRole('button', {name: 'Повторить', exact: true}),
             ).toBeVisible();
             await expect(
-                learner.getByRole('heading', {name: 'Нажмите «Продолжить»', exact: true}),
+                learner
+                    .getByRole('list', {name: 'Переходы группы'})
+                    .getByText(/Выполните переход: «Продолжить»/),
             ).toBeVisible();
             await learner.getByRole('button', {name: 'Повторить', exact: true}).click();
         }
@@ -176,7 +210,10 @@ test('wrong value and server 422 cannot advance the learner; correction complete
     await expect(
         learner.getByRole('heading', {name: 'Заполните «Стоимость»', exact: true}),
     ).toBeVisible();
-    await learner.getByRole('button', {name: 'Подсказка', exact: true}).click();
+    await learner
+        .getByRole('listitem', {name: 'Заполните «Стоимость»', exact: true})
+        .getByText('Подсказка', {exact: true})
+        .click();
     await expect(
         learner.getByRole('complementary', {name: 'Панель обучения'}),
     ).toContainText('150');
@@ -187,7 +224,9 @@ test('wrong value and server 422 cannot advance the learner; correction complete
     await learner.getByRole('textbox', {name: 'Обоснование', exact: true}).fill(reason);
     await learner.getByRole('textbox', {name: 'Обоснование', exact: true}).press('Tab');
     await expect(
-        learner.getByRole('heading', {name: 'Нажмите «Продолжить»', exact: true}),
+        learner
+            .getByRole('list', {name: 'Переходы группы'})
+            .getByText(/Выполните переход: «Продолжить»/),
     ).toBeVisible();
     await learner.getByRole('textbox', {name: 'Обоснование', exact: true}).fill('');
     await next(learner);
@@ -195,7 +234,9 @@ test('wrong value and server 422 cannot advance the learner; correction complete
         learner.getByText('Проверьте данные: сервер отклонил отправку.', {exact: true}),
     ).toBeVisible();
     await expect(
-        learner.getByRole('heading', {name: 'Нажмите «Продолжить»', exact: true}),
+        learner
+            .getByRole('list', {name: 'Переходы группы'})
+            .getByText(/Выполните переход: «Продолжить»/),
     ).toBeVisible();
     await learner.getByRole('textbox', {name: 'Обоснование', exact: true}).fill(reason);
     await next(learner);
@@ -252,11 +293,13 @@ test('late response after stop cannot advance a freshly started learner', async 
         learner.getByRole('combobox', {name: 'Курс', exact: true}),
     ).toBeVisible();
     await expect(
-        learner.getByRole('heading', {name: 'Нажмите «Новая процедура»', exact: true}),
+        learner
+            .getByRole('list', {name: 'Переходы группы'})
+            .getByText(/Выполните переход: «Новая процедура»/),
     ).toBeVisible();
     await expect(
         learner.getByRole('complementary', {name: 'Панель обучения'}),
-    ).toContainText('Пройдено шагов: 0');
+    ).toContainText('Выполнено заданий: 0');
     await learner.getByRole('button', {name: 'Новая процедура', exact: true}).click();
     await expect(learner.getByRole('textbox', {name: 'ФИО', exact: true})).toHaveValue(
         '',
@@ -325,6 +368,20 @@ test('recording JSON pasted into learner can be prepared without recording actio
         .getByRole('button', {name: 'Выбрать признак завершения', exact: true})
         .click();
     await page.getByRole('heading', {name: 'Заявка принята', exact: true}).click();
+    await groupBoundaries(page);
+    await page
+        .getByRole('button', {name: 'Создать черновик сценария', exact: true})
+        .click();
+    const firstBoundary = page.getByRole('checkbox', {
+        name: `Переход ${recording.actions.find((action) => action.kind === 'click')!.id}`,
+        exact: true,
+    });
+
+    await firstBoundary.uncheck();
+    await expect(
+        page.getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true}),
+    ).toHaveCount(0);
+    await firstBoundary.check();
     await page
         .getByRole('button', {name: 'Создать черновик сценария', exact: true})
         .click();
@@ -334,7 +391,16 @@ test('recording JSON pasted into learner can be prepared without recording actio
     const scenario = parseScenario(await readFile(await (await download).path(), 'utf8'));
 
     expect(scenario.kind).toBe('training-scenario');
-    expect(scenario.steps).toHaveLength(recording.actions.length);
+    expect(scenario.version).toBe(4);
+
+    if (scenario.version !== 4) {
+        throw new Error('Expected grouped scenario');
+    }
+
+    expect(scenario.groups).toHaveLength(4);
+    expect(
+        scenario.groups.flatMap((group) => [...group.expectations, ...group.transitions]),
+    ).toHaveLength(recording.actions.length);
     await page
         .getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true})
         .click();

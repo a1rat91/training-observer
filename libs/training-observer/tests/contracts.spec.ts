@@ -1,6 +1,7 @@
 import {
     ContractError,
     type ElementDescriptor,
+    type LegacyScenario as Scenario,
     parseRecording,
     parseScenario,
     readRecording,
@@ -9,7 +10,6 @@ import {
     readTargetWaitState,
     type Recording,
     type Resolution,
-    type Scenario,
     serializeRecording,
     serializeScenario,
 } from '../src/contracts';

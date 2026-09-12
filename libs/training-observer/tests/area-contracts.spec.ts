@@ -2,17 +2,18 @@ import {AreaRegistry} from '../src/areas';
 import {
     bindRecordingAreas,
     bindScenarioAreas,
+    type LegacyScenario as Scenario,
     parseRecording,
     parseScenario,
     type Recording,
-    type Scenario,
     serializeRecording,
     serializeScenario,
 } from '../src/contracts';
 import {ElementRecorder} from '../src/recording';
 import {describeElement} from '../src/recording/element-description';
 import {TargetResolver} from '../src/resolution';
-import {Conditions, draftScenario, ScenarioRuntime} from '../src/runtime';
+import {Conditions, ScenarioRuntime} from '../src/runtime';
+import {draftLegacyScenario} from '../src/runtime/legacy-authoring';
 
 const definitions = [
     {key: 'search', hostTag: 'search-mf', observe: true},
@@ -67,7 +68,15 @@ function scenario(): Scenario {
         {includeStatic: true},
     );
 
-    return parseScenario(serializeScenario(draftScenario(log, finish, 'player')));
+    const result = parseScenario(
+        serializeScenario(draftLegacyScenario(log, finish, 'player')),
+    );
+
+    if (result.version === 4) {
+        throw new Error('Expected v3');
+    }
+
+    return result;
 }
 
 it('round-trips selected areas and target ownership, including an area disabled after recording', () => {

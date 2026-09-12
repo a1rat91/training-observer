@@ -11,5 +11,7 @@ export function bindRecordingAreas(recording: Recording, areas: AreaBindings): R
 }
 
 export function bindScenarioAreas(scenario: Scenario, areas: AreaBindings): Scenario {
-    return readScenario({...readScenario(scenario), version: 3, areas});
+    const document = readScenario(scenario);
+
+    return readScenario({...document, version: document.version === 4 ? 4 : 3, areas});
 }

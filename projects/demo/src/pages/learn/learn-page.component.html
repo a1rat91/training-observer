@@ -1,8 +1,8 @@
 <header>
     <h1>Прохождение обучения</h1>
     <p>
-        Это диагностический режим spike: запустите обучение, выберите процедуру в поиске и выполняйте задания.
-        Автоматический старт и свободный порядок заполнения будут добавлены в следующем этапе runtime.
+        Выполняйте доступные задания активной группы в любом порядке. Переход требует выполнения обязательных заданий и
+        подтверждения результата. Автоматический запуск будет добавлен отдельно.
     </p>
 </header>
 <div class="workspace">
@@ -61,8 +61,43 @@
         }
         @if (current(); as state) {
             <h2 aria-live="polite">{{ labels[state.status] }}</h2>
-            <p>Пройдено шагов: {{ state.completedSteps }}</p>
-            @if (state.status !== 'completed' && state.status !== 'stopped') {
+            <p>Выполнено заданий: {{ state.completedSteps }}</p>
+            @if (state.expectations; as expectations) {
+                <h3>{{ state.groupTitle }}</h3>
+                <ul aria-label="Задания группы">
+                    @for (expectation of expectations; track expectation.id) {
+                        <li [attr.aria-label]="expectation.instruction">
+                            <h4>{{ expectation.instruction }}</h4>
+                            <p>{{ expectationLabels[expectation.status] }}</p>
+                            @if (expectation.hint) {
+                                <details>
+                                    <summary>Подсказка</summary>
+                                    <p>{{ expectation.hint }}</p>
+                                </details>
+                            }
+                            @if (expectation.optional && expectation.status !== 'satisfied') {
+                                <button
+                                    size="s"
+                                    tuiButton
+                                    type="button"
+                                    (click)="skip(expectation.id)"
+                                >
+                                    Пропустить {{ expectation.instruction }}
+                                </button>
+                            }
+                        </li>
+                    }
+                </ul>
+                <ul aria-label="Переходы группы">
+                    @for (transition of state.transitions; track transition.id) {
+                        <li>
+                            {{ transition.instruction }} ·
+                            {{ transition.ready ? 'Доступен' : 'Выполните задания группы' }}
+                        </li>
+                    }
+                </ul>
+            }
+            @if (!state.expectations && state.status !== 'completed' && state.status !== 'stopped') {
                 <h3>{{ state.instruction }}</h3>
                 @if (state.hint) {
                     <button
@@ -87,16 +122,16 @@
                         Пропустить необязательный шаг
                     </button>
                 }
-                @if (state.status === 'timedOut' || state.status === 'broken') {
-                    <button
-                        size="s"
-                        tuiButton
-                        type="button"
-                        (click)="retry()"
-                    >
-                        Повторить ожидание
-                    </button>
-                }
+            }
+            @if (state.status === 'timedOut' || state.status === 'broken') {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="retry()"
+                >
+                    Повторить ожидание
+                </button>
             }
             @if (state.message) {
                 <p role="status">{{ state.message }}</p>

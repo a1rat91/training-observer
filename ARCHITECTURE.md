@@ -85,8 +85,10 @@ Tracking-атрибуты и hooks в целевой интерфейс не д�
 бизнес-сущности, сценарий требует уточнения либо отдельного интеграционного адаптера. Ядро не угадывает скрытое
 состояние.
 
-Текущий runtime ещё последовательный. Следующее изменение вводит группы со свободными ожиданиями и явными переходами.
-Для новой семантики нужна новая версия Scenario; v2/v3 не переинтерпретируются автоматически.
+Реализован Scenario v4: группы независимых ожиданий, явные зависимости и переходы. Runtime v2/v3 сохраняет
+последовательную семантику. Импорт не мигрирует порядок автоматически; новый черновик из записи v3 создаёт v4. В текущем
+редакторе автор отмечает границы вручную и проверяет предлагаемую цель подтверждения; автоматических предложений по
+кластеризации DOM пока нет.
 
 ## Подтверждение текстового ввода
 
@@ -113,8 +115,8 @@ submit, оно вводится отдельной явной политикой
 неподтверждённый ввод только в наблюдаемых состояниях. Для IME требуется завершённая composition перед blur.
 
 ElementRecorder.hasUncommittedInput и RuntimeSnapshot.uncommittedInput сообщают приложению о черновике. Он блокирует
-completion, не создавая ошибок на каждый символ. Свободный порядок и повторная проверка уже выполненных ожиданий после
-нового подтверждения относятся к следующему изменению runtime. Старые JSON с commit:idle/change остаются читаемыми;
+completion, не создавая ошибок на каждый символ. В v4 редактирование снимает прежний зачёт до blur, а изменение
+подтверждённого значения сервером делает ожидание невыполненным. Старые JSON с commit:idle/change остаются читаемыми;
 новый recorder создаёт текстовые действия с commit:blur.
 
 ## Потоки данных
@@ -126,7 +128,7 @@ flowchart TD
     Identity[DOM identity: role, name, attributes, context] --> Recorder
     Recorder --> Recording[Recording: actions, states, descriptors]
     Recording --> Authoring[draftScenario и проверка автором]
-    Authoring --> Scenario[Scenario: шаги, ветки, completion]
+    Authoring --> Scenario[Scenario v4: группы, зависимости, переходы]
     Scenario --> Runtime[ScenarioRuntime и XState]
     Recorder -->|Подтверждённое действие и intent token| Runtime
     Host --> Registry[AreaRegistry: границы и ownership]
@@ -134,7 +136,7 @@ flowchart TD
     Registry --> Recorder
     Session[RecordingSessionService] --> Recorder
     Session --> Resolver
-    Registry --> Targets[TargetResolver: область из wire v3]
+    Registry --> Targets[TargetResolver: сохранённая область цели]
     Targets --> Resolver[ElementResolver]
     Host --> Targets
     Identity --> Resolver
@@ -145,7 +147,7 @@ flowchart TD
 ```
 
 Registry подключён к recorder и поиску целей текущего сеанса через RecordingSessionService. Привязки target → area
-сериализуются в Recording/Scenario v3; learner подключает registry и TargetResolver.
+сериализуются в Recording v3 и Scenario v3/v4; learner подключает registry и TargetResolver.
 
 Contracts/validation ограничивают данные на границах импорта, authoring и runtime. Стрелки описывают передачу данных, а
 не наследование классов. Во время прохождения runtime владеет экземпляром recorder. Панель вызывает команды и показывает
@@ -158,16 +160,17 @@ snapshot; она не должна дублировать алгоритм вы�
 | Модуль                                                                      | Назначение и основные точки входа                                                                    |
 | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | [areas](libs/training-observer/src/areas/)                                  | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
-| [contracts](libs/training-observer/src/contracts/)                          | Recording/Scenario v2/v3, Resolution v2, parse/read/serialize и строгая validation                   |
+| [contracts](libs/training-observer/src/contracts/)                          | Recording v2/v3, Scenario v2/v3/v4, Resolution v2, parse/read/serialize и строгая validation         |
 | [dom/identity.ts](libs/training-observer/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
 | [recording/dom.ts](libs/training-observer/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
 | [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
 | [resolution/resolver.ts](libs/training-observer/src/resolution/resolver.ts) | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
-| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)     | `draftScenario`: линейный черновик из записи и выбранного признака результата                        |
+| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)     | `draftScenario`: группы из записи v3, явных границ и выбранного признака результата                  |
 | [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)   | Проверка условий по текущему DOM и committed value текущего шага                                     |
-| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)         | `ScenarioRuntime`: start/stop/retry/skip, поколения шага и snapshots                                 |
+| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)         | `ScenarioRuntime`: выбор v4 GroupRuntime или совместимого интерпретатора v2/v3                       |
 
-Это единственные рабочие модули библиотеки; прежние дублирующие реализации удалены. Пакет собирается ng-packagr в
+GroupRuntime хранит доказательства выполнения активной группы; legacy-runtime и legacy-authoring изолируют совместимость
+с прежними последовательными документами. Они не экспортируются отдельными публичными API. Пакет собирается ng-packagr в
 dist/training-observer. Публичный API — @training-observer/core; Angular facade экспортируется отдельно из
 @training-observer/core/angular. Demo не импортирует внутренние файлы. Сервис находится в src/angular и зависит от
 основного entry point; ядро не зависит от Angular. Исследовательские отчёты сохранены как исторические данные.
@@ -178,14 +181,17 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
    MutationObserver и sampling properties дают наблюдаемые состояния. State update сам по себе не является действием.
 2. Input/select подтверждаются по значению и принадлежности контролу. Portal option учитывается только при доказанном
    owner. Recording сохраняет actions и states раздельно, без живых Event/Element-ссылок.
-3. Authoring преобразует запись в черновик. Автор проверяет задания, expected values, branches и completion. Видимость
-   следующей цели не всегда доказывает успешный клик — автоматический черновик требует проверки.
-4. Runtime заново разрешает цель шага. Resolver проверяет semantic context, совместимость identity, locators, score и
-   разрыв между кандидатами. Даже единственный CSS-результат не принимается без identity proof.
-5. Подходящее действие активирует проверку completion. Неизвестное состояние не превращается в false ради перехода;
-   несколько подходящих веток означают ambiguity. Конец графа требует отдельного глобального completion.
-6. Token поколения связывает intent и отложенный commit. При смене шага/повторе старые tokens инвалидируются; stop
-   освобождает listeners, observers и timers. Runtime не отменяет запросы чужого приложения.
+3. Authoring создаёт v4 из записи с областями. Автор отмечает границы групп, проверяет значения, зависимости и
+   результаты переходов. Исправления одного поля сворачиваются только внутри выбранной группы.
+4. GroupRuntime разрешает цели всех доступных ожиданий активной группы. Capture сохраняет разрешение действия, поколение
+   области и группы до обработчиков приложения; commit сопоставляет тип и ожидаемое значение.
+5. Единственное соответствие создаёт доказательство действия. Для полей текущее значение перепроверяется; для клика
+   подтверждённый результат сохраняется, даже если справку потом закрыли. when:false исключает условное ожидание;
+   when:unknown оставляет его ожидающим. requires содержит ID ожиданий той же группы и проверяется без циклов.
+6. Переход требует выполнения обязательных ожиданий до действия и своего completion после него. Несколько подтверждённых
+   переходов дают ambiguity. Завершение дополнительно требует глобального completion.
+7. Поколения не позволяют отложенному commit перейти в другую группу. Stop освобождает listeners, observers и timers.
+   Runtime не отменяет действия или HTTP-запросы целевого приложения. Старые v2/v3 исполняет отдельный интерпретатор.
 
 ## Правила кода библиотеки
 
@@ -203,9 +209,10 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 
 [План multi-MF](docs/implementation-plan.md): AreaRegistry и Angular facade реализованы, EventHub и выбор областей
 записи подключены через RecordingSessionService. Wire v3 переносит привязки областей в learner через TargetResolver.
-Свободный порядок и автоматический запуск остаются следующими изменениями. Обновление Angular отложено: начинаем на
-текущей 19.2.25; новая библиотечная обвязка должна следовать указанным в плане Angular-практикам. Саму demo-форму
-специально оптимизировать или переводить на zoneless не требуется. Driver.js не используется.
+Группы и свободный порядок реализованы в v4; общий ownership portals и автоматический запуск остаются следующим
+изменением. Обновление Angular отложено: начинаем на текущей 19.2.25; новая библиотечная обвязка должна следовать
+указанным в плане Angular-практикам. Саму demo-форму специально оптимизировать или переводить на zoneless не требуется.
+Driver.js не используется.
 
 [Benchmark](docs/spike/benchmark.md) подтвердил 368/369 восстановлений доступных различимых целей на тестовой матрице.
 Подмена бизнес-сущности при одинаковом DOM дала один false accept: DOM-only алгоритм не видит скрытой смены сущности.

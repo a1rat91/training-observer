@@ -1,4 +1,4 @@
-/** Wire v3 сохраняет логические области; v2 читается отдельно, без автоматического назначения MF. */
+/** Recording v3 сохраняет области; Scenario v4 — группы. Прежние v2/v3 читаются без изменения семантики. */
 import {type AreaDefinition} from '../areas/types';
 
 export interface AreaBindings {
@@ -153,7 +153,54 @@ interface ScenarioContent {
     steps: ScenarioStep[];
 }
 
-export type Scenario = DocumentScope & ScenarioContent;
+export type LegacyScenario = DocumentScope & ScenarioContent;
+
+/** Значение события проверяется отдельно от результата действия в DOM. */
+export type GroupExpectedAction =
+    | {kind: 'click'; targetId: string}
+    | {kind: 'input' | 'select'; targetId: string; value: ValueCondition}
+    | {kind: 'navigation'; pathname: string};
+
+/** Группа независимых ожиданий; requires задаёт только явно необходимые зависимости. */
+export interface Expectation {
+    id: string;
+    instruction: string;
+    hint: string | null;
+    optional: boolean;
+    when: Condition | null;
+    requires: string[];
+    action: GroupExpectedAction;
+    completion: Condition;
+}
+export interface GroupTransition {
+    id: string;
+    instruction: string;
+    hint: string | null;
+    when: Condition | null;
+    requires: string[];
+    action: GroupExpectedAction;
+    completion: Condition;
+    toGroupId: string | null;
+}
+export interface ExpectationGroup {
+    id: string;
+    title: string;
+    entry: Condition;
+    expectations: Expectation[];
+    transitions: GroupTransition[];
+}
+export interface GroupedScenario {
+    kind: 'training-scenario';
+    version: 4;
+    id: string;
+    mode: ObservationMode;
+    areas: AreaBindings;
+    descriptors: ElementDescriptor[];
+    startGroupId: string;
+    groups: ExpectationGroup[];
+    completion: Condition;
+}
+export type Scenario = GroupedScenario | LegacyScenario;
 
 export type EvidenceGroup = 'attributes' | 'context' | 'naming' | 'role-type';
 export interface CandidateEvidence {

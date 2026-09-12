@@ -44,6 +44,19 @@ export default class LearnPageComponent {
     public readonly error = signal('');
     public readonly hintVisible = signal(false);
     public source = '';
+    public readonly expectationLabels = {
+        inactive: 'Не требуется в этом состоянии',
+        waiting: 'Ожидаем цель',
+        ready: 'Доступно',
+        editing: 'Завершите ввод',
+        confirming: 'Ожидаем результат',
+        satisfied: 'Выполнено',
+        mismatch: 'Значение не совпадает',
+        ambiguous: 'Неоднозначность',
+        blocked: 'Ожидаем зависимости',
+        skipped: 'Пропущено',
+    };
+
     public readonly labels = {
         waiting: 'Ожидаем поле',
         ready: 'Выполните задание',
@@ -154,8 +167,8 @@ export default class LearnPageComponent {
         this.runtime?.retry();
     }
 
-    public skip(): void {
-        this.runtime?.skip();
+    public skip(id?: string): void {
+        this.runtime?.skip(id);
     }
 
     public json(value: unknown): string {
