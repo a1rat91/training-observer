@@ -11,6 +11,18 @@
         class="player"
     />
     <aside aria-label="Панель записи">
+        <details aria-label="Границы микрофронтов">
+            <summary>Границы микрофронтов</summary>
+            <p>Проверка registry. Выбор областей ещё не подключён к записи.</p>
+            <ul>
+                @for (area of areaRegistry.areas(); track area.key) {
+                    <li>
+                        {{ area.key }} · {{ area.status }} · экземпляров: {{ area.matches }} · поколение:
+                        {{ area.generation }}
+                    </li>
+                }
+            </ul>
+        </details>
         <h2>{{ running() ? 'Идёт запись' : 'Запись остановлена' }}</h2>
         @if (imported()) {
             <p role="status">

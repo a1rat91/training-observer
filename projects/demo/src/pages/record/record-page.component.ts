@@ -1,15 +1,18 @@
 import {
+    afterNextRender,
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
     inject,
     NgZone,
     signal,
+    viewChild,
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
 
+import {AreaRegistryService} from '../../../../../libs/element-spike/src/areas/area-registry.service';
 import {
     parseRecording,
     type Recording,
@@ -20,6 +23,7 @@ import {
 import {ElementRecorder} from '../../../../../libs/element-spike/src/recording';
 import {ElementResolver} from '../../../../../libs/element-spike/src/resolution';
 import {RECORDING_IMPORT_KEY} from '../scenario-storage';
+import {DEMO_AREAS} from '../workspace/area-definitions';
 import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
@@ -36,12 +40,15 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [AreaRegistryService],
 })
 export default class RecordPageComponent {
     private readonly zone = inject(NgZone);
     private readonly destroyRef = inject(DestroyRef);
     private recorder?: ElementRecorder;
+    private readonly workspace = viewChild.required(ProcedureShellComponent);
 
+    public readonly areaRegistry = inject(AreaRegistryService);
     public readonly recording = signal<Recording | null>(null);
     public readonly running = signal(false);
     public readonly resolutions = signal<Array<{name: string; report: Resolution}>>([]);
@@ -50,6 +57,13 @@ export default class RecordPageComponent {
     public readonly imported = signal(false);
 
     constructor() {
+        afterNextRender(() => {
+            this.areaRegistry.connect(
+                this.workspace().surface().nativeElement,
+                DEMO_AREAS,
+            );
+        });
+
         try {
             const source = sessionStorage.getItem(RECORDING_IMPORT_KEY);
 

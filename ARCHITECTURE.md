@@ -83,6 +83,8 @@ flowchart TD
     Authoring --> Scenario[Scenario: шаги, ветки, completion]
     Scenario --> Runtime[ScenarioRuntime и XState]
     Recorder -->|Подтверждённое действие и intent token| Runtime
+    Host --> Registry[AreaRegistry: границы и ownership]
+    Registry --> Facade[AreaRegistryService: readonly signals]
     Host --> Resolver[ElementResolver]
     Identity --> Resolver
     Resolver -->|Element либо ambiguous / broken| Runtime
@@ -90,6 +92,8 @@ flowchart TD
     Conditions --> Runtime
     Runtime --> Snapshot[Snapshot и события для приложения]
 ```
+
+Registry уже доступен для диагностики через Angular service; его подключение к recorder/resolver ещё впереди.
 
 Contracts/validation ограничивают данные на границах импорта, authoring и runtime. Стрелки описывают передачу данных, а
 не наследование классов. Во время прохождения runtime владеет экземпляром recorder. Панель вызывает команды и показывает
@@ -99,16 +103,17 @@ snapshot; она не должна дублировать алгоритм вы�
 
 Все указанные пути находятся внутри `libs/element-spike/src`.
 
-| Модуль                                                                  | Назначение и основные точки входа                                                     |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [contracts](libs/element-spike/src/contracts/)                          | Recording/Scenario/Resolution v2, parse/read/serialize и строгая validation           |
-| [dom/identity.ts](libs/element-spike/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском            |
-| [recording/dom.ts](libs/element-spike/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                |
-| [recording/recorder.ts](libs/element-spike/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт |
-| [resolution/resolver.ts](libs/element-spike/src/resolution/resolver.ts) | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ             |
-| [runtime/authoring.ts](libs/element-spike/src/runtime/authoring.ts)     | `draftScenario`: линейный черновик из записи и выбранного признака результата         |
-| [runtime/conditions.ts](libs/element-spike/src/runtime/conditions.ts)   | Проверка условий по текущему DOM и committed value текущего шага                      |
-| [runtime/runtime.ts](libs/element-spike/src/runtime/runtime.ts)         | `ScenarioRuntime`: start/stop/retry/skip, поколения шага и snapshots                  |
+| Модуль                                                                  | Назначение и основные точки входа                                                                    |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [areas](libs/element-spike/src/areas/)                                  | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
+| [contracts](libs/element-spike/src/contracts/)                          | Recording/Scenario/Resolution v2, parse/read/serialize и строгая validation                          |
+| [dom/identity.ts](libs/element-spike/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
+| [recording/dom.ts](libs/element-spike/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
+| [recording/recorder.ts](libs/element-spike/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
+| [resolution/resolver.ts](libs/element-spike/src/resolution/resolver.ts) | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
+| [runtime/authoring.ts](libs/element-spike/src/runtime/authoring.ts)     | `draftScenario`: линейный черновик из записи и выбранного признака результата                        |
+| [runtime/conditions.ts](libs/element-spike/src/runtime/conditions.ts)   | Проверка условий по текущему DOM и committed value текущего шага                                     |
+| [runtime/runtime.ts](libs/element-spike/src/runtime/runtime.ts)         | `ScenarioRuntime`: start/stop/retry/skip, поколения шага и snapshots                                 |
 
 Это рабочие модули v2. Старые файлы непосредственно в корне `libs/element-spike/src` — черновики, а не стабильный
 публичный barrel нового пакета. Изолированная Angular-библиотека и её packaging ещё не выделены: текущие панели
@@ -143,9 +148,9 @@ snapshot; она не должна дублировать алгоритм вы�
 
 ## Следующий цикл и границы
 
-[План multi-MF](docs/spike/microfrontend-plan.md) добавляет AreaRegistry, общий EventHub, выбор наблюдаемых областей и
-Angular ObservationSession. Это **план**, не реализованные классы. Обновление Angular отложено: начинаем на текущей
-19.2.25; новая библиотечная обвязка должна следовать указанным в плане Angular-практикам. Саму demo-форму специально
+[План multi-MF](docs/spike/microfrontend-plan.md): AreaRegistry и Angular facade реализованы, общий EventHub, выбор
+наблюдаемых областей и ObservationSession ещё запланированы. Обновление Angular отложено: начинаем на текущей 19.2.25;
+новая библиотечная обвязка должна следовать указанным в плане Angular-практикам. Саму demo-форму специально
 оптимизировать или переводить на zoneless не требуется. Driver.js не используется.
 
 [Benchmark](docs/spike/benchmark.md) подтвердил 368/369 восстановлений доступных различимых целей на тестовой матрице.
