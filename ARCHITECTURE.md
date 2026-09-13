@@ -184,6 +184,16 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 @training-observer/core/angular. Demo не импортирует внутренние файлы. Сервис находится в src/angular и зависит от
 основного entry point; ядро не зависит от Angular. Исследовательские отчёты сохранены как исторические данные.
 
+## Интеграция инструмента выбора в админку
+
+Инструмент выбора составов групп находится в Angular-админке (`projects/demo/src/authoring`), вне headless-пакета. Он
+принимает root и registry, перехватывает события собственным верхним слоем и вызывает публичные
+`describeElement`/`ElementResolver`. Вне записи автор сохраняет descriptors и area keys в отдельный документ
+`training-element-groups` v1. Ядро предоставляет `readElementDescriptor` для проверки сохранённых целей. Собственные
+события инструмента не являются учебными действиями; document/window capture handlers приложения могут их видеть. Эти
+заготовки пока не исполняются runtime и не добавляются в Scenario v4. Привязка к заданию и обратная связь — следующая
+часть этапа 6.
+
 ## Алгоритм текущего runtime
 
 1. Recorder строит inventory выбранного root и описания целей. Capture events дают намерение пользователя;

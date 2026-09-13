@@ -1,0 +1,131 @@
+<section aria-label="Группы вариантов">
+    <h3>Группы вариантов</h3>
+    <p>
+        Выберите элементы, между которыми ученик будет выбирать. Состав сохраняется в этом браузере; реакции и привязка
+        к заданию будут настраиваться следующим шагом.
+    </p>
+    <button
+        size="s"
+        tuiButton
+        type="button"
+        [disabled]="disabled()"
+        (click)="open()"
+    >
+        Создать группу вариантов
+    </button>
+    @for (group of groups(); track group.id) {
+        <p>{{ group.title }} · элементов: {{ group.targets.length }}</p>
+        <button
+            appearance="secondary"
+            size="s"
+            tuiButton
+            type="button"
+            [disabled]="disabled()"
+            (click)="open(group)"
+        >
+            Изменить {{ group.title }}
+        </button>
+    }
+    @if (error() && !active()) {
+        <p role="alert">{{ error() }}</p>
+    }
+</section>
+@if (active()) {
+    <div
+        #layer
+        aria-label="Выбор элементов группы"
+        aria-modal="true"
+        popover="manual"
+        role="dialog"
+        class="layer"
+        (click)="choose($event)"
+        (contextmenu)="guard($event)"
+        (dblclick)="guard($event)"
+        (mousedown)="guard($event)"
+        (mouseup)="guard($event)"
+        (pointerdown)="guard($event)"
+        (pointermove)="move($event)"
+        (pointerup)="guard($event)"
+    >
+        @if (outline(); as rect) {
+            <div
+                class="outline"
+                [style.height.px]="rect.height"
+                [style.left.px]="rect.left"
+                [style.top.px]="rect.top"
+                [style.width.px]="rect.width"
+            ></div>
+        }
+        <section
+            #panel
+            aria-label="Настройки группы"
+            tabindex="-1"
+            class="panel"
+            [class.left]="left()"
+        >
+            <h2>Выберите элементы</h2>
+            <button
+                appearance="secondary"
+                size="s"
+                tuiButton
+                type="button"
+                (click)="left.set(!left())"
+            >
+                {{ left() ? 'Панель справа' : 'Панель слева' }}
+            </button>
+            <p>
+                Клик добавляет элемент, повторный — убирает. Выбранные элементы не активируются. Escape отменяет
+                изменения.
+            </p>
+            <tui-textfield>
+                <label tuiLabel>Название группы вариантов</label>
+                <input
+                    tuiTextfield
+                    [ngModel]="title()"
+                    (ngModelChange)="title.set($event)"
+                />
+            </tui-textfield>
+            <p role="status">Выбрано: {{ selected().length }}</p>
+            <ol aria-label="Выбранные элементы">
+                @for (entry of selected(); track entry.descriptor.id) {
+                    <li>
+                        {{ name(entry.descriptor) }} · {{ entry.areaKey }}
+                        @if (entry.stale) {
+                            <p role="alert">Элемент изменился или отсутствует. Уберите его и выберите заново.</p>
+                        }
+                        <button
+                            appearance="secondary"
+                            size="s"
+                            tuiButton
+                            type="button"
+                            (click)="remove(entry.descriptor.id)"
+                        >
+                            Убрать {{ name(entry.descriptor) }}
+                        </button>
+                    </li>
+                }
+            </ol>
+            @if (error()) {
+                <p role="alert">{{ error() }}</p>
+            }
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="!canSave()"
+                (click)="save()"
+            >
+                Готово
+            </button>
+            <button
+                appearance="secondary"
+                size="s"
+                tuiButton
+                type="button"
+                (click)="close()"
+            >
+                Отмена
+            </button>
+        </section>
+    </div>
+}

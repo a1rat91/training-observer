@@ -739,6 +739,13 @@ function checkValue(value: CapturedValue, document: Recording, targetId: string)
     }
 }
 
+/** Проверяет отдельную сохранённую цель админки теми же правилами, что и цели wire-сценария. */
+export function readElementDescriptor(value: unknown): ElementDescriptor {
+    return read<ElementDescriptor>(value, descriptor, (target) => {
+        descriptorsValid([target]);
+    });
+}
+
 export function readRecording(value: unknown): Recording {
     return read<Recording>(value, versioned(recordingShape), (document) => {
         const ids = descriptorsValid(document.descriptors);

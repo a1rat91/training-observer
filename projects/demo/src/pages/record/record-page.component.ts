@@ -24,6 +24,7 @@ import {
     RecordingSessionService,
 } from '@training-observer/core/angular';
 
+import {ElementGroupPickerComponent} from '../../authoring/element-group-picker.component';
 import {RECORDING_IMPORT_KEY} from '../scenario-storage';
 import {DEMO_AREAS} from '../workspace/area-definitions';
 import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
@@ -34,6 +35,7 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     standalone: true,
     selector: 'record-page',
     imports: [
+        ElementGroupPickerComponent,
         FormsModule,
         ProcedureShellComponent,
         ScenarioEditorComponent,

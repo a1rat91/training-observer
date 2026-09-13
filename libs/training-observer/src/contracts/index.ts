@@ -4,6 +4,7 @@ export {
     ContractError,
     parseRecording,
     parseScenario,
+    readElementDescriptor,
     readRecording,
     readResolution,
     readScenario,

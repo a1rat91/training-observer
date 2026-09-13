@@ -59,6 +59,10 @@
         @if (error()) {
             <p role="alert">{{ error() }}</p>
         }
+        <element-group-picker
+            [disabled]="running()"
+            [root]="workspace.surface().nativeElement"
+        />
         @if (recording(); as report) {
             @if (!running()) {
                 <scenario-editor
