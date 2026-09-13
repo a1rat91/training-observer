@@ -9,6 +9,7 @@ test.use({hasTouch: true});
 
 async function fixture(page: Page): Promise<void> {
     await page.goto('/record');
+    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
     await page.locator('procedure-search-mf').evaluate((root) => {
         const form = document.createElement('form');
 
@@ -42,7 +43,10 @@ async function point(
     name: string,
     role: 'button' | 'checkbox' | 'radio' = 'button',
 ): Promise<void> {
-    const box = await page.getByRole(role, {name, exact: true}).boundingBox();
+    const target = page.getByRole(role, {name, exact: true});
+
+    await target.evaluate((element) => element.scrollIntoView({block: 'center'}));
+    const box = await target.boundingBox();
 
     if (!box) {
         throw new Error('Fixture target is missing');
@@ -93,6 +97,7 @@ test('generic controls are grouped through a shield, survive reload and remain i
         ),
     ).toContain('submit');
     await page.reload();
+    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
     await expect(
         page.getByRole('button', {name: 'Изменить My choices', exact: true}),
     ).toBeVisible();
@@ -152,7 +157,7 @@ test('remount invalidates selection and recording excludes the picker', async ({
     });
 
     await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
-    await expect(start).toBeDisabled();
+    await expect(start).toBeHidden();
     await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
     await start.click();
     await point(page, 'Alpha choice');
@@ -209,6 +214,7 @@ test('touch selection and highlighting follow resize and scroll; changed labels 
 
 test('a Taiga combobox is selectable without opening its dropdown', async ({page}) => {
     await page.goto('/record');
+    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
     await page
         .getByRole('button', {name: 'Создать группу вариантов', exact: true})
         .click();
@@ -239,6 +245,7 @@ test('invalid saved group documents are rejected and not overwritten', async ({p
         ELEMENT_GROUPS_KEY,
     );
     await page.reload();
+    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
     await page
         .getByRole('button', {name: 'Создать группу вариантов', exact: true})
         .click();

@@ -66,7 +66,9 @@ async function groupBoundaries(page: Page): Promise<void> {
         await readFile(await (await downloaded).path(), 'utf8'),
     );
 
-    await expect(page.getByText('Группы и переходы', {exact: true})).toBeVisible();
+    await expect(
+        page.getByText('Экраны обучения и переходы', {exact: true}),
+    ).toBeVisible();
 
     // These are explicit boundaries of this fixture, never a library heuristic.
     for (const action of recording.actions.filter((entry) => entry.kind === 'click')) {
@@ -378,7 +380,9 @@ test('recording JSON pasted into learner can be prepared without recording actio
         .getByRole('button', {name: 'Подготовить сценарий из записи', exact: true})
         .click();
     await expect(page).toHaveURL(/\/record$/);
-    await expect(page.getByRole('status')).toContainText('Запись импортирована');
+    await expect(
+        page.getByRole('status').filter({hasText: 'Запись импортирована'}),
+    ).toBeVisible();
     await expect(
         page.getByRole('list', {name: 'Записанные действия'}).getByRole('listitem'),
     ).toHaveCount(recording.actions.length);

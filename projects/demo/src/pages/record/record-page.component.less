@@ -46,6 +46,11 @@ li {
     white-space: pre-wrap;
 }
 
+.recorded-actions {
+    max-block-size: 22rem;
+    overflow: auto;
+}
+
 pre {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -81,15 +86,15 @@ pre {
 }
 
 .workflow li {
-    padding: 0.65rem 1rem;
-    background: var(--tui-background-base);
-    border-radius: 0.75rem;
+    padding-block: 0.5rem;
+    border-block-end: 2px solid transparent;
     color: var(--tui-text-secondary);
 }
 
 .workflow .current {
-    background: var(--tui-background-accent-1);
-    color: #fff;
+    border-block-end-color: var(--tui-border-focus);
+    color: var(--tui-text-primary);
+    font-weight: bold;
 }
 
 .notice {
