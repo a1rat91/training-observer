@@ -409,7 +409,7 @@ test('recording JSON pasted into learner can be prepared without recording actio
     await firstBoundary.uncheck();
     await expect(
         page.getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true}),
-    ).toHaveCount(0);
+    ).toBeDisabled();
     await firstBoundary.check();
     await page
         .getByRole('button', {name: 'Создать черновик сценария', exact: true})

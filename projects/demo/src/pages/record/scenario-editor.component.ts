@@ -18,8 +18,10 @@ import {
     type ElementDescriptor,
     type GroupedScenario,
     isObservableElement,
+    mergeScenarioDraft,
     parseScenario,
     type Recording,
+    type Scenario,
     type SemanticAction,
     serializeScenario,
 } from '@training-observer/core';
@@ -28,7 +30,11 @@ import {AreaRegistryService} from '@training-observer/core/angular';
 import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
 import {ScenarioReviewComponent} from './scenario-review.component';
 
-/** Готовит сценарий из журнала: автор выбирает конец записи, границы групп и результаты переходов, затем редактирует задания. */
+/**
+ * Редактор связывает рабочую запись с черновиком. Автор выбирает конец и границы, затем изменяет задания.
+ * Изменение записи делает черновик устаревшим. Пересборка объединяет авторские правки с новым журналом;
+ * отсутствующие границы и конфликты требуют явного решения до экспорта или запуска тренировки.
+ */
 @Component({
     standalone: true,
     selector: 'scenario-editor',
@@ -44,6 +50,32 @@ import {ScenarioReviewComponent} from './scenario-review.component';
     ],
     template: `
         <h3>Подготовка сценария</h3>
+        @if (stale()) {
+            <p role="alert">
+                Запись или настройки изменились. Пересоберите черновик перед сохранением.
+                Авторские правки пока сохранены ниже.
+            </p>
+        }
+        @if (!targetAction()) {
+            <p role="alert">
+                Последнее действие отсутствует. Выберите новое последнее действие или
+                отмените удаление.
+            </p>
+        }
+        @for (id of missingBoundaries(); track id) {
+            <p role="alert">
+                Граница {{ id }} отсутствует в выбранной части записи. Восстановите
+                действие или явно уберите эту границу и проверьте группы.
+            </p>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                (click)="removeBoundary(id)"
+            >
+                Убрать удалённую границу {{ id }}
+            </button>
+        }
         <h4>1. Выберите последнее действие сценария</h4>
         <p>
             «Остановить запись» выключает сбор событий в админке. Выберите ниже действие в
@@ -165,10 +197,32 @@ import {ScenarioReviewComponent} from './scenario-review.component';
                 size="s"
                 tuiButton
                 type="button"
-                [disabled]="disabled()"
+                [disabled]="
+                    disabled() || !targetAction() || missingBoundaries().length > 0
+                "
                 (click)="build()"
             >
                 Создать черновик сценария
+            </button>
+        }
+        @if (conflicts().length) {
+            <p role="alert">
+                Авторские правки конфликтуют с новой записью. Можно отменить удаление,
+                исправить задания ниже или применить запись только для конфликтующих
+                полей:
+            </p>
+            <ul>
+                @for (path of conflicts(); track path) {
+                    <li>{{ conflictTitle(path) }}</li>
+                }
+            </ul>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                (click)="build(true)"
+            >
+                Использовать новую запись для конфликтов
             </button>
         }
         @if (source) {
@@ -201,7 +255,7 @@ import {ScenarioReviewComponent} from './scenario-review.component';
                 size="s"
                 tuiButton
                 type="button"
-                [disabled]="disabled()"
+                [disabled]="disabled() || stale()"
                 (click)="save()"
             >
                 Сохранить и открыть прохождение
@@ -210,7 +264,7 @@ import {ScenarioReviewComponent} from './scenario-review.component';
                 size="s"
                 tuiButton
                 type="button"
-                [disabled]="disabled()"
+                [disabled]="disabled() || stale()"
                 (click)="download()"
             >
                 Скачать сценарий
@@ -231,6 +285,9 @@ export class ScenarioEditorComponent {
     private cleanup?: () => void;
     private recordingId = '';
     private readonly targetId = signal('');
+    private baseline?: Scenario;
+    private readonly builtFor = signal<Recording | null>(null);
+    private readonly configurationChanged = signal(false);
 
     public readonly recording = input.required<Recording>();
     public readonly root = input.required<HTMLElement>();
@@ -241,11 +298,21 @@ export class ScenarioEditorComponent {
     public source = '';
     public readonly draft = signal<GroupedScenario | null>(null);
     public readonly boundaries = signal<Record<string, string>>({});
-
-    public readonly targetAction = computed(
+    public readonly conflicts = signal<string[]>([]);
+    public readonly stale = computed(
         () =>
-            this.recording().actions.find((action) => action.id === this.targetId()) ??
-            this.recording().actions[this.recording().actions.length - 1],
+            !!this.builtFor() &&
+            (this.builtFor() !== this.recording() || this.configurationChanged()),
+    );
+
+    public readonly missingBoundaries = computed(() =>
+        Object.keys(this.boundaries()).filter(
+            (id) => !this.actions().some((action) => action.id === id),
+        ),
+    );
+
+    public readonly targetAction = computed(() =>
+        this.recording().actions.find((action) => action.id === this.targetId()),
     );
 
     public readonly actions = computed(() =>
@@ -262,14 +329,24 @@ export class ScenarioEditorComponent {
         effect(() => {
             const id = this.recording().id;
 
+            this.cancelPick();
+            this.conflicts.set([]);
+
             if (id !== this.recordingId) {
                 this.recordingId = id;
                 this.cancelPick();
                 this.finish.set(null);
                 this.finishAreaKey = undefined;
                 this.source = '';
+                this.draft.set(null);
+                this.baseline = undefined;
+                this.builtFor.set(null);
+                this.configurationChanged.set(false);
+                this.conflicts.set([]);
                 this.boundaries.set({});
-                this.targetId.set('');
+                const actions = this.recording().actions;
+
+                this.targetId.set(actions[actions.length - 1]?.id ?? '');
                 this.error.set('');
             }
         });
@@ -280,6 +357,28 @@ export class ScenarioEditorComponent {
         target.fingerprint.features.label ||
         target.fingerprint.features.text ||
         target.id;
+
+    public conflictTitle(path: string): string {
+        const groups = this.draft()?.groups ?? [];
+        const group = groups.find((entry) => path.includes(`[${entry.id}]`));
+        const job =
+            group &&
+            [...group.expectations, ...group.transitions].find((entry) =>
+                path.includes(`[${entry.id}]`),
+            );
+
+        const fields: Array<[boolean, string]> = [
+            [path.includes('.action.value'), 'ожидаемое значение'],
+            [path.includes('.completion'), 'условие результата'],
+            [path.endsWith('.hint'), 'подсказка'],
+            [path.endsWith('.instruction'), 'текст задания'],
+            [path.endsWith('.requires'), 'зависимости'],
+        ];
+
+        const field = fields.find(([matches]) => matches)?.[1] ?? 'состав или настройки';
+
+        return `${job?.instruction ?? group?.title ?? 'Сценарий'}: ${field}`;
+    }
 
     public readonly actionTitle = (action: SemanticAction): string =>
         action
@@ -324,8 +423,8 @@ export class ScenarioEditorComponent {
         }
 
         this.targetId.set(action.id);
-        this.source = '';
-        this.boundaries.set({});
+        this.configurationChanged.set(true);
+        this.conflicts.set([]);
     }
 
     public actionName(action: SemanticAction): string {
@@ -348,13 +447,13 @@ export class ScenarioEditorComponent {
 
     public setBoundary(id: string, target: ElementDescriptor | null): void {
         if (target) {
-            this.source = '';
+            this.configurationChanged.set(true);
             this.boundaries.update((entries) => ({...entries, [id]: target.id}));
         }
     }
 
     public toggleBoundary(action: SemanticAction, enabled: boolean): void {
-        this.source = '';
+        this.configurationChanged.set(true);
         const entries = {...this.boundaries()};
         const next = this.actions()[this.actions().indexOf(action) + 1];
 
@@ -378,6 +477,14 @@ export class ScenarioEditorComponent {
         this.cleanup?.();
         this.cleanup = undefined;
         this.picking.set(false);
+    }
+
+    public removeBoundary(id: string): void {
+        this.boundaries.update((entries) =>
+            Object.fromEntries(Object.entries(entries).filter(([key]) => key !== id)),
+        );
+        this.configurationChanged.set(true);
+        this.conflicts.set([]);
     }
 
     public pick(): void {
@@ -411,7 +518,7 @@ export class ScenarioEditorComponent {
                 const areaRoot = registry.root(owner.area.key)!;
 
                 this.finishAreaKey = owner.area.key;
-                this.source = '';
+                this.configurationChanged.set(true);
                 this.finish.set(
                     describeElement(element, areaRoot, `finish-${Date.now()}`, {
                         includeStatic: true,
@@ -432,34 +539,61 @@ export class ScenarioEditorComponent {
             root.ownerDocument.removeEventListener('click', listener, true);
     }
 
-    public build(): void {
+    public build(preferRecording = false): void {
         try {
-            this.source = JSON.stringify(
-                draftScenario(
-                    {...this.recording(), actions: this.actions()},
-                    this.finish()!,
-                    this.finishAreaKey,
-                    [
-                        ...Object.entries(this.boundaries())
-                            .filter(([actionId]) => actionId !== this.targetAction()?.id)
-                            .map(([actionId, nextTargetId]) => ({
-                                actionId,
-                                nextTargetId,
-                            })),
-                        ...(this.targetAction()?.kind === 'click'
-                            ? [
-                                  {
-                                      actionId: this.targetAction()!.id,
-                                      nextTargetId: this.finish()!.id,
-                                  },
-                              ]
-                            : []),
-                    ],
-                ),
-                null,
-                2,
+            if (!this.targetAction() || this.missingBoundaries().length) {
+                throw new Error(
+                    'Исправьте последнее действие и удалённые границы либо отмените удаление.',
+                );
+            }
+
+            const generated = draftScenario(
+                {...this.recording(), actions: this.actions()},
+                this.finish()!,
+                this.finishAreaKey,
+                [
+                    ...Object.entries(this.boundaries())
+                        .filter(([actionId]) => actionId !== this.targetAction()?.id)
+                        .map(([actionId, nextTargetId]) => ({
+                            actionId,
+                            nextTargetId,
+                        })),
+                    ...(this.targetAction()?.kind === 'click'
+                        ? [
+                              {
+                                  actionId: this.targetAction()!.id,
+                                  nextTargetId: this.finish()!.id,
+                              },
+                          ]
+                        : []),
+                ],
             );
-            const document = parseScenario(this.source);
+
+            const result =
+                this.baseline && this.source
+                    ? mergeScenarioDraft(
+                          this.baseline,
+                          parseScenario(this.source),
+                          generated,
+                          preferRecording,
+                      )
+                    : {scenario: generated, baseline: generated, conflicts: []};
+
+            this.conflicts.set(result.conflicts);
+
+            if (!result.scenario) {
+                this.configurationChanged.set(true);
+
+                return;
+            }
+
+            const document = result.scenario;
+
+            this.source = JSON.stringify(document, null, 2);
+            this.baseline = result.baseline;
+            this.builtFor.set(this.recording());
+            this.configurationChanged.set(false);
+            this.conflicts.set([]);
 
             this.draft.set(document.version === 4 ? document : null);
             this.error.set('');
@@ -498,6 +632,7 @@ export class ScenarioEditorComponent {
 
     public download(): void {
         try {
+            this.assertPrepared();
             const json = serializeScenario(parseScenario(this.source));
             const url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
             const anchor = document.createElement('a');
@@ -516,6 +651,7 @@ export class ScenarioEditorComponent {
 
     public save(): void {
         try {
+            this.assertPrepared();
             const json = serializeScenario(parseScenario(this.source));
 
             localStorage.setItem(SCENARIO_STORAGE_KEY, json);
@@ -524,6 +660,12 @@ export class ScenarioEditorComponent {
             this.error.set(
                 error instanceof Error ? error.message : 'Не удалось сохранить сценарий',
             );
+        }
+    }
+
+    private assertPrepared(): void {
+        if (this.stale() || !this.targetAction() || this.missingBoundaries().length) {
+            throw new Error('Пересоберите черновик после изменения записи.');
         }
     }
 }

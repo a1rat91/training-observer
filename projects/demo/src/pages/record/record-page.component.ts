@@ -13,6 +13,7 @@ import {TuiCheckbox} from '@taiga-ui/kit';
 import {
     parseRecording,
     type Recording,
+    removeRecordedAction,
     type Resolution,
     type SemanticAction,
     serializeRecording,
@@ -28,6 +29,7 @@ import {DEMO_AREAS} from '../workspace/area-definitions';
 import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
+/** Панель записи: сохраняет исходный журнал, редактирует копии после stop и отменяет удаления стеком версий. */
 @Component({
     standalone: true,
     selector: 'record-page',
@@ -46,13 +48,18 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
 export default class RecordPageComponent {
     private readonly session = inject(RecordingSessionService);
     private readonly importedRecording = signal<Recording | null>(null);
+    private readonly edits = signal<Recording[]>([]);
     private readonly workspace = viewChild.required(ProcedureShellComponent);
 
     public readonly areaRegistry = inject(AreaRegistryService);
     public readonly recording = computed(
-        () => this.session.recording() ?? this.importedRecording(),
+        () =>
+            this.edits()[this.edits().length - 1] ??
+            this.session.recording() ??
+            this.importedRecording(),
     );
 
+    public readonly canUndo = computed(() => this.edits().length > 0);
     public readonly running = this.session.running;
     public readonly resolutions = signal<Array<{name: string; report: Resolution}>>([]);
     public readonly error = signal('');
@@ -88,6 +95,7 @@ export default class RecordPageComponent {
 
     public start(root: HTMLElement): void {
         this.error.set('');
+        this.edits.set([]);
         this.imported.set(false);
         this.importedRecording.set(null);
         this.resolutions.set([]);
@@ -100,6 +108,36 @@ export default class RecordPageComponent {
 
     public stop(): void {
         this.session.stop();
+    }
+
+    public remove(action: SemanticAction): void {
+        const recording = this.recording();
+
+        if (!recording || this.running()) {
+            return;
+        }
+
+        try {
+            const next = removeRecordedAction(recording, action.id);
+
+            this.edits.update((versions) => [...versions, next]);
+            this.resolutions.set([]);
+            this.error.set('');
+        } catch (error: unknown) {
+            this.error.set(
+                error instanceof Error ? error.message : 'Не удалось удалить действие',
+            );
+        }
+    }
+
+    public undo(): void {
+        if (this.running()) {
+            return;
+        }
+
+        this.edits.update((versions) => versions.slice(0, -1));
+        this.resolutions.set([]);
+        this.error.set('');
     }
 
     public check(): void {

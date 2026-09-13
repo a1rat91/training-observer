@@ -60,7 +60,7 @@
             <p role="alert">{{ error() }}</p>
         }
         @if (recording(); as report) {
-            @if (!running() && report.actions.length) {
+            @if (!running()) {
                 <scenario-editor
                     [recording]="report"
                     [root]="workspace.surface().nativeElement"
@@ -74,22 +74,48 @@
                 <p role="alert">{{ diagnostic.message }}</p>
             }
             <h3>Записанные действия</h3>
-            <p>Это исходный журнал. Задания для ученика вы настроите после остановки записи.</p>
+            <p>
+                После остановки удалите лишние действия. Номера оставшихся действий сохраняются. После изменений
+                пересоберите черновик выше; авторские правки будут сохранены, конфликты показаны отдельно.
+            </p>
+            @if (!running()) {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    [disabled]="!canUndo()"
+                    (click)="undo()"
+                >
+                    Отменить удаление
+                </button>
+            }
             <ol aria-label="Записанные действия">
                 @for (action of report.actions; track action.id) {
                     <li>
                         <strong>{{ actionLabel(action) }} · {{ name(action) }}</strong>
                         <div class="value">{{ value(action) }}</div>
+                        @if (!running()) {
+                            <button
+                                appearance="secondary"
+                                size="s"
+                                tuiButton
+                                type="button"
+                                [attr.aria-label]="'Удалить действие ' + action.sequence"
+                                (click)="remove(action)"
+                            >
+                                Удалить
+                            </button>
+                        }
                     </li>
                 } @empty {
-                    <li>Пока нет действий. Выберите процедуру слева и заполните поля.</li>
+                    <li>Нет действий. Отмените удаление или запишите действия в приложении.</li>
                 }
             </ol>
         }
         <details class="advanced">
             <summary>Настройки записи и диагностика</summary>
             <p>
-                Для обычной записи менять ничего не нужно. Здесь можно выбрать области наблюдения, скачать исходный
+                Для обычной записи менять ничего не нужно. Здесь можно выбрать области наблюдения, скачать рабочий
                 журнал и проверить поиск элементов.
             </p>
             <label>

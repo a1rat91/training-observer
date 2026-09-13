@@ -164,18 +164,19 @@ snapshot; она не должна дублировать алгоритм вы�
 
 Все указанные пути находятся внутри `libs/training-observer/src`.
 
-| Модуль                                                                                        | Назначение и основные точки входа                                                                    |
-| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [areas](libs/training-observer/src/areas/)                                                    | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
-| [contracts](libs/training-observer/src/contracts/)                                            | Recording v2/v3, Scenario v2/v3/v4, Resolution v2, parse/read/serialize и строгая validation         |
-| [observation/portal-ownership.ts](libs/training-observer/src/observation/portal-ownership.ts) | Общий индекс ARIA-связей dropdown, проверка конкурентов, повторных ID и смены экземпляра до commit   |
-| [dom/identity.ts](libs/training-observer/src/dom/identity.ts)                                 | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
-| [recording/dom.ts](libs/training-observer/src/recording/dom.ts)                               | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
-| [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)                     | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
-| [resolution/resolver.ts](libs/training-observer/src/resolution/resolver.ts)                   | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
-| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)                       | `draftScenario`: группы из записи v3, явных границ и выбранного признака результата                  |
-| [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)                     | Проверка условий по текущему DOM и committed value текущего шага                                     |
-| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)                           | `ScenarioRuntime`: выбор v4 GroupRuntime или совместимого интерпретатора v2/v3                       |
+| Модуль                                                                                        | Назначение и основные точки входа                                                                         |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [areas](libs/training-observer/src/areas/)                                                    | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals      |
+| [contracts](libs/training-observer/src/contracts/)                                            | Recording v2/v3, Scenario v2/v3/v4, Resolution v2, parse/read/serialize и строгая validation              |
+| [observation/portal-ownership.ts](libs/training-observer/src/observation/portal-ownership.ts) | Общий индекс ARIA-связей dropdown, проверка конкурентов, повторных ID и смены экземпляра до commit        |
+| [dom/identity.ts](libs/training-observer/src/dom/identity.ts)                                 | Общие признаки цели, контекст, доступность; используется записью и поиском                                |
+| [recording/dom.ts](libs/training-observer/src/recording/dom.ts)                               | `describe` создаёт descriptor, `readValue` читает значение по политике                                    |
+| [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)                     | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                     |
+| [resolution/resolver.ts](libs/training-observer/src/resolution/resolver.ts)                   | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                                 |
+| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)                       | `draftScenario`: группы из записи v3, явных границ и выбранного признака результата                       |
+| [runtime/recording-edit.ts](libs/training-observer/src/runtime/recording-edit.ts)             | Удаление действий из копии записи; объединение нового черновика и авторских правок с проверкой конфликтов |
+| [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)                     | Проверка условий по текущему DOM и committed value текущего шага                                          |
+| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)                           | `ScenarioRuntime`: выбор v4 GroupRuntime или совместимого интерпретатора v2/v3                            |
 
 GroupRuntime хранит доказательства выполнения активной группы; legacy-runtime и legacy-authoring изолируют совместимость
 с прежними последовательными документами. Они не экспортируются отдельными публичными API. Пакет собирается ng-packagr в
@@ -193,7 +194,11 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 2. Input/select подтверждаются по значению и принадлежности контролу. Portal option учитывается только при доказанном
    owner. Recording сохраняет actions и states раздельно, без живых Event/Element-ссылок.
 3. Authoring создаёт v4 из записи с областями. Автор отмечает границы групп, проверяет значения, зависимости и
-   результаты переходов. Исправления одного поля сворачиваются только внутри выбранной группы.
+   результаты переходов. Исправления одного поля сворачиваются только внутри выбранной группы. Удаление действия
+   сохраняет ID/sequence остальных событий. Админка хранит историю рабочих копий для отмены; после изменения записи
+   запрещает сохранение устаревшего сценария. Пересборка сравнивает базовый черновик, авторский документ и новый
+   черновик по ID и полям. Независимые правки сохраняются, конфликты требуют выбора, итог снова проходит строгую
+   проверку ссылок. Удалённый конец или граница не переназначаются автоматически.
 4. GroupRuntime разрешает цели всех доступных ожиданий активной группы. Capture сохраняет разрешение действия, поколение
    области и группы до обработчиков приложения; commit сопоставляет тип и ожидаемое значение.
 5. Единственное соответствие создаёт доказательство действия. Для полей текущее значение перепроверяется; для клика
