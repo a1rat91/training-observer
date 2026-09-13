@@ -238,3 +238,31 @@ it('a recorder on one small root still sees a competing owner outside that root'
     );
     expect(secret).not.toHaveBeenCalled();
 });
+
+it('samples server properties without rescanning stable inventory and discovers new controls before the next sample', () => {
+    jest.useFakeTimers();
+    const area = root.querySelector('alpha-mf')!;
+    const queries = jest.spyOn(area, 'querySelectorAll');
+
+    recorder.start();
+    queries.mockClear();
+    root.querySelector<HTMLInputElement>('alpha-mf input')!.value = 'server';
+    jest.advanceTimersByTime(500);
+    expect(queries).not.toHaveBeenCalled();
+    expect(recorder.snapshot().states).toEqual(
+        expect.arrayContaining([
+            expect.objectContaining({value: expect.objectContaining({raw: 'server'})}),
+        ]),
+    );
+    expect(recorder.snapshot().actions).toHaveLength(0);
+    area.insertAdjacentHTML('beforeend', '<input aria-label="New field">');
+    jest.advanceTimersByTime(100);
+    expect(
+        recorder
+            .snapshot()
+            .descriptors.some(
+                (entry) => entry.fingerprint.features.accessibleName === 'New field',
+            ),
+    ).toBe(true);
+    queries.mockRestore();
+});

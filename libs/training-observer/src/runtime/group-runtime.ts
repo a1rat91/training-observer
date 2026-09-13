@@ -3,6 +3,7 @@
  * Capture сохраняет кандидатов, поколения области/группы и разрешение перехода до обработчика приложения.
  * Commit выбирает единственное соответствие типа/значения. Условия полей перепроверяются; click-evidence
  * сохраняется после подтверждённого результата. Переход ждёт postcondition, не выводится из DOM-мутации.
+ * Фоновая проверка использует цикл recorder без отдельного observer/timer; capture/commit синхронны.
  * Никаких знаний о маршрутах, компонентах или бизнес-действиях приложения здесь нет.
  */
 import {createActor} from 'xstate';
@@ -66,9 +67,6 @@ export class GroupRuntime {
     private signature = '';
     private evaluating = false;
     private pending?: {jobs: GroupTransition[]; stamp?: Stamp};
-    private observer?: MutationObserver;
-    private timer?: ReturnType<typeof setInterval>;
-    private unsubscribe?: () => void;
 
     constructor(
         private readonly root: HTMLElement,
@@ -98,6 +96,7 @@ export class GroupRuntime {
                 normalizers: ['date-dmy-v1', 'decimal-comma-v1'],
             },
             acceptUntrustedEvents: options.acceptUntrustedEvents,
+            onObservation: () => this.tick(),
             onIntent: (event, element) => this.capture(event, element),
             onAction: (action, _element, token) => this.accept(action, token),
         });
@@ -112,15 +111,6 @@ export class GroupRuntime {
         this.actor.start();
         this.resetDeadline();
         this.recorder.start();
-        this.unsubscribe = this.options.areas!.subscribe(() => this.tick());
-        this.observer = new MutationObserver(() => this.tick());
-        this.observer.observe(this.root, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            characterData: true,
-        });
-        this.timer = setInterval(() => this.tick(), 100);
         this.tick();
     }
 
@@ -197,9 +187,6 @@ export class GroupRuntime {
     private dispose(): void {
         this.epoch++;
         this.pending = undefined;
-        this.unsubscribe?.();
-        this.observer?.disconnect();
-        clearInterval(this.timer);
         this.recorder.stop();
         this.receipts.clear();
         this.editing.clear();

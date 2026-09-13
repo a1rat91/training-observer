@@ -9,6 +9,14 @@
         "build": {
             "configurations": {
                 "development": {},
+                "e2e": {
+                    "fileReplacements": [
+                        {
+                            "replace": "projects/demo/src/environments/environment.ts",
+                            "with": "projects/demo/src/environments/environment.e2e.ts"
+                        }
+                    ]
+                },
                 "github": {
                     "baseHref": "/training-observer/",
                     "budgets": [
@@ -109,6 +117,9 @@
         },
         "serve": {
             "configurations": {
+                "e2e": {
+                    "buildTarget": "demo:build:e2e"
+                },
                 "development": {
                     "buildTarget": "demo:build:development"
                 },

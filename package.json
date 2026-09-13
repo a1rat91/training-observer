@@ -31,6 +31,7 @@
         "procedure:server": "node scripts/procedure-server/server.mjs",
         "test:procedure-api": "node --test scripts/procedure-server/*.test.mjs",
         "benchmark:spike": "node scripts/spike-benchmark/all.mjs",
+        "benchmark:observation": "node scripts/observation-benchmark/run.mjs",
         "test:benchmark": "node --test scripts/spike-benchmark/metrics.test.mjs",
         "test:core": "jest --config libs/training-observer/jest.config.cjs --runInBand",
         "test:angular": "jest --config libs/training-observer/jest.angular.config.cjs --runInBand",

@@ -596,6 +596,19 @@ Unit-проверки покрывают маленький root, конкуре
 
 ## Этап 5. Измеряемая оптимизация
 
+**В работе: реализована первая часть — общий цикл recorder/runtime и повторное использование inventory при sampling.**
+Runtime получает coalesced microtask после наблюдения recorder; отдельные runtime observer и interval удалены.
+Произвольные изменения `.value` по-прежнему обнаруживаются среди всех tracked controls и не становятся действиями.
+Мутация пересканирует затронутую область целиком: это безопасный промежуточный вариант, учитывающий влияние labels, ARIA
+и контекста на соседние элементы. Remount и изменение политики пересобирают выбранные области.
+
+Воспроизводимый runner: `npm run benchmark:observation`. Сравнение с `98575d2`, методика и ограничения находятся в
+[отчёте](./observation-benchmark/README.md). Browser tests получили отдельный backend на 4311 через Angular environment
+replacement, чтобы не расходовать лимит сессий demo на 4310.
+
+**Осталось в этапе 5:** точная invalidation dirty subtrees и identity с безопасным fallback, отдельные счётчики работы
+discovery/ownership и расширенные измерения задержки принятия действия. Этот промежуточный результат не закрывает этап.
+
 **Изменения:** добавить общий scheduler observation, чтобы recorder/runtime не делали независимые полные scans одного
 root. После первичного inventory обновлять tracked controls по dirty subtrees; периодически читать properties из
 актуального набора, потому что MutationObserver не видит произвольные `.value`/`.checked` изменения.

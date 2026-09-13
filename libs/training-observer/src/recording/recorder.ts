@@ -3,7 +3,8 @@
  * Алгоритм: создаёт inventory и descriptors, принимает capture events, сопоставляет intent с контролом,
  * подтверждает текст только после blur, select — после изменения/выбора через DOM-значение.
  * Действия сохраняются отдельно от фоновых state updates.
- * Мутации и sampling properties обновляют inventory; dropdown требует доказанного owner.
+ * Мутации обновляют inventory области; sampling читает известные controls без повторного поиска.
+ * После наблюдения coalesced microtask запускает проверку runtime; dropdown требует доказанного owner.
  * AreaRegistry ограничивает inventory/values и поколения pending действий; EventHub разделяет capture listeners.
  * Stop освобождает подписку, observers и timer. Angular model, HTTP payload и setters не используются.
  */
@@ -75,6 +76,8 @@ export interface RecorderOptions {
     areas?: AreaRegistry;
     pollMs?: number;
     onUpdate?(): void;
+    /** После цикла наблюдения: общий такт проверки runtime, без отдельного observer/timer. */
+    onObservation?(): void;
     /** Synchronous semantic intent; Element is ephemeral and never serialized. */
     onAction?(
         action: SemanticAction,
@@ -101,6 +104,7 @@ export class ElementRecorder {
     private synchronizing = false;
     private pending?: PendingInput;
     private choice?: PendingSelection;
+    private observationQueued = false;
     private notification?: ReturnType<typeof setTimeout>;
     private startedAt = 0;
     private descriptorSequence = 0;
@@ -163,7 +167,6 @@ export class ElementRecorder {
         }, this.options.pollMs ?? 100);
 
         this.cleanup.push(() => clearInterval(interval));
-        this.reconcile('snapshot');
         this.notify();
     }
 
@@ -250,6 +253,7 @@ export class ElementRecorder {
     private shutdown(): void {
         this.running = false;
         this.generation++;
+        this.observationQueued = false;
 
         for (const observer of this.observers.values()) {
             observer.disconnect();
@@ -409,13 +413,15 @@ export class ElementRecorder {
                 const observer = new MutationObserver((records) => {
                     if (
                         this.running &&
-                        records.some(
-                            (record) =>
-                                record.target.nodeType !== 1 ||
-                                this.accepts(record.target as Element),
+                        records.some((record) =>
+                            this.accepts(
+                                record.target.nodeType === 1
+                                    ? (record.target as Element)
+                                    : record.target.parentElement!,
+                            ),
                         )
                     ) {
-                        this.reconcile('mutation');
+                        this.reconcile('mutation', [root]);
                     }
                 });
 
@@ -513,9 +519,32 @@ export class ElementRecorder {
         }
     }
 
-    private reconcile(source: ObservedState['source']): void {
+    private reconcile(
+        source: ObservedState['source'],
+        dirtyRoots?: readonly Element[],
+    ): void {
+        if (source === 'property-observer') {
+            // Flush mutations before sampling: the observer callback may not have run yet.
+            this.options.areas?.snapshots();
+            dirtyRoots = [...this.observers]
+                .filter(([, observer]) =>
+                    observer.takeRecords().some((record) => {
+                        const element =
+                            record.target.nodeType === 1
+                                ? (record.target as Element)
+                                : record.target.parentElement;
+
+                        return !!element && this.accepts(element);
+                    }),
+                )
+                .map(([root]) => root);
+        }
+
+        // Property sampling reuses inventory. A DOM mutation rescans its area because label/ARIA/context
+        // dependencies can affect siblings outside the changed subtree. Area changes rebuild all selected roots.
+        const roots = dirtyRoots ?? this.roots();
         const elements = new Set(
-            this.roots().flatMap((root) => [...root.querySelectorAll(CONTROLS)]),
+            roots.flatMap((root) => [...root.querySelectorAll(CONTROLS)]),
         );
 
         for (const element of elements) {
@@ -551,6 +580,26 @@ export class ElementRecorder {
                 this.tracked.delete(target.element);
             }
         }
+
+        this.observationCycle();
+    }
+
+    private observationCycle(): void {
+        if (!this.running || this.observationQueued || !this.options.onObservation) {
+            return;
+        }
+
+        this.observationQueued = true;
+        const generation = this.generation;
+
+        queueMicrotask(() => {
+            if (!this.running || this.generation !== generation) {
+                return;
+            }
+
+            this.observationQueued = false;
+            this.options.onObservation?.();
+        });
     }
 
     private state(target: Tracked, source: ObservedState['source']): void {

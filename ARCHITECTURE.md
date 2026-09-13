@@ -187,6 +187,9 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 
 1. Recorder строит inventory выбранного root и описания целей. Capture events дают намерение пользователя;
    MutationObserver и sampling properties дают наблюдаемые состояния. State update сам по себе не является действием.
+   Sampling читает уже известные controls; DOM-мутация пересобирает inventory изменённой области, смена областей — всех
+   выбранных roots. Runtime получает общий coalesced microtask после цикла recorder и не держит второй observer/timer.
+   Capture/commit остаются синхронными. Это оптимизация по областям; точная invalidation поддеревьев ещё не реализована.
 2. Input/select подтверждаются по значению и принадлежности контролу. Portal option учитывается только при доказанном
    owner. Recording сохраняет actions и states раздельно, без живых Event/Element-ссылок.
 3. Authoring создаёт v4 из записи с областями. Автор отмечает границы групп, проверяет значения, зависимости и

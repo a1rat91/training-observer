@@ -4,7 +4,8 @@
  * проверяет ожидаемое действие и отдельное completion, затем выбирает ветку либо ждёт изменения DOM.
  * TargetResolver ограничивает action и completion областью из wire v3; remount владельца отменяет intent.
  * XState отражает фазу; Conditions вычисляет true/false/unknown. Конец графа требует глобального completion.
- * Skip/retry/переход инвалидируют старые tokens; stop освобождает recorder, observer и timer.
+ * Фоновые проверки получают общий цикл recorder. Skip/retry/переход инвалидируют старые tokens;
+ * stop освобождает recorder вместе с его observer и timer.
  */
 import {createActor} from 'xstate';
 
@@ -34,8 +35,6 @@ export class LegacyScenarioRuntime {
     private unsubscribeAreas?: () => void;
     private readonly conditions: Conditions;
     private readonly recorder: ElementRecorder;
-    private observer?: MutationObserver;
-    private interval?: ReturnType<typeof setInterval>;
     private step: ScenarioStep | null;
     private armed = false;
     private generation = 0;
@@ -88,6 +87,7 @@ export class LegacyScenarioRuntime {
             areas: options.areas,
             onAction: (action, element, intentToken) =>
                 this.action(action, element, intentToken),
+            onObservation: () => this.tick(),
             onIntent: (event, element) => this.capture(event, element),
         });
     }
@@ -126,14 +126,6 @@ export class LegacyScenarioRuntime {
             previousAreas = currentAreas;
             this.tick();
         });
-        this.observer = new MutationObserver(() => this.tick());
-        this.observer.observe(this.root, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            characterData: true,
-        });
-        this.interval = setInterval(() => this.tick(), 100);
         this.tick();
     }
 
@@ -192,8 +184,6 @@ export class LegacyScenarioRuntime {
     private dispose(): void {
         this.unsubscribeAreas?.();
         this.unsubscribeAreas = undefined;
-        clearInterval(this.interval);
-        this.observer?.disconnect();
         this.recorder.stop();
     }
 

@@ -470,3 +470,16 @@ it('matches explicit navigation in the active group without assigning it to an a
         history.replaceState({}, '', pathname);
     }
 });
+
+it('shares the recorder sampling timer and releases it along with queued observation callbacks', () => {
+    const interval = jest.spyOn(globalThis, 'setInterval');
+
+    start();
+    jest.runAllTicks();
+    expect(interval).toHaveBeenCalledTimes(1);
+    runtime!.stop();
+    jest.runAllTicks();
+    expect(jest.getTimerCount()).toBe(0);
+    expect(runtime!.snapshot().status).toBe('stopped');
+    interval.mockRestore();
+});

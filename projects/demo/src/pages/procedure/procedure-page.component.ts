@@ -22,6 +22,7 @@ import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
 import {type Subscription, timeout} from 'rxjs';
 
+import {environment} from '../../environments/environment';
 import {
     type ProcedureAction,
     type ProcedureField,
@@ -30,7 +31,7 @@ import {
 } from './procedure-contract';
 import {type FieldValue, ProcedureFieldComponent} from './procedure-field.component';
 
-const API = 'http://127.0.0.1:4310/api/procedures';
+const API = environment.procedureApiUrl;
 
 @Component({
     standalone: true,
