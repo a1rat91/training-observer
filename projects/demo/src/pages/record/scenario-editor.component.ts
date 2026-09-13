@@ -27,6 +27,7 @@ import {
 } from '@training-observer/core';
 import {AreaRegistryService} from '@training-observer/core/angular';
 
+import {type ElementGroup} from '../../authoring/element-groups';
 import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
 import {ScenarioReviewComponent} from './scenario-review.component';
 
@@ -51,9 +52,8 @@ import {ScenarioReviewComponent} from './scenario-review.component';
     template: `
         <h3>Подготовка сценария</h3>
         <p>
-            Здесь вы задаёте конец тренировки, экраны обучения и задания внутри них. Это
-            рабочая часть сценария; отдельные «Группы вариантов» пока служат только
-            заготовками.
+            Здесь вы задаёте конец тренировки, экраны обучения и задания внутри них. В
+            карточках заданий можно настроить обратную связь и привязать группы вариантов.
         </p>
         @if (stale()) {
             <p role="alert">
@@ -238,6 +238,7 @@ import {ScenarioReviewComponent} from './scenario-review.component';
         @if (source) {
             @if (draft(); as document) {
                 <scenario-review
+                    [elementGroups]="elementGroups()"
                     [scenario]="document"
                     (scenarioChange)="review($event)"
                 />
@@ -299,6 +300,7 @@ export class ScenarioEditorComponent {
     private readonly builtFor = signal<Recording | null>(null);
     private readonly configurationChanged = signal(false);
 
+    public readonly elementGroups = input<readonly ElementGroup[]>([]);
     public readonly recording = input.required<Recording>();
     public readonly root = input.required<HTMLElement>();
     public readonly disabled = input(false);
@@ -605,7 +607,7 @@ export class ScenarioEditorComponent {
             this.configurationChanged.set(false);
             this.conflicts.set([]);
 
-            this.draft.set(document.version === 4 ? document : null);
+            this.draft.set('groups' in document ? document : null);
             this.error.set('');
         } catch (error: unknown) {
             this.error.set(
@@ -632,7 +634,7 @@ export class ScenarioEditorComponent {
         try {
             const document = parseScenario(source);
 
-            this.draft.set(document.version === 4 ? document : null);
+            this.draft.set('groups' in document ? document : null);
             this.error.set('');
         } catch (error: unknown) {
             this.draft.set(null);

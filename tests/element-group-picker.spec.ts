@@ -9,7 +9,7 @@ test.use({hasTouch: true});
 
 async function fixture(page: Page): Promise<void> {
     await page.goto('/record');
-    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
+    await page.getByText('Группы вариантов', {exact: true}).click();
     await page.locator('procedure-search-mf').evaluate((root) => {
         const form = document.createElement('form');
 
@@ -97,7 +97,7 @@ test('generic controls are grouped through a shield, survive reload and remain i
         ),
     ).toContain('submit');
     await page.reload();
-    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
+    await page.getByText('Группы вариантов', {exact: true}).click();
     await expect(
         page.getByRole('button', {name: 'Изменить My choices', exact: true}),
     ).toBeVisible();
@@ -214,7 +214,7 @@ test('touch selection and highlighting follow resize and scroll; changed labels 
 
 test('a Taiga combobox is selectable without opening its dropdown', async ({page}) => {
     await page.goto('/record');
-    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
+    await page.getByText('Группы вариантов', {exact: true}).click();
     await page
         .getByRole('button', {name: 'Создать группу вариантов', exact: true})
         .click();
@@ -245,7 +245,7 @@ test('invalid saved group documents are rejected and not overwritten', async ({p
         ELEMENT_GROUPS_KEY,
     );
     await page.reload();
-    await page.getByText('Группы вариантов — заготовки', {exact: true}).click();
+    await page.getByText('Группы вариантов', {exact: true}).click();
     await page
         .getByRole('button', {name: 'Создать группу вариантов', exact: true})
         .click();

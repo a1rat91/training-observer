@@ -7,6 +7,7 @@ export {
 } from './recording-edit';
 export {
     type ExpectationSnapshot,
+    type RuntimeFeedback,
     type RuntimeOptions,
     type RuntimeSnapshot,
     type RuntimeStatus,

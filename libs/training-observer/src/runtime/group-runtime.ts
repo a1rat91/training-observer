@@ -4,11 +4,13 @@
  * Commit выбирает единственное соответствие типа/значения. Условия полей перепроверяются; click-evidence
  * сохраняется после подтверждённого результата. Переход ждёт postcondition, не выводится из DOM-мутации.
  * Фоновая проверка использует цикл recorder без отдельного observer/timer; capture/commit синхронны.
+ * Реакции v5 связываются с доступным заданием и подтверждённой попыткой, успех ждёт completion.
  * Никаких знаний о маршрутах, компонентах или бизнес-действиях приложения здесь нет.
  */
 import {createActor} from 'xstate';
 
 import {
+    type ActionVariant,
     type ElementDescriptor,
     type Expectation,
     type ExpectationGroup,
@@ -23,6 +25,7 @@ import {Conditions, valueMatches} from './conditions';
 import {
     type ExpectationSnapshot,
     machine,
+    type RuntimeFeedback,
     type RuntimeOptions,
     type RuntimeSnapshot,
 } from './state';
@@ -37,16 +40,25 @@ interface Stamp {
 interface Receipt {
     stamp?: Stamp;
     confirmed: boolean;
+    attemptId: string;
 }
 
 interface Intent {
     epoch: number;
     stamp?: Stamp;
     candidates: Array<{job: Job; permitted: boolean}>;
+    variants?: Array<{job: Job; groupId: string; variant: ActionVariant}>;
 }
 
 export class GroupRuntime {
     private readonly actor = createActor(machine);
+    private readonly sessionId = Array.from(
+        globalThis.crypto.getRandomValues(new Uint32Array(4)),
+        (value) => value.toString(16).padStart(8, '0'),
+    ).join('');
+
+    private readonly feedbackQueue: RuntimeFeedback[] = [];
+    private readonly sent = new Set<string>();
     private readonly resolver: TargetResolver;
     private readonly conditions: Conditions;
     private readonly recorder: ElementRecorder;
@@ -66,7 +78,7 @@ export class GroupRuntime {
     private deadline = 0;
     private signature = '';
     private evaluating = false;
-    private pending?: {jobs: GroupTransition[]; stamp?: Stamp};
+    private pending?: {jobs: GroupTransition[]; stamp?: Stamp; attemptId: string};
 
     constructor(
         private readonly root: HTMLElement,
@@ -336,6 +348,15 @@ export class GroupRuntime {
                 );
 
                 if (result === 'true') {
+                    if (!receipt.confirmed) {
+                        this.feedback(
+                            job,
+                            receipt.attemptId,
+                            'success',
+                            job.feedback?.success,
+                        );
+                    }
+
                     receipt.confirmed = true;
 
                     return save('satisfied');
@@ -452,7 +473,32 @@ export class GroupRuntime {
                         : this.dependencies(job),
             }));
 
-        const token: Intent = {epoch: this.epoch, stamp, candidates};
+        const variants = [...this.group.expectations, ...this.group.transitions]
+            .filter(
+                (job) =>
+                    this.available(job) &&
+                    this.dependencies(job) &&
+                    ('toGroupId' in job
+                        ? this.transitionAllowed(job)
+                        : !['blocked', 'inactive', 'satisfied', 'skipped'].includes(
+                              this.states.get(job.id) ?? 'waiting',
+                          )),
+            )
+            .flatMap((job) =>
+                (job.choiceGroups ?? []).flatMap((choices) =>
+                    choices.variants.flatMap((variant) => {
+                        const descriptor = this.scenario.descriptors.find(
+                            (entry) => entry.id === variant.action.targetId,
+                        )!;
+
+                        return this.resolver.resolve(descriptor).element === element
+                            ? [{job, groupId: choices.id, variant}]
+                            : [];
+                    }),
+                ),
+            );
+
+        const token: Intent = {epoch: this.epoch, stamp, candidates, variants};
 
         this.minted.add(token);
 
@@ -514,6 +560,36 @@ export class GroupRuntime {
             this.editing.delete(job.id);
         }
 
+        const variants = (intent.variants ?? []).filter(
+            ({variant}) =>
+                variant.action.kind === action.kind &&
+                (!('value' in action) ||
+                    ('value' in variant.action &&
+                        valueMatches(action.value, variant.action.value))),
+        );
+
+        // Похожие descriptors могут сойтись на одном live control. Не выбирать ошибку против правильного задания.
+        if (variants.length > 1 || (variants.length && candidates.length)) {
+            this.message =
+                'Противоречивые правила вариантов: действие соответствует нескольким целям.';
+            this.actor.send({type: 'AMBIGUOUS'});
+            this.publish();
+
+            return;
+        }
+
+        if (variants.length === 1) {
+            const {job, groupId, variant} = variants[0]!;
+
+            this.feedback(job, action.id, variant.outcome, variant.message, {
+                choiceGroupId: groupId,
+                variantId: variant.id,
+            });
+            this.publish();
+
+            return;
+        }
+
         if (!candidates.length) {
             return;
         }
@@ -537,6 +613,15 @@ export class GroupRuntime {
             for (const {job} of allowed) {
                 this.receipts.delete(job.id);
                 this.mismatches.add(job.id);
+            }
+
+            if (allowed.length === 1) {
+                this.feedback(
+                    allowed[0]!.job,
+                    action.id,
+                    'error',
+                    allowed[0]!.job.feedback?.mismatch,
+                );
             }
 
             this.message = 'Значение не соответствует заданию.';
@@ -570,12 +655,14 @@ export class GroupRuntime {
             this.pending = {
                 jobs: transitions.map((entry) => entry.job),
                 stamp: intent.stamp,
+                attemptId: action.id,
             };
             this.resetDeadline();
         } else {
             this.receipts.set(matching[0]!.job.id, {
                 stamp: intent.stamp,
                 confirmed: false,
+                attemptId: action.id,
             });
             this.mismatches.delete(matching[0]!.job.id);
         }
@@ -653,6 +740,14 @@ export class GroupRuntime {
                     if (nextId === null) {
                         this.finalizeTransition();
                     } else {
+                        const job = matches[0]!.job;
+
+                        this.feedback(
+                            job,
+                            this.pending.attemptId,
+                            'success',
+                            job.feedback?.success,
+                        );
                         this.advance(nextId);
                     }
 
@@ -676,6 +771,13 @@ export class GroupRuntime {
                 } else {
                     this.wait('FINALIZE');
                 }
+
+                return;
+            }
+
+            if (this.ambiguousChoice()) {
+                this.message = 'Неоднозначная цель группы вариантов. Проверьте сценарий.';
+                this.actor.send({type: 'AMBIGUOUS'});
 
                 return;
             }
@@ -710,6 +812,19 @@ export class GroupRuntime {
 
     private finalizeTransition(): void {
         if (this.conditions.evaluate(this.scenario.completion) === 'true') {
+            const job = this.pending?.jobs.find(
+                (entry) => this.conditions.evaluate(entry.completion) === 'true',
+            );
+
+            if (job && this.pending) {
+                this.feedback(
+                    job,
+                    this.pending.attemptId,
+                    'success',
+                    job.feedback?.success,
+                );
+            }
+
             this.completed++;
             this.complete();
         } else {
@@ -749,7 +864,80 @@ export class GroupRuntime {
         }
     }
 
+    private ambiguousChoice(): boolean {
+        const jobs = [...this.group.expectations, ...this.group.transitions].filter(
+            (job) =>
+                this.available(job) &&
+                this.dependencies(job) &&
+                ('toGroupId' in job
+                    ? this.transitionAllowed(job)
+                    : !['blocked', 'inactive', 'satisfied', 'skipped'].includes(
+                          this.states.get(job.id) ?? 'waiting',
+                      )),
+        );
+
+        return jobs
+            .flatMap((job) => job.choiceGroups ?? [])
+            .flatMap((group) => group.variants)
+            .some((variant) => {
+                const descriptor = this.scenario.descriptors.find(
+                    (entry) => entry.id === variant.action.targetId,
+                )!;
+
+                return (
+                    this.resolver.resolve(descriptor).report.status === 'ambiguous' ||
+                    ['ambiguous', 'conflict'].includes(
+                        this.resolver.areaStatus(descriptor.id),
+                    )
+                );
+            });
+    }
+
+    private feedback(
+        job: Job,
+        attemptId: string,
+        outcome: RuntimeFeedback['outcome'],
+        message?: string,
+        variant: Pick<RuntimeFeedback, 'choiceGroupId' | 'variantId'> = {},
+    ): void {
+        if (!message?.trim()) {
+            return;
+        }
+
+        const key = JSON.stringify([
+            this.epoch,
+            this.group.id,
+            job.id,
+            attemptId,
+            outcome,
+            variant.variantId,
+        ]);
+
+        if (this.sent.has(key)) {
+            return;
+        }
+
+        this.sent.add(key);
+        this.feedbackQueue.push({
+            sessionId: this.sessionId,
+            groupId: this.group.id,
+            jobId: job.id,
+            attemptId,
+            outcome,
+            message,
+            ...variant,
+        });
+    }
+
     private publish(): void {
+        const feedback = this.feedbackQueue.splice(0);
+
+        for (const event of feedback) {
+            if (this.actor.getSnapshot().value !== 'stopped') {
+                this.options.onFeedback?.(event);
+            }
+        }
+
         const snapshot = this.snapshot();
         const signature = JSON.stringify(snapshot);
 

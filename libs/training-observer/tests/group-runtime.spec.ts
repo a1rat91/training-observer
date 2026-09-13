@@ -483,3 +483,238 @@ it('shares the recorder sampling timer and releases it along with queued observa
     expect(runtime!.snapshot().status).toBe('stopped');
     interval.mockRestore();
 });
+
+function choiceButton(id: string, outcome: 'allowed' | 'error' = 'error'): void {
+    const button = document.createElement('button');
+
+    button.textContent = id;
+    root.querySelector('alpha-surface')!.append(button);
+    scenario.descriptors.push(describeElement(button, areas.root('alpha')!, id));
+    scenario.areas.targets.push({targetId: id, areaKey: 'alpha'});
+    scenario.version = 5;
+    const job = scenario.groups[0]!.expectations[0]!;
+
+    job.choiceGroups = [
+        ...(job.choiceGroups ?? []),
+        {
+            id,
+            title: id,
+            variants: [
+                {
+                    id,
+                    action: {kind: 'click', targetId: id},
+                    outcome,
+                    message: `Feedback ${id}`,
+                },
+            ],
+        },
+    ];
+}
+
+function startFeedback(): Array<import('../src').RuntimeFeedback> {
+    const events: Array<import('../src').RuntimeFeedback> = [];
+
+    runtime = new ScenarioRuntime(root, scenario, {
+        areas,
+        acceptUntrustedEvents: true,
+        timeoutMs: 1000,
+        onFeedback: (event) => {
+            events.push(event);
+        },
+    });
+    runtime.start();
+
+    return events;
+}
+
+it('v5 emits wrong input only on blur, corrects it and never repeats feedback on observation', () => {
+    scenario.version = 5;
+    scenario.groups[0]!.expectations[0]!.feedback = {
+        success: 'Correct A',
+        mismatch: 'Wrong A',
+    };
+    scenario.groups[0]!.expectations[1]!.feedback = {success: 'Correct B'};
+    const events = startFeedback();
+
+    send('a', 'wrong', false);
+    expect(events).toEqual([]);
+    field('a').dispatchEvent(new Event('blur'));
+    jest.advanceTimersByTime(0);
+    expect(events.map((event) => event.message)).toEqual(['Wrong A']);
+    send('b', 'B');
+    send('a', 'A');
+    jest.advanceTimersByTime(500);
+    expect(events.map((event) => event.message)).toEqual([
+        'Wrong A',
+        'Correct B',
+        'Correct A',
+    ]);
+    expect(new Set(events.map((event) => event.attemptId)).size).toBe(3);
+    expect(
+        events.every(
+            (event) =>
+                event.sessionId === events[0]!.sessionId && event.groupId === 'first',
+        ),
+    ).toBe(true);
+    expect(JSON.stringify(events)).not.toContain('raw');
+    field('a').value = 'server change';
+    jest.advanceTimersByTime(500);
+    expect(events).toHaveLength(3);
+    runtime!.stop();
+    send('a', 'A');
+    expect(events).toHaveLength(3);
+});
+
+it('v5 alternatives give explicit feedback without crediting or penalizing unrelated actions', () => {
+    choiceButton('Wrong');
+    choiceButton('Help', 'allowed');
+    const events = startFeedback();
+
+    root.querySelectorAll('button')[1]!.click();
+    jest.advanceTimersByTime(0);
+    expect(events[0]).toMatchObject({
+        outcome: 'error',
+        message: 'Feedback Wrong',
+        jobId: 'a',
+        variantId: 'Wrong',
+    });
+    expect(state('a')).toBe('ready');
+    root.querySelectorAll('button')[2]!.click();
+    jest.advanceTimersByTime(0);
+    expect(events[1]).toMatchObject({outcome: 'allowed'});
+    root.querySelector('h2')!.click();
+    jest.advanceTimersByTime(500);
+    expect(events).toHaveLength(2);
+    send('a', 'A');
+    root.querySelectorAll('button')[1]!.click();
+    jest.advanceTimersByTime(0);
+    expect(events).toHaveLength(2); // already satisfied task does not own alternatives
+});
+
+it('v5 does not evaluate alternatives of blocked or future jobs', () => {
+    choiceButton('Wrong');
+    scenario.groups[0]!.expectations[0]!.requires = ['b'];
+    const events = startFeedback();
+
+    root.querySelectorAll('button')[1]!.click();
+    jest.advanceTimersByTime(0);
+    expect(events).toHaveLength(0);
+    send('b', 'B');
+    root.querySelectorAll('button')[1]!.click();
+    jest.advanceTimersByTime(0);
+    expect(events).toHaveLength(1);
+});
+
+it('v5 never invents a student error for an ambiguous alternative target', () => {
+    choiceButton('Wrong');
+    root.querySelector('alpha-surface')!.append(
+        root.querySelectorAll('button')[1]!.cloneNode(true),
+    );
+    const events = startFeedback();
+
+    root.querySelectorAll('button')[1]!.click();
+    jest.advanceTimersByTime(0);
+    expect(events).toHaveLength(0);
+    expect(runtime!.snapshot().status).toBe('ambiguous');
+});
+
+it.each(['radio', 'checkbox'])(
+    'v5 checks %s choices after the checked value commits',
+    (type) => {
+        const control = document.createElement('input');
+
+        control.type = type;
+        control.setAttribute('aria-label', 'Forbidden choice');
+        root.querySelector('alpha-surface')!.append(control);
+        scenario.version = 5;
+        scenario.descriptors.push(
+            describeElement(control, areas.root('alpha')!, 'choice'),
+        );
+        scenario.areas.targets.push({targetId: 'choice', areaKey: 'alpha'});
+        scenario.groups[0]!.expectations[0]!.choiceGroups = [
+            {
+                id: 'options',
+                title: 'Options',
+                variants: [
+                    {
+                        id: 'forbidden',
+                        outcome: 'error',
+                        message: 'Forbidden',
+                        action: {
+                            kind: 'select',
+                            targetId: 'choice',
+                            value: {kind: 'raw-equals', value: true},
+                        },
+                    },
+                ],
+            },
+        ];
+        const events = startFeedback();
+
+        control.click();
+        jest.advanceTimersByTime(0);
+        expect(events.map((event) => event.message)).toEqual(['Forbidden']);
+        jest.advanceTimersByTime(500);
+        expect(events).toHaveLength(1);
+    },
+);
+
+it('v5 transition success waits for its result and final global completion', () => {
+    scenario.version = 5;
+    const edge = scenario.groups[0]!.transitions[0]!;
+
+    edge.toGroupId = null;
+    edge.completion = {
+        kind: 'value',
+        targetId: 'd',
+        condition: {kind: 'raw-equals', value: 'DONE'},
+    };
+    scenario.completion = {
+        kind: 'value',
+        targetId: 'c',
+        condition: {kind: 'raw-equals', value: 'FINAL'},
+    };
+    edge.feedback = {success: 'Finished'};
+    const events = startFeedback();
+
+    for (const id of ['a', 'b', 'c']) {
+        send(id, id.toUpperCase());
+    }
+
+    click();
+    expect(events).toEqual([]);
+    field('d').value = 'DONE';
+    jest.advanceTimersByTime(100);
+    expect(events).toEqual([]);
+    field('c').value = 'FINAL';
+    jest.advanceTimersByTime(100);
+    expect(events.map((event) => event.message)).toEqual(['Finished']);
+    expect(runtime!.snapshot().status).toBe('completed');
+    jest.advanceTimersByTime(500);
+    expect(events).toHaveLength(1);
+});
+
+it('v5 roundtrips reactions and rejects v4 extensions, dangling alternatives and contradictory rules', () => {
+    choiceButton('Wrong');
+    const source = serializeScenario(scenario);
+
+    expect(parseScenario(source)).toEqual(scenario);
+    expect(() => serializeScenario({...scenario, version: 4})).toThrow('unknown field');
+    const job = scenario.groups[0]!.expectations[0]!;
+    const variant = job.choiceGroups![0]!.variants[0]!;
+
+    variant.action.targetId = 'missing';
+    expect(() => serializeScenario(scenario)).toThrow();
+    variant.action.targetId = 'Wrong';
+    scenario.groups[0]!.expectations[1]!.choiceGroups = JSON.parse(
+        JSON.stringify(job.choiceGroups),
+    );
+    expect(() => serializeScenario(scenario)).toThrow('Повторные');
+    delete scenario.groups[0]!.expectations[1]!.choiceGroups;
+    variant.action = {
+        kind: 'input',
+        targetId: 'a',
+        value: {kind: 'raw-equals', value: 'A'},
+    };
+    expect(() => serializeScenario(scenario)).toThrow('Ожидаемое действие');
+});

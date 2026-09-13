@@ -72,7 +72,7 @@ function scenario(): Scenario {
         serializeScenario(draftLegacyScenario(log, finish, 'player')),
     );
 
-    if (result.version === 4) {
+    if ('groups' in result) {
         throw new Error('Expected v3');
     }
 

@@ -1,4 +1,4 @@
-/** Recording v3 сохраняет области; Scenario v4 — группы. Прежние v2/v3 читаются без изменения семантики. */
+/** Recording v3 сохраняет области; Scenario v4 — группы, v5 — авторские реакции. Прежние v2/v3/v4 читаются без изменения семантики. */
 import {type AreaDefinition} from '../areas/types';
 
 export interface AreaBindings {
@@ -161,8 +161,31 @@ export type GroupExpectedAction =
     | {kind: 'input' | 'select'; targetId: string; value: ValueCondition}
     | {kind: 'navigation'; pathname: string};
 
+/** Авторские реакции относятся к подтверждённой попытке, а не к каждому DOM event. */
+export interface ActionFeedback {
+    success?: string;
+    mismatch?: string;
+}
+
+/** Ожидаемое действие задаётся самим заданием. Альтернативы никогда не засчитывают его. */
+export interface ActionVariant {
+    id: string;
+    action: Exclude<GroupExpectedAction, {kind: 'navigation'}>;
+    outcome: 'allowed' | 'error';
+    message?: string;
+}
+export interface ActionChoiceGroup {
+    id: string;
+    title: string;
+    variants: ActionVariant[];
+}
+export interface ActionReactions {
+    feedback?: ActionFeedback;
+    choiceGroups?: ActionChoiceGroup[];
+}
+
 /** Группа независимых ожиданий; requires задаёт только явно необходимые зависимости. */
-export interface Expectation {
+export interface Expectation extends ActionReactions {
     id: string;
     instruction: string;
     hint: string | null;
@@ -172,7 +195,7 @@ export interface Expectation {
     action: GroupExpectedAction;
     completion: Condition;
 }
-export interface GroupTransition {
+export interface GroupTransition extends ActionReactions {
     id: string;
     instruction: string;
     hint: string | null;
@@ -191,7 +214,7 @@ export interface ExpectationGroup {
 }
 export interface GroupedScenario {
     kind: 'training-scenario';
-    version: 4;
+    version: 4 | 5;
     id: string;
     mode: ObservationMode;
     areas: AreaBindings;

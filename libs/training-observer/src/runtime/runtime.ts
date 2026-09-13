@@ -1,6 +1,6 @@
 /**
  * ScenarioRuntime выбирает интерпретатор по проверенной версии документа.
- * v2/v3 сохраняют последовательную семантику, v4 использует группы ожиданий.
+ * v2/v3 сохраняют последовательную семантику, v4/v5 используют группы ожиданий; v5 добавляет обратную связь.
  * Facade делегирует lifecycle; импорт не мигрирует зависимости и не переупорядочивает сценарий.
  */
 import {readScenario, type Scenario} from '../contracts';
@@ -10,6 +10,7 @@ import {type RuntimeOptions, type RuntimeSnapshot} from './state';
 
 export type {
     ExpectationSnapshot,
+    RuntimeFeedback,
     RuntimeOptions,
     RuntimeSnapshot,
     RuntimeStatus,
@@ -21,7 +22,7 @@ export class ScenarioRuntime {
         const document = readScenario(scenario);
 
         this.session =
-            document.version === 4
+            'groups' in document
                 ? new GroupRuntime(root, document, options)
                 : new LegacyScenarioRuntime(root, document, options);
     }

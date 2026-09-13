@@ -39,16 +39,28 @@ export function mergeScenarioDraft(
     generated: Scenario,
     preferRecording = false,
 ): DraftMerge {
-    const base = readScenario(original);
-    const edited = readScenario(authored);
+    const base = parseScenario(serializeScenario(original));
+    const edited = parseScenario(serializeScenario(authored));
     const next = parseScenario(serializeScenario(generated));
+
+    // v5 добавляет только авторские реакции; выравниваем групповые версии перед трёхсторонним merge.
+    if (
+        'groups' in base &&
+        'groups' in edited &&
+        'groups' in next &&
+        [base.version, edited.version, next.version].includes(5)
+    ) {
+        base.version = 5;
+        edited.version = 5;
+        next.version = 5;
+    }
 
     if (base.version !== edited.version || base.version !== next.version) {
         throw new Error('Нельзя объединить разные версии сценария.');
     }
 
     // У свернутого ввода ID берётся от первого события. После его удаления сохраняем ID ожидания.
-    if (base.version === 4 && next.version === 4) {
+    if ('groups' in base && 'groups' in next) {
         // Порядковые group-N сдвигаются после удаления границы. ID переносится по входящему переходу.
         const incoming = (document: typeof base, id: string): string[] =>
             document.groups
@@ -155,6 +167,30 @@ export function mergeScenarioDraft(
 
         if (same(after, before) || same(current, after)) {
             return current;
+        }
+
+        if (
+            path === '$.areas.targets' &&
+            Array.isArray(before) &&
+            Array.isArray(current) &&
+            Array.isArray(after)
+        ) {
+            const identify = (
+                entries: Array<{targetId: string; areaKey: string}>,
+            ): Array<{id: string; areaKey: string}> =>
+                entries.map((entry) => ({id: entry.targetId, areaKey: entry.areaKey}));
+
+            const bindings = merge(
+                identify(before),
+                identify(current),
+                identify(after),
+                '$.areaBindings',
+            ) as Array<{id: string; areaKey: string}>;
+
+            return bindings.map((entry) => ({
+                targetId: entry.id,
+                areaKey: entry.areaKey,
+            }));
         }
 
         if (keyed(before) && keyed(current) && keyed(after)) {

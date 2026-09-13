@@ -91,6 +91,24 @@ Tracking-атрибуты и hooks в целевой интерфейс не д�
 редакторе автор отмечает границы вручную и проверяет предлагаемую цель подтверждения; автоматических предложений по
 кластеризации DOM пока нет.
 
+## Авторская обратная связь
+
+Scenario v5 добавляет `feedback` и `choiceGroups` к ожиданиям/переходам, сохраняя исполнение старых v2/v3/v4.
+`GroupRuntime` разрешает альтернативные цели тем же TargetResolver и связывает попытку с capture token и поколением
+области. Только однозначная подтверждённая попытка получает `onFeedback`: sessionId, groupId, jobId, attemptId, outcome,
+message и необязательные choiceGroupId/variantId. Значений полей и DOM-ссылок в событии нет. Успех ждёт completion;
+ошибка значения возникает после commit. Повторное наблюдение не создаёт сообщений. Неизвестное действие не считается
+ошибкой.
+
+Статические противоречия запрещает validator; конфликт live-целей не превращается в ошибку ученика. Реакции проверяются
+только у доступных заданий активного экрана; выполненные/пропущенные задания больше не проверяют альтернативы. Для
+переходов требуются обязательные задания и зависимости. Автоматического вывода ошибочных вариантов по расположению DOM
+нет.
+
+Angular-зона ученика владеет Taiga UI Alerts и lifecycle подписок. Авторские сообщения передаются в шаблон с
+интерполяцией; ядро не зависит от Angular/Taiga и не открывает уведомления. Одна библиотека может использоваться с
+другим UI сообщений.
+
 ## Подтверждение текстового ввода
 
 Для администратора и ученика действует одно правило: события input обновляют внутренний черновик, а сравнение текстового
@@ -131,7 +149,7 @@ flowchart TD
     Identity[DOM identity: role, name, attributes, context] --> Recorder
     Recorder --> Recording[Recording: actions, states, descriptors]
     Recording --> Authoring[draftScenario и проверка автором]
-    Authoring --> Scenario[Scenario v4: группы, зависимости, переходы]
+    Authoring --> Scenario[Scenario v4/v5: группы, переходы, реакции]
     Scenario --> Runtime[ScenarioRuntime и XState]
     Recorder -->|Подтверждённое действие и intent token| Runtime
     Host --> Registry[AreaRegistry: границы и ownership]
@@ -146,11 +164,12 @@ flowchart TD
     Resolver -->|Element либо ambiguous / broken| Runtime
     Resolver --> Conditions[Conditions: true / false / unknown]
     Conditions --> Runtime
-    Runtime --> Snapshot[Snapshot и события для приложения]
+    Runtime --> Snapshot[Snapshot состояния для приложения]
+    Runtime --> Feedback[onFeedback: результат попытки и авторский текст]
 ```
 
 Registry подключён к recorder и поиску целей текущего сеанса через RecordingSessionService. Привязки target → area
-сериализуются в Recording v3 и Scenario v3/v4; learner подключает registry и TargetResolver.
+сериализуются в Recording v3 и Scenario v3/v4/v5; learner подключает registry и TargetResolver.
 
 PortalOwnership индексирует существующие связи по всему document, не читая values. Он не заменяет registry: сначала
 доказывается единственный владелец option, затем проверяется разрешённая область этого контрола. Индекс разделяется в
@@ -167,7 +186,7 @@ snapshot; она не должна дублировать алгоритм вы�
 | Модуль                                                                                        | Назначение и основные точки входа                                                                         |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | [areas](libs/training-observer/src/areas/)                                                    | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals      |
-| [contracts](libs/training-observer/src/contracts/)                                            | Recording v2/v3, Scenario v2/v3/v4, Resolution v2, parse/read/serialize и строгая validation              |
+| [contracts](libs/training-observer/src/contracts/)                                            | Recording v2/v3, Scenario v2/v3/v4/v5, Resolution v2, parse/read/serialize и строгая validation           |
 | [observation/portal-ownership.ts](libs/training-observer/src/observation/portal-ownership.ts) | Общий индекс ARIA-связей dropdown, проверка конкурентов, повторных ID и смены экземпляра до commit        |
 | [dom/identity.ts](libs/training-observer/src/dom/identity.ts)                                 | Общие признаки цели, контекст, доступность; используется записью и поиском                                |
 | [recording/dom.ts](libs/training-observer/src/recording/dom.ts)                               | `describe` создаёт descriptor, `readValue` читает значение по политике                                    |
@@ -176,7 +195,7 @@ snapshot; она не должна дублировать алгоритм вы�
 | [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)                       | `draftScenario`: группы из записи v3, явных границ и выбранного признака результата                       |
 | [runtime/recording-edit.ts](libs/training-observer/src/runtime/recording-edit.ts)             | Удаление действий из копии записи; объединение нового черновика и авторских правок с проверкой конфликтов |
 | [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)                     | Проверка условий по текущему DOM и committed value текущего шага                                          |
-| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)                           | `ScenarioRuntime`: выбор v4 GroupRuntime или совместимого интерпретатора v2/v3                            |
+| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)                           | `ScenarioRuntime`: выбор v4/v5 GroupRuntime или совместимого интерпретатора v2/v3                         |
 
 GroupRuntime хранит доказательства выполнения активной группы; legacy-runtime и legacy-authoring изолируют совместимость
 с прежними последовательными документами. Они не экспортируются отдельными публичными API. Пакет собирается ng-packagr в
@@ -191,8 +210,8 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 `describeElement`/`ElementResolver`. Вне записи автор сохраняет descriptors и area keys в отдельный документ
 `training-element-groups` v1. Ядро предоставляет `readElementDescriptor` для проверки сохранённых целей. Собственные
 события инструмента не являются учебными действиями; document/window capture handlers приложения могут их видеть. Эти
-заготовки пока не исполняются runtime и не добавляются в Scenario v4. Привязка к заданию и обратная связь — следующая
-часть этапа 6.
+заготовки сами не исполняются. `attachChoiceGroup` в админке создаёт копию состава в задании Scenario v5; автор явно
+задаёт допустимые и ошибочные варианты. Ожидаемые действия того же экрана не становятся альтернативами.
 
 ## Алгоритм текущего runtime
 

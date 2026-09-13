@@ -123,7 +123,7 @@ export function draftLegacyScenario(
         steps,
     });
 
-    if (scenario.version === 4) {
+    if ('groups' in scenario) {
         throw new Error('Expected legacy scenario');
     }
 

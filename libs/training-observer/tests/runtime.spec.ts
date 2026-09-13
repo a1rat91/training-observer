@@ -248,7 +248,7 @@ test('authoring draft requires explicit final evidence and captures expected val
     recorder.stop();
     const draft = draftScenario(recorder.snapshot(), value.descriptors[2]!);
 
-    if (draft.version === 4) {
+    if ('groups' in draft) {
         throw new Error('Expected legacy draft');
     }
 

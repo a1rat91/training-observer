@@ -73,7 +73,19 @@ export interface RuntimeSnapshot {
     expectations?: ExpectationSnapshot[];
     transitions?: Array<{id: string; instruction: string; ready: boolean}>;
 }
+/** Одно сообщение на проверенную попытку. Не содержит введённых значений или DOM-ссылок. */
+export interface RuntimeFeedback {
+    sessionId: string;
+    groupId: string;
+    jobId: string;
+    attemptId: string;
+    outcome: 'allowed' | 'error' | 'success';
+    message: string;
+    choiceGroupId?: string;
+    variantId?: string;
+}
 export interface RuntimeOptions extends ResolverOptions {
+    onFeedback?(event: RuntimeFeedback): void;
     areas?: AreaRegistry;
     timeoutMs?: number;
     onUpdate?(snapshot: RuntimeSnapshot): void;

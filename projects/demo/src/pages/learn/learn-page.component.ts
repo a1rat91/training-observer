@@ -7,12 +7,13 @@ import {
     inject,
     NgZone,
     signal,
+    type TemplateRef,
     viewChild,
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
-import {TuiButton, TuiTextfield} from '@taiga-ui/core';
+import {TuiAlertService, TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiTextarea} from '@taiga-ui/kit';
 import {
     parseRecording,
@@ -22,7 +23,7 @@ import {
     ScenarioRuntime,
 } from '@training-observer/core';
 import {AreaRegistryService} from '@training-observer/core/angular';
-import {catchError, of, switchMap, tap} from 'rxjs';
+import {catchError, of, Subscription, switchMap, tap} from 'rxjs';
 
 import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
 import {DEMO_AREAS} from '../workspace/area-definitions';
@@ -45,6 +46,11 @@ import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
     providers: [AreaRegistryService],
 })
 export default class LearnPageComponent {
+    private readonly feedbackText =
+        viewChild.required<TemplateRef<{data: string}>>('feedbackText');
+
+    private readonly alerts = inject(TuiAlertService);
+    private feedbackSubscriptions = new Subscription();
     private readonly route = inject(ActivatedRoute);
     private readonly http = inject(HttpClient);
     private readonly workspace = viewChild.required(ProcedureShellComponent);
@@ -93,14 +99,17 @@ export default class LearnPageComponent {
             this.error.set('Хранилище недоступно. Вставьте JSON сценария.');
         }
 
-        this.destroyRef.onDestroy(() => this.runtime?.stop());
+        this.destroyRef.onDestroy(() => {
+            this.runtime?.stop();
+            this.feedbackSubscriptions.unsubscribe();
+        });
         afterNextRender(() => {
             const savedSource = this.source;
 
             this.route.queryParamMap
                 .pipe(
                     tap((params) => {
-                        this.runtime?.stop();
+                        this.stop();
                         this.current.set(null);
                         this.error.set('');
                         this.example.set(params.has('example'));
@@ -139,6 +148,8 @@ export default class LearnPageComponent {
 
     public start(root: HTMLElement): void {
         this.runtime?.stop();
+        this.feedbackSubscriptions.unsubscribe();
+        this.feedbackSubscriptions = new Subscription();
         this.current.set(null);
         this.error.set('');
         this.hintVisible.set(false);
@@ -188,6 +199,27 @@ export default class LearnPageComponent {
                         {recorded: '/record', current: '/learn'},
                         {recorded: '/spike/record', current: '/learn'},
                     ],
+                    onFeedback: (event) =>
+                        this.zone.run(() => {
+                            // Template interpolation preserves author text; Taiga's string fallback uses innerHTML.
+                            this.feedbackSubscriptions.add(
+                                this.alerts
+                                    .open(this.feedbackText(), {
+                                        data: event.message,
+                                        label: {
+                                            success: 'Верно',
+                                            error: 'Попробуйте иначе',
+                                            allowed: 'Допустимое действие',
+                                        }[event.outcome],
+                                        appearance: {
+                                            success: 'positive',
+                                            error: 'negative',
+                                            allowed: 'info',
+                                        }[event.outcome],
+                                    })
+                                    .subscribe(),
+                            );
+                        }),
                     onUpdate: (snapshot) =>
                         this.zone.run(() => {
                             if (snapshot.stepId !== this.current()?.stepId) {
@@ -221,6 +253,7 @@ export default class LearnPageComponent {
     }
 
     public stop(): void {
+        this.feedbackSubscriptions.unsubscribe();
         this.runtime?.stop();
     }
 

@@ -55,7 +55,7 @@ export class LegacyScenarioRuntime {
     ) {
         const document = readScenario(scenario);
 
-        if (document.version === 4) {
+        if ('groups' in document) {
             throw new Error('Grouped scenario requires the grouped interpreter');
         }
 

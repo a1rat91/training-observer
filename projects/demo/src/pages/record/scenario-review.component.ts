@@ -1,8 +1,9 @@
-import {ChangeDetectionStrategy, Component, model} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, model, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TuiTextfield} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
 import {
+    type ActionReactions,
     type Condition,
     type Expectation,
     type GroupedScenario,
@@ -10,10 +11,14 @@ import {
     type ValueCondition,
 } from '@training-observer/core';
 
+import {ActionReactionsComponent} from '../../authoring/action-reactions.component';
+import {attachChoiceGroup} from '../../authoring/attach-choice-group';
+import {type ElementGroup} from '../../authoring/element-groups';
+
 /** Редактор авторского сценария. Изменения формируют новый документ; целевое приложение не затрагивается. */
 @Component({
     selector: 'scenario-review',
-    imports: [FormsModule, TuiCheckbox, TuiTextfield],
+    imports: [ActionReactionsComponent, FormsModule, TuiCheckbox, TuiTextfield],
     template: `
         <h3>4. Проверьте задания</h3>
         <p>
@@ -21,9 +26,13 @@ import {
             подсказку или ожидаемое значение. Переходы завершают группу.
         </p>
         <p>
-            «Подсказка» помогает выполнить задание. Тексты реакции на правильный или
-            ошибочный ответ здесь пока не настраиваются.
+            «Подсказка» помогает выполнить задание. В «Обратная связь и варианты» у
+            каждого задания и перехода настраиваются сообщения о результате и
+            альтернативные действия.
         </p>
+        @if (error()) {
+            <p role="alert">{{ error() }}</p>
+        }
         @for (group of scenario().groups; track group.id) {
             <section
                 class="group"
@@ -65,6 +74,13 @@ import {
                                 "
                             />
                         </tui-textfield>
+                        <action-reactions
+                            [descriptors]="scenario().descriptors"
+                            [groups]="elementGroups()"
+                            [job]="job"
+                            (attach)="attach(group.id, job.id, $event)"
+                            (changed)="reactions(group.id, job.id, $event)"
+                        />
                         @if (value(job); as expected) {
                             @if (isBoolean(expected)) {
                                 <label>
@@ -145,6 +161,13 @@ import {
                         <br />
                         После обязательных заданий → {{ nextTitle(transition.toGroupId) }}
                     </p>
+                    <action-reactions
+                        [descriptors]="scenario().descriptors"
+                        [groups]="elementGroups()"
+                        [job]="transition"
+                        (attach)="attach(group.id, transition.id, $event)"
+                        (changed)="reactions(group.id, transition.id, $event)"
+                    />
                 }
                 @if (!group.transitions.length) {
                     <p class="transition">
@@ -160,6 +183,41 @@ import {
 })
 export class ScenarioReviewComponent {
     public readonly scenario = model.required<GroupedScenario>();
+    public readonly elementGroups = input<readonly ElementGroup[]>([]);
+    public readonly error = signal('');
+
+    public reactions(groupId: string, jobId: string, patch: ActionReactions): void {
+        this.scenario.update((document) => ({
+            ...document,
+            version: 5,
+            groups: document.groups.map((group) =>
+                group.id === groupId
+                    ? {
+                          ...group,
+                          expectations: group.expectations.map((job) =>
+                              job.id === jobId ? {...job, ...patch} : job,
+                          ),
+                          transitions: group.transitions.map((job) =>
+                              job.id === jobId ? {...job, ...patch} : job,
+                          ),
+                      }
+                    : group,
+            ),
+        }));
+    }
+
+    public attach(groupId: string, jobId: string, selection: ElementGroup): void {
+        try {
+            this.scenario.set(
+                attachChoiceGroup(this.scenario(), groupId, jobId, selection),
+            );
+            this.error.set('');
+        } catch (error: unknown) {
+            this.error.set(
+                error instanceof Error ? error.message : 'Не удалось привязать группу.',
+            );
+        }
+    }
 
     public title(groupId: string, title: string): void {
         this.scenario.update((document) => ({

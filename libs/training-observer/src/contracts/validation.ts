@@ -9,7 +9,9 @@ import {
     type CapturedValue,
     type Condition,
     type ElementDescriptor,
+    type Expectation,
     type GroupedScenario,
+    type GroupTransition,
     type Recording,
     type Resolution,
     type Scenario,
@@ -474,27 +476,78 @@ const groupAction = {
     completion: condition,
 };
 
-const groupedScenario = object({
-    kind: one('training-scenario'),
-    version: one(4),
-    id,
-    mode,
-    areas: areaBindings,
-    descriptors: array(descriptor),
-    startGroupId: id,
-    completion: condition,
-    groups: array(
+const reactions = {
+    feedback: object({}, {success: text, mismatch: text}),
+    choiceGroups: array(
         object({
             id,
             title: id,
-            entry: condition,
-            expectations: array(object({...groupAction, optional: bool}), 0, 1000),
-            transitions: array(object({...groupAction, toGroupId: nullable(id)}), 0, 32),
+            variants: array(
+                object(
+                    {
+                        id,
+                        action: tagged('kind', {
+                            click: object({kind: one('click'), targetId: id}),
+                            input: object({
+                                kind: one('input'),
+                                targetId: id,
+                                value: valueCondition,
+                            }),
+                            select: object({
+                                kind: one('select'),
+                                targetId: id,
+                                value: valueCondition,
+                            }),
+                        }),
+                        outcome: one('allowed', 'error'),
+                    },
+                    {message: text},
+                ),
+                1,
+                100,
+            ),
         }),
-        1,
+        0,
         100,
     ),
-});
+};
+
+const groupedScenario = (version: 4 | 5): Check =>
+    object({
+        kind: one('training-scenario'),
+        version: one(version),
+        id,
+        mode,
+        areas: areaBindings,
+        descriptors: array(descriptor),
+        startGroupId: id,
+        completion: condition,
+        groups: array(
+            object({
+                id,
+                title: id,
+                entry: condition,
+                expectations: array(
+                    object(
+                        {...groupAction, optional: bool},
+                        version === 5 ? reactions : {},
+                    ),
+                    0,
+                    1000,
+                ),
+                transitions: array(
+                    object(
+                        {...groupAction, toGroupId: nullable(id)},
+                        version === 5 ? reactions : {},
+                    ),
+                    0,
+                    32,
+                ),
+            }),
+            1,
+            100,
+        ),
+    });
 
 const scenarioShape = (version: 2 | 3): Check =>
     object({
@@ -803,8 +856,8 @@ export function readScenario(value: unknown): Scenario {
     return read<Scenario>(
         value,
         (entry, path) => {
-            if (record(entry, path).version === 4) {
-                groupedScenario(entry, path);
+            if ([4, 5].includes(record(entry, path).version as number)) {
+                groupedScenario(record(entry, path).version as 4 | 5)(entry, path);
             } else {
                 versioned(scenarioShape)(entry, path);
             }
@@ -816,7 +869,7 @@ export function readScenario(value: unknown): Scenario {
                 bindingsValid(document.areas, ids);
             }
 
-            if (document.version === 4) {
+            if ('groups' in document) {
                 bindingsValid(document.areas, ids);
                 checkGroups(document, ids);
 
@@ -867,6 +920,73 @@ export function readScenario(value: unknown): Scenario {
     );
 }
 
+/** Статические конфликты запрещаются консервативно в пределах экрана, независимо от when/requires. */
+function checkChoices(
+    document: GroupedScenario,
+    jobs: Array<Expectation | GroupTransition>,
+    targets: Set<string>,
+): void {
+    const identity = (targetId: string): string => {
+        targetExists(targetId, targets, '$.groups.action');
+        const descriptor = document.descriptors.find((entry) => entry.id === targetId)!;
+        const area = document.areas.targets.find(
+            (entry) => entry.targetId === targetId,
+        )?.areaKey;
+
+        return JSON.stringify([area, descriptor.fingerprint.features]);
+    };
+
+    for (const job of jobs) {
+        unique(
+            (job.choiceGroups ?? []).map((entry) => entry.id),
+            '$.groups.choiceGroups',
+        );
+    }
+
+    const groups = jobs.flatMap((job) => job.choiceGroups ?? []);
+
+    for (const group of groups) {
+        unique(
+            group.variants.map((entry) => entry.id),
+            '$.groups.choiceGroups.variants',
+        );
+    }
+
+    const rules = new Set<string>();
+
+    for (const variant of groups.flatMap((group) => group.variants)) {
+        const target = identity(variant.action.targetId);
+        const key = JSON.stringify([
+            target,
+            variant.action.kind,
+            'value' in variant.action ? variant.action.value : null,
+        ]);
+
+        if (rules.has(key)) {
+            fail(
+                '$.groups.choiceGroups',
+                'Повторные или противоречивые правила вариантов одного экрана.',
+            );
+        }
+
+        rules.add(key);
+
+        if (
+            jobs.some(
+                (job) =>
+                    'targetId' in job.action &&
+                    identity(job.action.targetId) === target &&
+                    job.action.kind === variant.action.kind,
+            )
+        ) {
+            fail(
+                '$.groups.choiceGroups',
+                'Ожидаемое действие уже задано в этом экране; уберите его из альтернатив.',
+            );
+        }
+    }
+}
+
 function checkGroups(document: GroupedScenario, targets: Set<string>): void {
     const groups = unique(
         document.groups.map((group) => group.id),
@@ -897,6 +1017,9 @@ function checkGroups(document: GroupedScenario, targets: Set<string>): void {
             entries.map((entry) => entry.id),
             '$.groups.actions',
         );
+
+        checkChoices(document, entries, targets);
+
         const expectations = new Map(
             group.expectations.map((entry) => [entry.id, entry]),
         );

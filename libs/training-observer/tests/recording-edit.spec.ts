@@ -232,3 +232,51 @@ it('keeps later group identities and author text when deleting an earlier bounda
     expect(merged.groups[0]!.transitions[0]!.toGroupId).toBe('group-3');
     expect(next.groups[1]!.id).toBe('group-2');
 });
+
+it('merges v5 feedback and new choice descriptors with deletion from a v4 recording draft', () => {
+    const base = generate(recording);
+    const authored: GroupedScenario = JSON.parse(JSON.stringify(base));
+
+    authored.version = 5;
+    const job = authored.groups[0]!.expectations[0]!;
+
+    job.feedback = {success: 'Accepted', mismatch: 'Correct the name'};
+    const descriptor = JSON.parse(JSON.stringify(authored.descriptors[0]!));
+
+    descriptor.id = 'author-choice';
+    descriptor.fingerprint.features.accessibleName = 'Other control';
+    authored.descriptors.push(descriptor);
+    authored.areas.targets.push({targetId: descriptor.id, areaKey: 'test'});
+    job.choiceGroups = [
+        {
+            id: 'choices',
+            title: 'Choices',
+            variants: [
+                {
+                    id: 'other',
+                    action: {kind: 'click', targetId: descriptor.id},
+                    outcome: 'error',
+                    message: 'Other action',
+                },
+            ],
+        },
+    ];
+    const result = mergeScenarioDraft(
+        base,
+        authored,
+        generate(removeRecordedAction(recording, recording.actions[2]!.id)),
+    );
+
+    expect(result.conflicts).toEqual([]);
+    const merged = result.scenario as GroupedScenario;
+
+    expect(merged.version).toBe(5);
+    expect(merged.groups[0]!.expectations[0]!.feedback).toEqual(job.feedback);
+    expect(merged.groups[0]!.expectations[0]!.choiceGroups).toEqual(job.choiceGroups);
+    expect(merged.areas.targets).toContainEqual({
+        targetId: 'author-choice',
+        areaKey: 'test',
+    });
+    expect(merged.descriptors.some((entry) => entry.id === 'author-choice')).toBe(true);
+    expect(base.version).toBe(4);
+});

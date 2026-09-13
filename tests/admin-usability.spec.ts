@@ -7,10 +7,9 @@ test('admin shows available commands by phase and distinguishes feedback drafts 
     const panel = page.getByRole('complementary', {name: 'Панель записи'});
 
     await expect(
-        page.getByText(
-            'Обратная связь за правильные и ошибочные действия ещё не реализована.',
-            {exact: false},
-        ),
+        page.getByText('После создания черновика раскройте «Обратная связь и варианты»', {
+            exact: false,
+        }),
     ).toBeVisible();
     await expect(
         panel.getByRole('button', {name: 'Начать запись', exact: true}),
@@ -64,9 +63,9 @@ test('admin shows available commands by phase and distinguishes feedback drafts 
                     ),
             ),
     ).toBe(true);
-    await panel.getByText('Группы вариантов — заготовки', {exact: true}).click();
+    await panel.getByText('Группы вариантов', {exact: true}).click();
     await expect(
-        panel.getByText('Эти заготовки ещё не включаются в учебный сценарий', {
+        panel.getByText('Чтобы включить его в тренировку, привяжите группу к заданию', {
             exact: false,
         }),
     ).toBeVisible();
