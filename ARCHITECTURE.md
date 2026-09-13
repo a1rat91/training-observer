@@ -126,6 +126,8 @@ completion, не создавая ошибок на каждый символ. �
 flowchart TD
     Host[Внешний интерфейс: DOM-root и browser events] --> Hub[DocumentEventHub]
     Hub --> Recorder[ElementRecorder]
+    Host --> Portals[PortalOwnership: общий индекс ARIA-связей]
+    Portals -->|Владелец option или отказ| Recorder
     Identity[DOM identity: role, name, attributes, context] --> Recorder
     Recorder --> Recording[Recording: actions, states, descriptors]
     Recording --> Authoring[draftScenario и проверка автором]
@@ -150,6 +152,10 @@ flowchart TD
 Registry подключён к recorder и поиску целей текущего сеанса через RecordingSessionService. Привязки target → area
 сериализуются в Recording v3 и Scenario v3/v4; learner подключает registry и TargetResolver.
 
+PortalOwnership индексирует существующие связи по всему document, не читая values. Он не заменяет registry: сначала
+доказывается единственный владелец option, затем проверяется разрешённая область этого контрола. Индекс разделяется в
+пределах одного экземпляра пакета; для независимо собранных MF dependency должна быть общей.
+
 Contracts/validation ограничивают данные на границах импорта, authoring и runtime. Стрелки описывают передачу данных, а
 не наследование классов. Во время прохождения runtime владеет экземпляром recorder. Панель вызывает команды и показывает
 snapshot; она не должна дублировать алгоритм выбора цели и прохождения.
@@ -158,17 +164,18 @@ snapshot; она не должна дублировать алгоритм вы�
 
 Все указанные пути находятся внутри `libs/training-observer/src`.
 
-| Модуль                                                                      | Назначение и основные точки входа                                                                    |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [areas](libs/training-observer/src/areas/)                                  | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
-| [contracts](libs/training-observer/src/contracts/)                          | Recording v2/v3, Scenario v2/v3/v4, Resolution v2, parse/read/serialize и строгая validation         |
-| [dom/identity.ts](libs/training-observer/src/dom/identity.ts)               | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
-| [recording/dom.ts](libs/training-observer/src/recording/dom.ts)             | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
-| [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)   | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
-| [resolution/resolver.ts](libs/training-observer/src/resolution/resolver.ts) | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
-| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)     | `draftScenario`: группы из записи v3, явных границ и выбранного признака результата                  |
-| [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)   | Проверка условий по текущему DOM и committed value текущего шага                                     |
-| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)         | `ScenarioRuntime`: выбор v4 GroupRuntime или совместимого интерпретатора v2/v3                       |
+| Модуль                                                                                        | Назначение и основные точки входа                                                                    |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [areas](libs/training-observer/src/areas/)                                                    | AreaRegistry: discovery, конфликты, поколения и ownership; AreaRegistryService: DI/lifecycle/signals |
+| [contracts](libs/training-observer/src/contracts/)                                            | Recording v2/v3, Scenario v2/v3/v4, Resolution v2, parse/read/serialize и строгая validation         |
+| [observation/portal-ownership.ts](libs/training-observer/src/observation/portal-ownership.ts) | Общий индекс ARIA-связей dropdown, проверка конкурентов, повторных ID и смены экземпляра до commit   |
+| [dom/identity.ts](libs/training-observer/src/dom/identity.ts)                                 | Общие признаки цели, контекст, доступность; используется записью и поиском                           |
+| [recording/dom.ts](libs/training-observer/src/recording/dom.ts)                               | `describe` создаёт descriptor, `readValue` читает значение по политике                               |
+| [recording/recorder.ts](libs/training-observer/src/recording/recorder.ts)                     | `ElementRecorder`: start/stop, capture, inventory, intent/commit, snapshots и экспорт                |
+| [resolution/resolver.ts](libs/training-observer/src/resolution/resolver.ts)                   | `ElementResolver.resolve`: проверка цели в текущем root, evidence и отказ                            |
+| [runtime/authoring.ts](libs/training-observer/src/runtime/authoring.ts)                       | `draftScenario`: группы из записи v3, явных границ и выбранного признака результата                  |
+| [runtime/conditions.ts](libs/training-observer/src/runtime/conditions.ts)                     | Проверка условий по текущему DOM и committed value текущего шага                                     |
+| [runtime/runtime.ts](libs/training-observer/src/runtime/runtime.ts)                           | `ScenarioRuntime`: выбор v4 GroupRuntime или совместимого интерпретатора v2/v3                       |
 
 GroupRuntime хранит доказательства выполнения активной группы; legacy-runtime и legacy-authoring изолируют совместимость
 с прежними последовательными документами. Они не экспортируются отдельными публичными API. Пакет собирается ng-packagr в
@@ -210,10 +217,11 @@ dist/training-observer. Публичный API — @training-observer/core; Angu
 
 [План multi-MF](docs/implementation-plan.md): AreaRegistry и Angular facade реализованы, EventHub и выбор областей
 записи подключены через RecordingSessionService. Wire v3 переносит привязки областей в learner через TargetResolver.
-Группы и свободный порядок реализованы в v4, автоматический запуск подключён в demo. Общий ownership portals остаётся
-следующим изменением. Обновление Angular отложено: начинаем на текущей 19.2.25; новая библиотечная обвязка должна
-следовать указанным в плане Angular-практикам. Саму demo-форму специально оптимизировать или переводить на zoneless не
-требуется. Driver.js не используется.
+Группы и свободный порядок реализованы в v4, автоматический запуск подключён в demo. Общий индекс ARIA-связей dropdown
+подключён к recorder и используется runtime через его recorder. Следующий этап — измеряемая оптимизация наблюдения.
+Обновление Angular отложено: начинаем на текущей 19.2.25; новая библиотечная обвязка должна следовать указанным в плане
+Angular-практикам. Саму demo-форму специально оптимизировать или переводить на zoneless не требуется. Driver.js не
+используется.
 
 [Benchmark](docs/spike/benchmark.md) подтвердил 368/369 восстановлений доступных различимых целей на тестовой матрице.
 Подмена бизнес-сущности при одинаковом DOM дала один false accept: DOM-only алгоритм не видит скрытой смены сущности.

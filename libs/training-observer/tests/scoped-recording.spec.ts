@@ -205,3 +205,36 @@ it('a failing event subscriber does not prevent delivery to other sessions', () 
     stopNext();
     scheduled.mockRestore();
 });
+
+it('a recorder on one small root still sees a competing owner outside that root', () => {
+    jest.useFakeTimers();
+    root.innerHTML =
+        '<alpha-mf><input role="combobox" aria-label="Name" aria-controls="popup"></alpha-mf><beta-mf><input aria-controls="popup"></beta-mf>';
+    document.body.insertAdjacentHTML(
+        'beforeend',
+        '<div id="popup"><button role="option">A</button></div>',
+    );
+    const secret = jest.fn(() => 'OFF_AREA_SECRET');
+
+    Object.defineProperty(root.querySelector('beta-mf input')!, 'value', {get: secret});
+    const local = new ElementRecorder(root.querySelector('alpha-mf')!, {
+        areas,
+        valuePolicy: {...valuePolicy, normalizers: []},
+        acceptUntrustedEvents: true,
+    });
+
+    const option = document.querySelector<HTMLElement>('[role="option"]')!;
+
+    option.addEventListener('click', () => {
+        root.querySelector<HTMLInputElement>('alpha-mf input')!.value = 'A';
+    });
+    local.start();
+    option.click();
+    jest.advanceTimersByTime(100);
+    local.stop();
+    expect(local.snapshot().actions).toHaveLength(0);
+    expect(local.snapshot().diagnostics).toEqual(
+        expect.arrayContaining([expect.objectContaining({code: 'ambiguous-owner'})]),
+    );
+    expect(secret).not.toHaveBeenCalled();
+});

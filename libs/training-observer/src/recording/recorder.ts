@@ -19,6 +19,7 @@ import {
     type ValuePolicy,
 } from '../contracts';
 import {DocumentEventHub} from '../observation/event-hub';
+import {PortalOwnership, type PortalProof} from '../observation/portal-ownership';
 import {
     accessibleName,
     CONTROLS,
@@ -59,6 +60,7 @@ interface PendingInput {
 }
 
 interface PendingSelection {
+    proof: PortalProof;
     intentToken?: unknown;
     target: Tracked;
     before: string;
@@ -90,6 +92,7 @@ export interface RecorderOptions {
 /** DOM-only recording. No Angular state, HTTP bodies, target attributes or patched setters. */
 export class ElementRecorder {
     private readonly document: Document;
+    private readonly portals: PortalOwnership;
     private readonly tracked = new Map<Element, Tracked>();
     private readonly syntheticClicks = new WeakSet<Element>();
     private readonly cleanup: Array<() => void> = [];
@@ -113,6 +116,7 @@ export class ElementRecorder {
         private readonly options: RecorderOptions,
     ) {
         this.document = root.ownerDocument;
+        this.portals = PortalOwnership.forDocument(this.document);
         this.reset();
     }
 
@@ -136,6 +140,7 @@ export class ElementRecorder {
         this.startedAt = performance.now();
         this.lastPath = this.document.location.pathname;
         this.cleanup.push(
+            this.portals.acquire(),
             DocumentEventHub.forDocument(this.document).subscribe((event) =>
                 this.observe(event),
             ),
@@ -697,38 +702,22 @@ export class ElementRecorder {
         );
     }
 
-    private byId(id: string): Element | null {
-        // IDs are transient ownership evidence; never persisted as locators.
-        // eslint-disable-next-line unicorn/prefer-query-selector
-        return this.document.getElementById(id);
-    }
-
-    private owners(element: Element): Element[] {
-        return Array.from(
-            this.root.querySelectorAll('[aria-controls],[aria-owns]'),
-        ).filter((owner) => {
-            const ids =
-                `${owner.getAttribute('aria-controls') ?? ''} ${owner.getAttribute('aria-owns') ?? ''}`
-                    .trim()
-                    .split(/\s+/);
-
-            return ids.some((id) => id && this.byId(id)?.contains(element));
-        });
-    }
-
     private choose(option: Element, event: Event): void {
-        const owners = this.owners(option);
+        const resolution = this.portals.resolveOption(option);
 
-        if (owners.length !== 1) {
+        if (resolution.status !== 'resolved') {
             this.diagnostic(
-                owners.length ? 'ambiguous-owner' : 'unsupported-control',
+                resolution.status === 'ambiguous'
+                    ? 'ambiguous-owner'
+                    : 'unsupported-control',
                 'Dropdown не имеет единственного доказанного владельца через aria-controls/aria-owns.',
             );
 
             return;
         }
 
-        const owner = owners[0]!;
+        const {proof} = resolution;
+        const owner = proof.owner;
         const target = this.track(owner, true);
 
         if (!target) {
@@ -745,6 +734,7 @@ export class ElementRecorder {
         const intentToken = this.options.onIntent?.(event, owner);
 
         this.choice = {
+            proof,
             intentToken,
             target,
             before: JSON.stringify(
@@ -766,6 +756,16 @@ export class ElementRecorder {
         const choice = this.choice;
 
         if (!choice) {
+            return;
+        }
+
+        if (!this.portals.valid(choice.proof)) {
+            this.choice = undefined;
+            this.diagnostic(
+                'ambiguous-owner',
+                'Принадлежность dropdown изменилась до подтверждения выбора.',
+            );
+
             return;
         }
 
@@ -954,7 +954,7 @@ export class ElementRecorder {
             const keyboard = event as KeyboardEvent;
 
             if (element.matches('[role="combobox"]') && keyboard.key === 'Enter') {
-                const active = this.byId(
+                const active = this.portals.byId(
                     element.getAttribute('aria-activedescendant') ?? '',
                 );
 

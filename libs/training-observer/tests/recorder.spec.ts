@@ -346,3 +346,33 @@ test('programmatic checkbox click does not turn its trusted native change into a
 
     expect(atCompatValue[atCompatValue.length - 1]).toMatchObject({value: {raw: true}});
 });
+
+for (const reuse of ['new-node', 'same-node']) {
+    test(`selection is cancelled if popup ID is reused before value confirmation: ${reuse}`, () => {
+        setup('<input role="combobox" aria-label="Курс" aria-controls="popup">');
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="popup"><button role="option">Angular</button></div>',
+        );
+        const popup = document.querySelector('#popup')!;
+        const option = popup.querySelector<HTMLElement>('[role="option"]')!;
+
+        option.addEventListener('click', () => {
+            popup.remove();
+
+            if (reuse === 'same-node') {
+                document.body.append(popup);
+            } else {
+                document.body.insertAdjacentHTML('beforeend', '<div id="popup"></div>');
+            }
+
+            root.querySelector('input')!.value = 'Angular';
+        });
+        option.click();
+        advance();
+        expect(recorder.snapshot().actions).toHaveLength(0);
+        expect(recorder.snapshot().diagnostics).toEqual(
+            expect.arrayContaining([expect.objectContaining({code: 'ambiguous-owner'})]),
+        );
+    });
+}
