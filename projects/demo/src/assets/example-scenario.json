@@ -1,0 +1,1269 @@
+{
+    "kind": "training-scenario",
+    "version": 4,
+    "id": "demo-internal-course",
+    "mode": {
+        "kind": "dom-only"
+    },
+    "descriptors": [
+        {
+            "version": 2,
+            "id": "target-1",
+            "scope": {
+                "pathname": "/record",
+                "context": []
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "combobox",
+                    "accessibleName": "Поиск процедуры",
+                    "label": "Поиск процедуры",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {},
+                    "context": []
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "combobox",
+                        "name": "Поиск процедуры",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Поиск процедуры",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "css",
+                        "value": "input"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-10",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Данные сотрудника"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "textbox",
+                    "accessibleName": "ФИО",
+                    "label": "ФИО",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "text"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Данные сотрудника"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Данные сотрудника"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "textbox",
+                        "name": "ФИО",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "ФИО",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "text",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"text\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-12",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Данные сотрудника"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "textbox",
+                    "accessibleName": "Рабочая почта",
+                    "label": "Рабочая почта",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "email"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Данные сотрудника"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Данные сотрудника"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "textbox",
+                        "name": "Рабочая почта",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Рабочая почта",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "email",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"email\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-14",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Данные сотрудника"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "combobox",
+                    "accessibleName": "Вид обучения",
+                    "label": "Вид обучения",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "autocomplete": "off"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Данные сотрудника"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Данные сотрудника"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "combobox",
+                        "name": "Вид обучения",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Вид обучения",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "autocomplete",
+                        "value": "off",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "procedure-field:nth-of-type(3) input"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-16",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "form",
+                        "name": "Данные сотрудника"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "button",
+                    "role": "button",
+                    "accessibleName": "Продолжить",
+                    "label": null,
+                    "text": "Продолжить",
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "submit"
+                    },
+                    "context": [
+                        {
+                            "role": "form",
+                            "name": "Данные сотрудника"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "button",
+                        "name": "Продолжить",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "text",
+                        "value": "Продолжить",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "submit",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"submit\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-17",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Внутренний курс"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "combobox",
+                    "accessibleName": "Курс",
+                    "label": "Курс",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "autocomplete": "off"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Внутренний курс"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Заявка на обучение"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "combobox",
+                        "name": "Курс",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Курс",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "autocomplete",
+                        "value": "off",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "fieldset:nth-of-type(2) tui-textfield > input"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-19",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Формат участия"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "radio",
+                    "accessibleName": "Онлайн",
+                    "label": "Онлайн",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "radio"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Формат участия"
+                        },
+                        {
+                            "role": "group",
+                            "name": "Внутренний курс"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Заявка на обучение"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "radio",
+                        "name": "Онлайн",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Онлайн",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "radio",
+                        "exact": true
+                    },
+                    "recordedMatches": 2
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "label:nth-of-type(1) > [type=\"radio\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-21",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Внутренний курс"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "switch",
+                    "accessibleName": "Нужен наставник",
+                    "label": "Нужен наставник",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "checkbox"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Внутренний курс"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Заявка на обучение"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "switch",
+                        "name": "Нужен наставник",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Нужен наставник",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "checkbox",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"checkbox\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-25",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "form",
+                        "name": "Заявка на обучение"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "button",
+                    "role": "button",
+                    "accessibleName": "Продолжить",
+                    "label": null,
+                    "text": "Продолжить",
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "submit"
+                    },
+                    "context": [
+                        {
+                            "role": "form",
+                            "name": "Заявка на обучение"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "button",
+                        "name": "Продолжить",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "text",
+                        "value": "Продолжить",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "submit",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"submit\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-26",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "group",
+                        "name": "Проверка данных"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "input",
+                    "role": "checkbox",
+                    "accessibleName": "Данные проверены",
+                    "label": "Данные проверены",
+                    "text": null,
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "checkbox"
+                    },
+                    "context": [
+                        {
+                            "role": "group",
+                            "name": "Проверка данных"
+                        },
+                        {
+                            "role": "form",
+                            "name": "Подтверждение заявки"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "checkbox",
+                        "name": "Данные проверены",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "label",
+                        "value": "Данные проверены",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "checkbox",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"checkbox\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "target-28",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "form",
+                        "name": "Подтверждение заявки"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "button",
+                    "role": "button",
+                    "accessibleName": "Продолжить",
+                    "label": null,
+                    "text": "Продолжить",
+                    "placeholder": null,
+                    "attributes": {
+                        "type": "submit"
+                    },
+                    "context": [
+                        {
+                            "role": "form",
+                            "name": "Подтверждение заявки"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "button",
+                        "name": "Продолжить",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "text",
+                        "value": "Продолжить",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "attribute",
+                        "name": "type",
+                        "value": "submit",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-4",
+                    "selector": {
+                        "kind": "css",
+                        "value": "[type=\"submit\"]"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        },
+        {
+            "version": 2,
+            "id": "finish-1789282147349",
+            "scope": {
+                "pathname": "/record",
+                "context": [
+                    {
+                        "role": "region",
+                        "name": "Результат заявки"
+                    }
+                ]
+            },
+            "fingerprint": {
+                "algorithm": "semantic-features-v1",
+                "normalization": "nfc-whitespace-v1",
+                "features": {
+                    "tag": "h2",
+                    "role": "heading",
+                    "accessibleName": "Заявка принята",
+                    "label": null,
+                    "text": "Заявка принята",
+                    "placeholder": null,
+                    "attributes": {},
+                    "context": [
+                        {
+                            "role": "region",
+                            "name": "Результат заявки"
+                        }
+                    ]
+                }
+            },
+            "locators": [
+                {
+                    "id": "locator-1",
+                    "selector": {
+                        "kind": "role",
+                        "role": "heading",
+                        "name": "Заявка принята",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-2",
+                    "selector": {
+                        "kind": "text",
+                        "value": "Заявка принята",
+                        "exact": true
+                    },
+                    "recordedMatches": 1
+                },
+                {
+                    "id": "locator-3",
+                    "selector": {
+                        "kind": "css",
+                        "value": "h2"
+                    },
+                    "recordedMatches": 1
+                }
+            ],
+            "contextRequired": false
+        }
+    ],
+    "areas": {
+        "definitions": [
+            {
+                "key": "procedure-search",
+                "hostTag": "procedure-search-mf",
+                "observe": true
+            },
+            {
+                "key": "procedure-player",
+                "hostTag": "procedure-mf",
+                "observe": true
+            },
+            {
+                "key": "directory",
+                "hostTag": "directory-mf",
+                "observe": false
+            },
+            {
+                "key": "notifications",
+                "hostTag": "notifications-mf",
+                "observe": false
+            }
+        ],
+        "targets": [
+            {
+                "targetId": "target-1",
+                "areaKey": "procedure-search"
+            },
+            {
+                "targetId": "target-10",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-12",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-14",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-16",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-17",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-19",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-21",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-25",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-26",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "target-28",
+                "areaKey": "procedure-player"
+            },
+            {
+                "targetId": "finish-1789282147349",
+                "areaKey": "procedure-player"
+            }
+        ]
+    },
+    "startGroupId": "group-1",
+    "completion": {
+        "kind": "visible",
+        "targetId": "finish-1789282147349",
+        "expected": true
+    },
+    "groups": [
+        {
+            "id": "group-1",
+            "title": "Найдите процедуру",
+            "entry": {
+                "kind": "visible",
+                "targetId": "target-1",
+                "expected": true
+            },
+            "expectations": [],
+            "transitions": [
+                {
+                    "id": "action-1",
+                    "instruction": "Выполните переход: «Поиск процедуры»",
+                    "hint": null,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "select",
+                        "targetId": "target-1",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": "Заявка на обучение"
+                        }
+                    },
+                    "completion": {
+                        "kind": "visible",
+                        "targetId": "target-10",
+                        "expected": true
+                    },
+                    "toGroupId": "group-2"
+                }
+            ]
+        },
+        {
+            "id": "group-2",
+            "title": "Заполните данные сотрудника",
+            "entry": {
+                "kind": "visible",
+                "targetId": "target-10",
+                "expected": true
+            },
+            "expectations": [
+                {
+                    "id": "action-2",
+                    "instruction": "Заполните «ФИО»",
+                    "hint": "Ожидаемое значение: \"Анна Смирнова\"",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "input",
+                        "targetId": "target-10",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": "Анна Смирнова"
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-10",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": "Анна Смирнова"
+                        }
+                    }
+                },
+                {
+                    "id": "action-3",
+                    "instruction": "Заполните «Рабочая почта»",
+                    "hint": "Ожидаемое значение: \"anna@example.test\"",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "input",
+                        "targetId": "target-12",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": "anna@example.test"
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-12",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": "anna@example.test"
+                        }
+                    }
+                },
+                {
+                    "id": "action-4",
+                    "instruction": "Заполните «Вид обучения»",
+                    "hint": "Ожидаемое значение: \"Внутренний курс\"",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "select",
+                        "targetId": "target-14",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": "Внутренний курс"
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-14",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": "Внутренний курс"
+                        }
+                    }
+                }
+            ],
+            "transitions": [
+                {
+                    "id": "action-5",
+                    "instruction": "Выполните переход: «Продолжить»",
+                    "hint": null,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "click",
+                        "targetId": "target-16"
+                    },
+                    "completion": {
+                        "kind": "visible",
+                        "targetId": "target-17",
+                        "expected": true
+                    },
+                    "toGroupId": "group-3"
+                }
+            ]
+        },
+        {
+            "id": "group-3",
+            "title": "Выберите параметры курса",
+            "entry": {
+                "kind": "visible",
+                "targetId": "target-17",
+                "expected": true
+            },
+            "expectations": [
+                {
+                    "id": "action-6",
+                    "instruction": "Заполните «Курс»",
+                    "hint": "Ожидаемое значение: \"Angular\"",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "select",
+                        "targetId": "target-17",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": "Angular"
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-17",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": "Angular"
+                        }
+                    }
+                },
+                {
+                    "id": "action-7",
+                    "instruction": "Заполните «Онлайн»",
+                    "hint": "Ожидаемое значение: true",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "select",
+                        "targetId": "target-19",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": true
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-19",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": true
+                        }
+                    }
+                },
+                {
+                    "id": "action-8",
+                    "instruction": "Заполните «Нужен наставник»",
+                    "hint": "Ожидаемое значение: true",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "select",
+                        "targetId": "target-21",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": true
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-21",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": true
+                        }
+                    }
+                }
+            ],
+            "transitions": [
+                {
+                    "id": "action-9",
+                    "instruction": "Выполните переход: «Продолжить»",
+                    "hint": null,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "click",
+                        "targetId": "target-25"
+                    },
+                    "completion": {
+                        "kind": "visible",
+                        "targetId": "target-26",
+                        "expected": true
+                    },
+                    "toGroupId": "group-4"
+                }
+            ]
+        },
+        {
+            "id": "group-4",
+            "title": "Подтвердите заявку",
+            "entry": {
+                "kind": "visible",
+                "targetId": "target-26",
+                "expected": true
+            },
+            "expectations": [
+                {
+                    "id": "action-10",
+                    "instruction": "Заполните «Данные проверены»",
+                    "hint": "Ожидаемое значение: true",
+                    "optional": false,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "select",
+                        "targetId": "target-26",
+                        "value": {
+                            "kind": "raw-equals",
+                            "value": true
+                        }
+                    },
+                    "completion": {
+                        "kind": "value",
+                        "targetId": "target-26",
+                        "condition": {
+                            "kind": "raw-equals",
+                            "value": true
+                        }
+                    }
+                }
+            ],
+            "transitions": [
+                {
+                    "id": "action-11",
+                    "instruction": "Выполните переход: «Продолжить»",
+                    "hint": null,
+                    "when": null,
+                    "requires": [],
+                    "action": {
+                        "kind": "click",
+                        "targetId": "target-28"
+                    },
+                    "completion": {
+                        "kind": "visible",
+                        "targetId": "finish-1789282147349",
+                        "expected": true
+                    },
+                    "toGroupId": null
+                }
+            ]
+        }
+    ]
+}

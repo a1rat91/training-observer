@@ -49,6 +49,16 @@ async function complete(page: Page): Promise<void> {
 }
 
 async function groupBoundaries(page: Page): Promise<void> {
+    const diagnostics = page.getByText('Настройки записи и диагностика', {exact: true});
+
+    if (
+        !(await page
+            .getByRole('button', {name: 'Скачать запись', exact: true})
+            .isVisible())
+    ) {
+        await diagnostics.click();
+    }
+
     const downloaded = page.waitForEvent('download');
 
     await page.getByRole('button', {name: 'Скачать запись', exact: true}).click();
@@ -56,7 +66,7 @@ async function groupBoundaries(page: Page): Promise<void> {
         await readFile(await (await downloaded).path(), 'utf8'),
     );
 
-    await page.getByText('Группы и переходы', {exact: true}).click();
+    await expect(page.getByText('Группы и переходы', {exact: true})).toBeVisible();
 
     // These are explicit boundaries of this fixture, never a library heuristic.
     for (const action of recording.actions.filter((entry) => entry.kind === 'click')) {
@@ -64,6 +74,19 @@ async function groupBoundaries(page: Page): Promise<void> {
             .getByRole('checkbox', {name: `Переход ${action.id}`, exact: true})
             .check();
     }
+
+    // Exercise the result selector as an author; the first transition starts the form.
+    const first = recording.actions.find((action) => action.kind === 'click')!;
+    const result = page.getByRole('combobox', {
+        name: `Результат действия ${first.sequence}`,
+        exact: true,
+    });
+
+    const title = await result.inputValue();
+
+    await result.click();
+    await page.getByRole('option', {name: title, exact: true}).click();
+    await expect(result).toHaveValue(title);
 }
 
 async function identityReverse(page: Page): Promise<void> {
@@ -76,7 +99,8 @@ async function identityReverse(page: Page): Promise<void> {
 }
 
 async function recordScenario(page: Page, isExternal = false): Promise<void> {
-    await page.goto('/spike/record');
+    await page.goto('/record');
+    await page.getByText('Настройки записи и диагностика', {exact: true}).click();
     await select(page, 'Поиск процедуры', 'Заявка на обучение');
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
     await page.getByText('Условия тестового прохождения', {exact: true}).click();
@@ -95,7 +119,7 @@ async function recordScenario(page: Page, isExternal = false): Promise<void> {
     await complete(page);
     await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
     await page
-        .getByRole('button', {name: 'Выбрать признак завершения', exact: true})
+        .getByRole('button', {name: 'Выбрать результат в приложении', exact: true})
         .click();
     await page.getByRole('heading', {name: 'Заявка принята', exact: true}).click();
     await groupBoundaries(page);
@@ -105,17 +129,19 @@ async function recordScenario(page: Page, isExternal = false): Promise<void> {
     await page
         .getByRole('button', {name: 'Сохранить и открыть прохождение', exact: true})
         .click();
-    await expect(page).toHaveURL(/\/spike\/learn$/);
+    await expect(page).toHaveURL(/\/learn$/);
 }
 
 async function startLearner(page: Page, profile: string): Promise<void> {
-    await page.goto('/spike/learn');
+    await page.goto('/learn');
+    await page.getByText('Управление тренировкой', {exact: true}).click();
+    await page.getByText('Импорт другого сценария', {exact: true}).click();
     await select(page, 'Поиск процедуры', 'Заявка на обучение');
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
     await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await select(page, 'Расположение полей', 'Другое расположение');
     await select(page, 'Поведение сервера', profile);
-    await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
+    await page.getByRole('button', {name: 'Применить JSON', exact: true}).click();
     await expect(
         page
             .getByRole('list', {name: 'Переходы группы'})
@@ -286,7 +312,7 @@ test('late response after stop cannot advance a freshly started learner', async 
     await expect(
         learner.getByRole('heading', {name: 'Обучение остановлено', exact: true}),
     ).toBeVisible();
-    await learner.getByRole('button', {name: 'Начать заново', exact: true}).click();
+    await learner.getByRole('button', {name: 'Применить JSON', exact: true}).click();
     release();
     await delivery;
     await expect(
@@ -312,7 +338,8 @@ test('late response after stop cannot advance a freshly started learner', async 
 test('recording JSON pasted into learner can be prepared without recording actions again', async ({
     page,
 }) => {
-    await page.goto('/spike/record');
+    await page.goto('/record');
+    await page.getByText('Настройки записи и диагностика', {exact: true}).click();
     await select(page, 'Поиск процедуры', 'Заявка на обучение');
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
     await page.getByText('Условия тестового прохождения', {exact: true}).click();
@@ -331,14 +358,16 @@ test('recording JSON pasted into learner can be prepared without recording actio
         await readFile(await (await pending).path(), 'utf8'),
     );
 
-    await page.goto('/spike/learn');
+    await page.goto('/learn');
+    await page.getByText('Управление тренировкой', {exact: true}).click();
+    await page.getByText('Импорт другого сценария', {exact: true}).click();
     await select(page, 'Поиск процедуры', 'Заявка на обучение');
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
     await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await page
         .getByRole('textbox', {name: 'JSON сценария', exact: true})
         .fill(JSON.stringify(recording));
-    await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
+    await page.getByRole('button', {name: 'Применить JSON', exact: true}).click();
     await expect(page.getByRole('alert')).toContainText(
         'Это запись действий, а не учебный сценарий',
     );
@@ -348,7 +377,7 @@ test('recording JSON pasted into learner can be prepared without recording actio
     await page
         .getByRole('button', {name: 'Подготовить сценарий из записи', exact: true})
         .click();
-    await expect(page).toHaveURL(/\/spike\/record$/);
+    await expect(page).toHaveURL(/\/record$/);
     await expect(page.getByRole('status')).toContainText('Запись импортирована');
     await expect(
         page.getByRole('list', {name: 'Записанные действия'}).getByRole('listitem'),
@@ -365,7 +394,7 @@ test('recording JSON pasted into learner can be prepared without recording actio
         page.getByRole('list', {name: 'Записанные действия'}).getByRole('listitem'),
     ).toHaveCount(recording.actions.length);
     await page
-        .getByRole('button', {name: 'Выбрать признак завершения', exact: true})
+        .getByRole('button', {name: 'Выбрать результат в приложении', exact: true})
         .click();
     await page.getByRole('heading', {name: 'Заявка принята', exact: true}).click();
     await groupBoundaries(page);
@@ -406,7 +435,7 @@ test('recording JSON pasted into learner can be prepared without recording actio
         .click();
     await select(page, 'Поиск процедуры', 'Заявка на обучение');
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
-    await page.getByRole('button', {name: 'Начать обучение', exact: true}).click();
+
     await expect(
         page.getByRole('heading', {name: 'Выполните задание', exact: true}),
     ).toBeVisible();

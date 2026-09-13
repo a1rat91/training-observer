@@ -1,11 +1,14 @@
 import {expect, test} from '@playwright/test';
 
-for (const route of ['/spike/record', '/spike/learn']) {
+for (const route of ['/record', '/learn']) {
     test(`search mounts an independent HTTP player on ${route}`, async ({page}) => {
         const errors: string[] = [];
 
         page.on('pageerror', (error) => errors.push(error.message));
         await page.goto(route);
+        await page
+            .getByText('Соседние приложения — для проверки изоляции', {exact: true})
+            .click();
         const player = page.locator('microfrontend > procedure-mf');
         const search = page.getByRole('combobox', {name: 'Поиск процедуры', exact: true});
 
@@ -55,7 +58,7 @@ for (const route of ['/spike/record', '/spike/learn']) {
 test('switching procedure cancels the old player and ignores its late response', async ({
     page,
 }) => {
-    await page.goto('/spike/record');
+    await page.goto('/record');
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
         release = resolve;

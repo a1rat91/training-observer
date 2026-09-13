@@ -103,28 +103,34 @@ export class ProcedureMicrofrontendComponent {
                     }
                 }
             }
-            @for (
-                area of reverse()
-                    ? ['notifications', 'directory']
-                    : ['directory', 'notifications'];
-                track area
-            ) {
-                <microfrontend>
-                    @if (area === 'directory') {
-                        <directory-mf />
-                    } @else {
-                        <notifications-mf />
-                    }
-                </microfrontend>
-            }
-            @if (duplicate()) {
-                <microfrontend><directory-mf /></microfrontend>
-            }
+            <details class="neighbors">
+                <summary>Соседние приложения — для проверки изоляции</summary>
+                <p>По умолчанию их действия не учитываются в записи и тренировке.</p>
+                @for (
+                    area of reverse()
+                        ? ['notifications', 'directory']
+                        : ['directory', 'notifications'];
+                    track area
+                ) {
+                    <microfrontend>
+                        @if (area === 'directory') {
+                            <directory-mf />
+                        } @else {
+                            <notifications-mf />
+                        }
+                    </microfrontend>
+                }
+                @if (duplicate()) {
+                    <microfrontend><directory-mf /></microfrontend>
+                }
+            </details>
         </div>
     `,
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProcedureShellComponent {
+    private readonly search = viewChild.required(ProcedureSearchComponent);
+
     public readonly surface = viewChild.required<ElementRef<HTMLElement>>('surface');
     public readonly selection = signal<ProcedureDefinition | null>(null);
     public readonly generation = signal(0);
@@ -132,6 +138,10 @@ export class ProcedureShellComponent {
     public readonly duplicate = signal(false);
     public readonly reverse = signal(false);
     public readonly increment = (value: number): number => value + 1;
+
+    public reset(): void {
+        this.search().control.reset();
+    }
 
     public choose(procedure: ProcedureDefinition | null): void {
         this.selection.set(procedure);

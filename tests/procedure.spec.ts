@@ -10,7 +10,10 @@ async function start(
     layout = 'Обычное расположение',
     profile = 'Обычный ответ',
 ): Promise<void> {
-    await page.goto('/spike/procedure');
+    await page.goto('/record');
+    await select(page, 'Поиск процедуры', 'Заявка на обучение');
+    await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
+    await page.getByText('Условия тестового прохождения', {exact: true}).click();
     await select(page, 'Расположение полей', layout);
     await select(page, 'Поведение сервера', profile);
     await page.getByRole('button', {name: 'Новая процедура', exact: true}).click();

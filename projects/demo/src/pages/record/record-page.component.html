@@ -1,58 +1,40 @@
 <header>
-    <h1>Запись процедуры</h1>
-    <p>
-        Начните запись, затем найдите процедуру, выберите её и заполните открывшуюся форму. Новая запись заменяет
-        предыдущую. Скачайте JSON перед уходом со страницы. Текст поля записывается после выхода из него — например,
-        клавишей Tab.
-    </p>
+    <p class="eyebrow">АДМИНИСТРАТОР</p>
+    <h1>Запишите свой сценарий</h1>
+    <p>Пройдите приложение слева один раз. Справа появятся ваши действия, затем — редактор заданий.</p>
+    <ol class="workflow">
+        <li [class.current]="!recording() || running()">1. Запись действий</li>
+        <li [class.current]="recording() && !running()">2. Подготовка заданий</li>
+        <li>3. Проверка в тренировке</li>
+    </ol>
 </header>
-<div class="workspace">
+<div
+    class="workspace"
+    [class.editing]="recording() && !running()"
+>
     <procedure-shell
         #workspace
         class="player"
     />
     <aside aria-label="Панель записи">
-        <details aria-label="Границы микрофронтов">
-            <summary>Границы микрофронтов</summary>
-            <p>Выберите MF для наблюдения. Изменения применяются и во время записи.</p>
-            <p>Запись v3 сохраняет привязки к микрофронтам. При прохождении цели ищутся только в своих областях.</p>
-            <ul>
-                @for (area of areaRegistry.areas(); track area.key) {
-                    <li>
-                        <label>
-                            <input
-                                tuiCheckbox
-                                type="checkbox"
-                                [ngModel]="area.observe"
-                                (ngModelChange)="areaRegistry.setObserved(area.key, $event)"
-                            />
-                            Наблюдать {{ area.key }}
-                        </label>
-                        {{ area.key }} · {{ area.status }} · экземпляров: {{ area.matches }} · поколение:
-                        {{ area.generation }}
-                    </li>
-                }
-            </ul>
-        </details>
-        <h2>{{ running() ? 'Идёт запись' : 'Запись остановлена' }}</h2>
+        <h2>{{ running() ? 'Идёт запись' : recording() ? 'Действия записаны' : 'Начните с записи' }}</h2>
         @if (imported()) {
             <p role="status">
                 Запись импортирована. Не включайте запись повторно. Пройдите процедуру слева до успешного результата,
                 затем выберите признак завершения и создайте черновик сценария. Сохранённые действия уже доступны ниже.
             </p>
         }
-        <label>
-            <input
-                tuiCheckbox
-                type="checkbox"
-                [disabled]="running()"
-                [(ngModel)]="captureValues"
-            />
-            Сохранять значения полей
-        </label>
         <p>
-            Пароли, файлы и одноразовые коды скрываются. Записываются действия в выбранных микрофронтах и связанных с
-            ними dropdown.
+            {{
+                running()
+                    ? 'Работайте в приложении слева. После последнего действия остановите запись.'
+                    : recording()
+                      ? 'Теперь выберите результат и разделите действия на группы ниже.'
+                      : 'Нажмите «Начать запись», затем выберите «Заявка на обучение» в поиске слева.'
+            }}
+        </p>
+        <p class="notice">
+            Текст засчитывается после выхода из поля — нажмите Tab. Клик и выбор варианта записываются сразу.
         </p>
         <div class="actions">
             <button
@@ -73,41 +55,7 @@
             >
                 Остановить запись
             </button>
-            <button
-                size="s"
-                tuiButton
-                type="button"
-                [disabled]="!recording() || running()"
-                (click)="download()"
-            >
-                Скачать запись
-            </button>
         </div>
-        <p>«Скачать запись» сохраняет журнал действий. Для обучения используйте блок «Подготовка сценария» ниже.</p>
-        <button
-            size="s"
-            tuiButton
-            type="button"
-            [disabled]="running() || !recording()?.actions?.length"
-            (click)="check()"
-        >
-            Проверить поиск
-        </button>
-        @if (resolutions().length) {
-            <section aria-label="Результаты поиска">
-                <h3>Поиск в текущем экране</h3>
-                <p>
-                    Результат на момент проверки. Поля прошлых экранов могут отсутствовать. После изменения формы
-                    нажмите проверку снова.
-                </p>
-                @for (entry of resolutions(); track entry.report.targetId) {
-                    <details>
-                        <summary>{{ entry.name }} · {{ entry.report.status }}</summary>
-                        <pre>{{ json(entry.report) }}</pre>
-                    </details>
-                }
-            </section>
-        }
         @if (error()) {
             <p role="alert">{{ error() }}</p>
         }
@@ -126,21 +74,100 @@
                 <p role="alert">{{ diagnostic.message }}</p>
             }
             <h3>Записанные действия</h3>
+            <p>Это исходный журнал. Задания для ученика вы настроите после остановки записи.</p>
             <ol aria-label="Записанные действия">
                 @for (action of report.actions; track action.id) {
                     <li>
-                        <strong>{{ action.kind }} · {{ name(action) }}</strong>
+                        <strong>{{ actionLabel(action) }} · {{ name(action) }}</strong>
                         <div class="value">{{ value(action) }}</div>
                     </li>
                 } @empty {
-                    <li>Пока нет действий. Создайте процедуру и заполните поля.</li>
+                    <li>Пока нет действий. Выберите процедуру слева и заполните поля.</li>
                 }
             </ol>
-            <details>
-                <summary>Наблюдаемые состояния (последние 10)</summary>
-                <p>Изменения от сервера и пересоздание полей — состояния, а не действия пользователя.</p>
-                <pre>{{ json(report.states.slice(-10)) }}</pre>
-            </details>
         }
+        <details class="advanced">
+            <summary>Настройки записи и диагностика</summary>
+            <p>
+                Для обычной записи менять ничего не нужно. Здесь можно выбрать области наблюдения, скачать исходный
+                журнал и проверить поиск элементов.
+            </p>
+            <label>
+                <input
+                    tuiCheckbox
+                    type="checkbox"
+                    [disabled]="running()"
+                    [(ngModel)]="captureValues"
+                />
+                Сохранять значения полей
+            </label>
+            <p>
+                Пароли, файлы и одноразовые коды скрываются. Записываются действия в выбранных микрофронтах и связанных
+                с ними dropdown.
+            </p>
+            <details aria-label="Границы микрофронтов">
+                <summary>Границы микрофронтов</summary>
+                <p>Выберите MF для наблюдения. Изменения применяются и во время записи.</p>
+                <p>Запись v3 сохраняет привязки к микрофронтам. При прохождении цели ищутся только в своих областях.</p>
+                <ul>
+                    @for (area of areaRegistry.areas(); track area.key) {
+                        <li>
+                            <label>
+                                <input
+                                    tuiCheckbox
+                                    type="checkbox"
+                                    [ngModel]="area.observe"
+                                    (ngModelChange)="areaRegistry.setObserved(area.key, $event)"
+                                />
+                                Наблюдать {{ area.key }}
+                            </label>
+                            {{ area.key }} · {{ area.status }} · экземпляров: {{ area.matches }} · поколение:
+                            {{ area.generation }}
+                        </li>
+                    }
+                </ul>
+            </details>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="!recording() || running()"
+                (click)="download()"
+            >
+                Скачать запись
+            </button>
+            <p>«Скачать запись» сохраняет журнал действий. Для обучения используйте блок «Подготовка сценария» ниже.</p>
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                [disabled]="running() || !recording()?.actions?.length"
+                (click)="check()"
+            >
+                Проверить поиск
+            </button>
+            @if (resolutions().length) {
+                <section aria-label="Результаты поиска">
+                    <h3>Поиск в текущем экране</h3>
+                    <p>
+                        Результат на момент проверки. Поля прошлых экранов могут отсутствовать. После изменения формы
+                        нажмите проверку снова.
+                    </p>
+                    @for (entry of resolutions(); track entry.report.targetId) {
+                        <details>
+                            <summary>{{ entry.name }} · {{ entry.report.status }}</summary>
+                            <pre>{{ json(entry.report) }}</pre>
+                        </details>
+                    }
+                </section>
+            }
+            @if (recording(); as report) {
+                <details>
+                    <summary>Наблюдаемые состояния (последние 10)</summary>
+                    <p>Изменения от сервера и пересоздание полей — состояния, а не действия пользователя.</p>
+                    <pre>{{ json(report.states.slice(-10)) }}</pre>
+                </details>
+            }
+        </details>
     </aside>
 </div>

@@ -1,41 +1,23 @@
 import {type Routes} from '@angular/router';
-import {DemoPath} from '@demo/constants';
 
 export const appRoutes: Routes = [
     {
-        path: DemoPath.Benchmark,
-        loadComponent: async () => import('../pages/benchmark/benchmark-page.component'),
-        data: {title: 'Benchmark восстановления'},
+        path: '',
+        pathMatch: 'full',
+        loadComponent: async () => import('../pages/home/home-page.component'),
+        title: 'Как пользоваться · Training Observer',
     },
     {
-        path: DemoPath.Learn,
-        loadComponent: async () => import('../pages/learn/learn-page.component'),
-        data: {title: 'Прохождение обучения'},
-    },
-    {
-        path: DemoPath.Record,
+        path: 'record',
         loadComponent: async () => import('../pages/record/record-page.component'),
-        data: {title: 'Запись процедуры'},
+        title: 'Запись · Training Observer',
     },
     {
-        path: DemoPath.Procedure,
-        loadComponent: async () => import('../pages/procedure/procedure-page.component'),
-        data: {title: 'Плеер процедур'},
+        path: 'learn',
+        loadComponent: async () => import('../pages/learn/learn-page.component'),
+        title: 'Тренировка · Training Observer',
     },
-    {
-        path: DemoPath.Research,
-        loadComponent: async () => import('../pages/research/research-page.component'),
-        data: {title: 'Исследование locators'},
-    },
-    // Examples
-    {
-        path: DemoPath.ControlsExample,
-        loadComponent: async () =>
-            import('../pages/examples/controls-example/controls-example.component'),
-        data: {title: 'Controls example'},
-    },
-    {
-        path: '**',
-        redirectTo: DemoPath.Research,
-    },
+    {path: 'spike/record', redirectTo: 'record', pathMatch: 'full'},
+    {path: 'spike/learn', redirectTo: 'learn', pathMatch: 'full'},
+    {path: '**', redirectTo: ''},
 ];

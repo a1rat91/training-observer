@@ -126,7 +126,7 @@ for (const external of [false, true]) {
                   ['button', 'Продолжить'],
               ];
 
-        await page.goto('/spike/record');
+        await page.goto('/record');
         await select(page, 'Поиск процедуры', 'Заявка на обучение');
         await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
         await page.getByText('Условия тестового прохождения', {exact: true}).click();
@@ -153,7 +153,7 @@ for (const external of [false, true]) {
         const pupil = await context.newPage();
 
         await page.close();
-        await pupil.goto('/spike/record');
+        await pupil.goto('/record');
         await select(pupil, 'Поиск процедуры', 'Заявка на обучение');
         await expect(
             pupil.getByRole('textbox', {name: 'ФИО', exact: true}),

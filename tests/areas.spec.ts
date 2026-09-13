@@ -6,7 +6,8 @@ test('Angular registry exposes missing, mounted, duplicated and remounted hosts'
     const errors: string[] = [];
 
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/spike/record');
+    await page.goto('/record');
+    await page.getByText('Настройки записи и диагностика', {exact: true}).click();
     await page.getByText('Границы микрофронтов', {exact: true}).click();
     const registry = page.locator('details[aria-label="Границы микрофронтов"]');
     const player = registry.getByRole('listitem').filter({hasText: 'procedure-player'});

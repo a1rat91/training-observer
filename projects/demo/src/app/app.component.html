@@ -1,3 +1,36 @@
 <tui-root>
-    <tui-doc-main />
+    <header class="app-header">
+        <a
+            routerLink="/"
+            class="brand"
+        >
+            Training Observer
+            <span>demo</span>
+        </a>
+        <nav aria-label="Основная навигация">
+            <a
+                ariaCurrentWhenActive="page"
+                routerLink="/"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}"
+            >
+                Как пользоваться
+            </a>
+            <a
+                ariaCurrentWhenActive="page"
+                routerLink="/record"
+                routerLinkActive="active"
+            >
+                Запись
+            </a>
+            <a
+                ariaCurrentWhenActive="page"
+                routerLink="/learn"
+                routerLinkActive="active"
+            >
+                Тренировка
+            </a>
+        </nav>
+    </header>
+    <main class="app-content"><router-outlet /></main>
 </tui-root>

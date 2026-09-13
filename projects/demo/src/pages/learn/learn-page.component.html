@@ -1,51 +1,43 @@
 <header>
-    <h1>Прохождение обучения</h1>
+    <p class="eyebrow">УЧЕНИК</p>
+    <h1>{{ example() ? 'Готовый пример: заявка на обучение' : 'Тренировка по вашему сценарию' }}</h1>
     <p>
-        Выполняйте доступные задания активной группы в любом порядке. Переход требует выполнения обязательных заданий и
-        подтверждения результата. Автоматический запуск будет добавлен отдельно.
+        Наблюдение включается автоматически. Выполняйте задания в приложении слева; справа смотрите, что уже проверено.
+        Внутри группы порядок свободный.
     </p>
+    <p><a routerLink="/">Инструкция и значения для готового примера</a></p>
 </header>
+@if (!source && !loading()) {
+    <section class="empty">
+        <h2>Пока нет сценария для тренировки</h2>
+        <p>Сначала запишите и сохраните свой сценарий или откройте готовый пример.</p>
+        <div class="actions">
+            <a
+                routerLink="/learn"
+                tuiButton
+                [queryParams]="{example: 1}"
+            >
+                Попробовать готовый пример
+            </a>
+            <a
+                appearance="secondary"
+                routerLink="/record"
+                tuiButton
+            >
+                Записать сценарий
+            </a>
+        </div>
+    </section>
+}
 <div class="workspace">
     <procedure-shell
         #workspace
         class="player"
     />
     <aside aria-label="Панель обучения">
-        <details [open]="!source || !!error()">
-            <summary>Сценарий</summary>
-            <p>
-                JSON передаётся со страницы записи через локальное хранилище этого браузера. Можно вставить другой
-                сценарий. «Скачать запись» экспортирует журнал действий; для обучения нужен сценарий из блока
-                «Подготовка сценария».
-            </p>
-            <tui-textfield>
-                <label tuiLabel>JSON сценария</label>
-                <textarea
-                    tuiTextarea
-                    [(ngModel)]="source"
-                ></textarea>
-            </tui-textfield>
-        </details>
-        <div class="actions">
-            <button
-                size="s"
-                tuiButton
-                type="button"
-                [disabled]="!source"
-                (click)="start(workspace.surface().nativeElement)"
-            >
-                {{ current() ? 'Начать заново' : 'Начать обучение' }}
-            </button>
-            <button
-                size="s"
-                tuiButton
-                type="button"
-                [disabled]="!current() || current()?.status === 'stopped' || current()?.status === 'completed'"
-                (click)="stop()"
-            >
-                Остановить обучение
-            </button>
-        </div>
+        @if (loading()) {
+            <p role="status">Загружаем готовый сценарий…</p>
+        }
         @if (error()) {
             <p role="alert">{{ error() }}</p>
         }
@@ -61,9 +53,22 @@
         }
         @if (current(); as state) {
             <h2 aria-live="polite">{{ labels[state.status] }}</h2>
-            <p>Выполнено заданий: {{ state.completedSteps }}</p>
+            @if (state.status === 'completed') {
+                <p>
+                    Все обязательные действия проверены. Теперь можно записать собственный сценарий или повторить
+                    пример.
+                </p>
+                <a
+                    routerLink="/record"
+                    tuiButton
+                >
+                    Записать свой сценарий
+                </a>
+            }
+            <p class="notice">Выполнено заданий: {{ state.completedSteps }}</p>
             @if (state.expectations; as expectations) {
                 <h3>{{ state.groupTitle }}</h3>
+                <p>Откройте подсказку под заданием, чтобы увидеть ожидаемое значение. После ввода нажмите Tab.</p>
                 <ul aria-label="Задания группы">
                     @for (expectation of expectations; track expectation.id) {
                         <li [attr.aria-label]="expectation.instruction">
@@ -136,12 +141,67 @@
             @if (state.message) {
                 <p role="status">{{ state.message }}</p>
             }
-            <details>
+            <details class="advanced">
                 <summary>Диагностика обучения</summary>
                 <pre>{{ json(state) }}</pre>
             </details>
         } @else {
-            <p>Подготовьте сценарий на странице записи или вставьте JSON, затем нажмите «Начать обучение».</p>
+            <p>Сохраните сценарий на странице записи или выберите готовый пример по ссылке выше.</p>
         }
+        <details
+            class="advanced"
+            [open]="!!error()"
+        >
+            <summary>Управление тренировкой</summary>
+            <p>
+                Применение JSON перезапускает проверку. Для полного повтора откройте тренировку заново — приложение тоже
+                начнётся с поиска.
+            </p>
+            <div class="actions">
+                <a
+                    appearance="secondary"
+                    href="/learn{{ example() ? '?example=1' : '' }}"
+                    size="s"
+                    tuiButton
+                >
+                    Начать заново
+                </a>
+            </div>
+            <details>
+                <summary>Импорт другого сценария</summary>
+                <p>
+                    JSON передаётся со страницы записи через локальное хранилище этого браузера. Можно вставить другой
+                    сценарий. «Скачать запись» экспортирует журнал действий; для обучения нужен сценарий из блока
+                    «Подготовка сценария».
+                </p>
+                <tui-textfield>
+                    <label tuiLabel>JSON сценария</label>
+                    <textarea
+                        tuiTextarea
+                        [(ngModel)]="source"
+                    ></textarea>
+                </tui-textfield>
+            </details>
+            <div class="actions">
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    [disabled]="!source"
+                    (click)="start(workspace.surface().nativeElement)"
+                >
+                    Применить JSON
+                </button>
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    [disabled]="!current() || current()?.status === 'stopped' || current()?.status === 'completed'"
+                    (click)="stop()"
+                >
+                    Остановить обучение
+                </button>
+            </div>
+        </details>
     </aside>
 </div>

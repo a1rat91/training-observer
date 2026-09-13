@@ -1,11 +1,10 @@
 import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {TuiDocMain} from '@taiga-ui/addon-doc';
+import {RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
 import {TuiRoot} from '@taiga-ui/core';
 
 @Component({
-    standalone: true,
     selector: 'my-app',
-    imports: [TuiDocMain, TuiRoot],
+    imports: [RouterLink, RouterLinkActive, RouterOutlet, TuiRoot],
     templateUrl: './app.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

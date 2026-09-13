@@ -7,7 +7,8 @@ import {parseRecording} from '../libs/training-observer/src/contracts';
 test('Taiga text input remains a draft through a pause and Enter, then commits once on Tab', async ({
     page,
 }) => {
-    await page.goto('/spike/record');
+    await page.goto('/record');
+    await page.getByText('Настройки записи и диагностика', {exact: true}).click();
     await page.getByRole('combobox', {name: 'Поиск процедуры', exact: true}).click();
     await page.getByRole('option', {name: 'Заявка на обучение', exact: true}).click();
     const input = page.getByRole('textbox', {name: 'ФИО', exact: true});
@@ -24,13 +25,13 @@ test('Taiga text input remains a draft through a pause and Enter, then commits o
         .getByRole('list', {name: 'Записанные действия'})
         .getByRole('listitem');
 
-    await expect(actions.filter({hasText: 'input'})).toHaveCount(0);
+    await expect(actions.filter({hasText: 'Ввод ·'})).toHaveCount(0);
     await expect(input).toBeFocused();
     await input.press('Tab');
-    await expect(actions.filter({hasText: 'input'})).toHaveCount(1);
+    await expect(actions.filter({hasText: 'Ввод ·'})).toHaveCount(1);
     await input.focus();
     await input.press('Tab');
-    await expect(actions.filter({hasText: 'input'})).toHaveCount(1);
+    await expect(actions.filter({hasText: 'Ввод ·'})).toHaveCount(1);
     await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
     const download = page.waitForEvent('download');
 
@@ -50,7 +51,8 @@ test('Taiga text input remains a draft through a pause and Enter, then commits o
 test('Taiga combobox distinguishes a blurred search query from a confirmed procedure', async ({
     page,
 }) => {
-    await page.goto('/spike/record');
+    await page.goto('/record');
+    await page.getByText('Настройки записи и диагностика', {exact: true}).click();
     await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
     const search = page.getByRole('combobox', {name: 'Поиск процедуры', exact: true});
 
@@ -61,11 +63,11 @@ test('Taiga combobox distinguishes a blurred search query from a confirmed proce
         .getByRole('list', {name: 'Записанные действия'})
         .getByRole('listitem');
 
-    await expect(actions.filter({hasText: 'input'})).toHaveCount(1);
-    await expect(actions.filter({hasText: 'select'})).toHaveCount(0);
+    await expect(actions.filter({hasText: 'Ввод ·'})).toHaveCount(1);
+    await expect(actions.filter({hasText: 'Выбор ·'})).toHaveCount(0);
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toHaveCount(0);
     await search.click();
     await page.getByRole('option', {name: 'Заявка на обучение', exact: true}).click();
     await expect(page.getByRole('textbox', {name: 'ФИО', exact: true})).toBeVisible();
-    await expect(actions.filter({hasText: 'select'})).toHaveCount(1);
+    await expect(actions.filter({hasText: 'Выбор ·'})).toHaveCount(1);
 });

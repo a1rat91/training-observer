@@ -1,6 +1,7 @@
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     DestroyRef,
     effect,
     inject,
@@ -15,6 +16,7 @@ import {
     describeElement,
     draftScenario,
     type ElementDescriptor,
+    type GroupedScenario,
     isObservableElement,
     parseScenario,
     type Recording,
@@ -24,12 +26,15 @@ import {
 import {AreaRegistryService} from '@training-observer/core/angular';
 
 import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
+import {ScenarioReviewComponent} from './scenario-review.component';
 
+/** Готовит сценарий из журнала: автор выбирает конец записи, границы групп и результаты переходов, затем редактирует задания. */
 @Component({
     standalone: true,
     selector: 'scenario-editor',
     imports: [
         FormsModule,
+        ScenarioReviewComponent,
         TuiButton,
         TuiCheckbox,
         TuiDataListWrapper,
@@ -39,9 +44,34 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
     ],
     template: `
         <h3>Подготовка сценария</h3>
+        <h4>1. Выберите последнее действие сценария</h4>
         <p>
-            После успешного завершения процедуры выберите заголовок или область, которая
-            появляется только при успехе.
+            «Остановить запись» выключает сбор событий в админке. Выберите ниже действие в
+            приложении, до которого должен дойти ученик. По умолчанию выбрано последнее
+            записанное.
+        </p>
+        <tui-textfield [stringify]="actionTitle">
+            <label tuiLabel>Последнее действие сценария</label>
+            <input
+                tuiSelect
+                [ngModel]="targetAction()"
+                (ngModelChange)="chooseAction($event)"
+            />
+            <tui-data-list-wrapper
+                *tuiTextfieldDropdown
+                new
+                [items]="recording().actions"
+            />
+        </tui-textfield>
+        <p>
+            В сценарий войдут действия с 1 по {{ targetAction()?.sequence }}. Всё после
+            выбранного действия останется только в исходной записи.
+        </p>
+        <h4>2. Укажите успешный результат этого действия</h4>
+        <p>
+            Нажатие кнопки отправки может закончиться ошибкой. Чтобы отличить успех от
+            ошибки, выберите результат в приложении — например, заголовок «Заявка
+            принята». Это условие для ученика, а не повторная остановка записи.
         </p>
         <button
             size="s"
@@ -50,10 +80,13 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
             [disabled]="disabled() || !recording().actions.length"
             (click)="pick()"
         >
-            Выбрать признак завершения
+            Выбрать результат в приложении
         </button>
         @if (picking()) {
-            <p role="status">Нажмите на признак успешного результата в плеере.</p>
+            <p role="status">
+                Теперь нажмите на успешный результат в приложении слева. Например, на
+                заголовок «Заявка принята».
+            </p>
             <button
                 size="s"
                 tuiButton
@@ -64,28 +97,48 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
             </button>
         }
         @if (finish(); as descriptor) {
-            <details>
+            <details open>
                 <summary>Группы и переходы</summary>
                 <p>
-                    По умолчанию задания независимы внутри одной группы. Отметьте
-                    действия, которые переводят в следующую группу, и проверьте цель
-                    подтверждения. Открытие справки может остаться обычным заданием.
+                    3. Отметьте действия, после которых начинается новая группа заданий. В
+                    учебном примере это выбор процедуры в поиске и каждое «Продолжить».
+                    Если записывали «Новая процедура», отметьте и её. Для каждого перехода
+                    выберите поле или результат, который должен появиться после него.
+                    Внутри группы задания выполняются в любом порядке. Клик по справке
+                    оставьте обычным заданием, если он не переключает группу. Последний
+                    клик сценария уже отмечен как завершающий переход.
                 </p>
-                @for (action of recording().actions; track action.id) {
+                @for (action of actions(); track action.id) {
                     @if (action.kind !== 'input') {
                         <label>
                             <input
                                 tuiCheckbox
                                 type="checkbox"
                                 [attr.aria-label]="'Переход ' + action.id"
-                                [ngModel]="!!boundaries()[action.id]"
+                                [disabled]="
+                                    action.id === targetAction()?.id &&
+                                    action.kind === 'click'
+                                "
+                                [ngModel]="
+                                    (action.id === targetAction()?.id &&
+                                        action.kind === 'click') ||
+                                    !!boundaries()[action.id]
+                                "
                                 (ngModelChange)="toggleBoundary(action, $event)"
                             />
-                            {{ action.sequence }}. {{ actionName(action) }}
+                            После действия {{ action.sequence }}:
+                            {{ actionName(action) }} —
+                            {{
+                                action.id === targetAction()?.id
+                                    ? 'завершение сценария'
+                                    : 'новая группа'
+                            }}
                         </label>
                         @if (boundaries()[action.id]) {
-                            <tui-textfield [stringify]="targetName">
-                                <label tuiLabel>Цель после {{ action.id }}</label>
+                            <tui-textfield [stringify]="resultTitle">
+                                <label tuiLabel>
+                                    Результат действия {{ action.sequence }}
+                                </label>
                                 <input
                                     tuiSelect
                                     [ngModel]="boundaryTarget(action.id)"
@@ -93,7 +146,7 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
                                 />
                                 <tui-data-list-wrapper
                                     *tuiTextfieldDropdown
-                                    [itemContent]="targetName"
+                                    new
                                     [items]="recording().descriptors.concat(descriptor)"
                                 />
                             </tui-textfield>
@@ -102,7 +155,7 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
                 }
             </details>
             <p>
-                Признак:
+                Успешный результат:
                 {{
                     descriptor.fingerprint.features.accessibleName ||
                         descriptor.fingerprint.features.text
@@ -119,13 +172,18 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
             </button>
         }
         @if (source) {
+            @if (draft(); as document) {
+                <scenario-review
+                    [scenario]="document"
+                    (scenarioChange)="review($event)"
+                />
+            }
             <p>
-                Проверьте группы, ожидаемые значения и условия переходов. Требования
-                открыть справку или выполнить другое действие раньше задаются через
-                requires.
+                5. Сохраните сценарий — откроется новое приложение для проверки. Начните
+                workflow заново; наблюдение включится автоматически.
             </p>
             <details>
-                <summary>Редактор JSON сценария</summary>
+                <summary>Дополнительно: JSON и сложные условия</summary>
                 <p>
                     Здесь редактируются instruction, hint, optional, when, requires,
                     transitions, completion и ожидаемые значения.
@@ -134,7 +192,8 @@ import {SCENARIO_STORAGE_KEY} from '../scenario-storage';
                     <label tuiLabel>JSON сценария</label>
                     <textarea
                         tuiTextarea
-                        [(ngModel)]="source"
+                        [ngModel]="source"
+                        (ngModelChange)="editSource($event)"
                     ></textarea>
                 </tui-textfield>
             </details>
@@ -171,6 +230,7 @@ export class ScenarioEditorComponent {
     private readonly router = inject(Router);
     private cleanup?: () => void;
     private recordingId = '';
+    private readonly targetId = signal('');
 
     public readonly recording = input.required<Recording>();
     public readonly root = input.required<HTMLElement>();
@@ -179,7 +239,23 @@ export class ScenarioEditorComponent {
     public readonly error = signal('');
     public readonly picking = signal(false);
     public source = '';
+    public readonly draft = signal<GroupedScenario | null>(null);
     public readonly boundaries = signal<Record<string, string>>({});
+
+    public readonly targetAction = computed(
+        () =>
+            this.recording().actions.find((action) => action.id === this.targetId()) ??
+            this.recording().actions[this.recording().actions.length - 1],
+    );
+
+    public readonly actions = computed(() =>
+        this.recording().actions.slice(
+            0,
+            this.recording().actions.findIndex(
+                (action) => action.id === this.targetAction()?.id,
+            ) + 1,
+        ),
+    );
 
     constructor() {
         this.destroyRef.onDestroy(() => this.cancelPick());
@@ -193,13 +269,64 @@ export class ScenarioEditorComponent {
                 this.finishAreaKey = undefined;
                 this.source = '';
                 this.boundaries.set({});
+                this.targetId.set('');
                 this.error.set('');
             }
         });
     }
 
     public readonly targetName = (target: ElementDescriptor): string =>
-        `${target.fingerprint.features.accessibleName || target.fingerprint.features.label || target.id} (${target.id})`;
+        target.fingerprint.features.accessibleName ||
+        target.fingerprint.features.label ||
+        target.fingerprint.features.text ||
+        target.id;
+
+    public readonly actionTitle = (action: SemanticAction): string =>
+        action
+            ? `№${action.sequence} · ${
+                  {
+                      click: 'Нажать',
+                      input: 'Заполнить',
+                      select: 'Выбрать',
+                      navigation: 'Перейти',
+                  }[action.kind]
+              } · ${this.actionName(action)}`
+            : '';
+
+    public readonly resultTitle = (target: ElementDescriptor): string => {
+        const name = this.targetName(target);
+        const duplicates = this.recording()
+            .descriptors.concat(this.finish() ?? [])
+            .filter((entry) => this.targetName(entry) === name);
+
+        if (duplicates.length < 2) {
+            return name;
+        }
+
+        if (target.id === this.finish()?.id) {
+            return `${name} · итоговый результат`;
+        }
+
+        const actions = this.recording()
+            .actions.filter(
+                (action) => 'targetId' in action && action.targetId === target.id,
+            )
+            .map((action) => action.sequence);
+
+        return actions.length
+            ? `${name} · действия №${actions.join(', ')}`
+            : `${name} · снимок ${duplicates.findIndex((entry) => entry.id === target.id) + 1}`;
+    };
+
+    public chooseAction(action: SemanticAction | null): void {
+        if (!action) {
+            return;
+        }
+
+        this.targetId.set(action.id);
+        this.source = '';
+        this.boundaries.set({});
+    }
 
     public actionName(action: SemanticAction): string {
         return action.kind === 'navigation'
@@ -229,8 +356,7 @@ export class ScenarioEditorComponent {
     public toggleBoundary(action: SemanticAction, enabled: boolean): void {
         this.source = '';
         const entries = {...this.boundaries()};
-        const next =
-            this.recording().actions[this.recording().actions.indexOf(action) + 1];
+        const next = this.actions()[this.actions().indexOf(action) + 1];
 
         if (enabled) {
             entries[action.id] =
@@ -285,6 +411,7 @@ export class ScenarioEditorComponent {
                 const areaRoot = registry.root(owner.area.key)!;
 
                 this.finishAreaKey = owner.area.key;
+                this.source = '';
                 this.finish.set(
                     describeElement(element, areaRoot, `finish-${Date.now()}`, {
                         includeStatic: true,
@@ -309,22 +436,63 @@ export class ScenarioEditorComponent {
         try {
             this.source = JSON.stringify(
                 draftScenario(
-                    this.recording(),
+                    {...this.recording(), actions: this.actions()},
                     this.finish()!,
                     this.finishAreaKey,
-                    Object.entries(this.boundaries()).map(([actionId, nextTargetId]) => ({
-                        actionId,
-                        nextTargetId,
-                    })),
+                    [
+                        ...Object.entries(this.boundaries())
+                            .filter(([actionId]) => actionId !== this.targetAction()?.id)
+                            .map(([actionId, nextTargetId]) => ({
+                                actionId,
+                                nextTargetId,
+                            })),
+                        ...(this.targetAction()?.kind === 'click'
+                            ? [
+                                  {
+                                      actionId: this.targetAction()!.id,
+                                      nextTargetId: this.finish()!.id,
+                                  },
+                              ]
+                            : []),
+                    ],
                 ),
                 null,
                 2,
             );
+            const document = parseScenario(this.source);
+
+            this.draft.set(document.version === 4 ? document : null);
             this.error.set('');
         } catch (error: unknown) {
             this.error.set(
                 error instanceof Error ? error.message : 'Не удалось создать сценарий',
             );
+        }
+    }
+
+    public review(document: GroupedScenario): void {
+        this.draft.set(document);
+        this.source = JSON.stringify(document, null, 2);
+
+        try {
+            parseScenario(this.source);
+            this.error.set('');
+        } catch (error: unknown) {
+            this.error.set(error instanceof Error ? error.message : 'Проверьте задания');
+        }
+    }
+
+    public editSource(source: string): void {
+        this.source = source;
+
+        try {
+            const document = parseScenario(source);
+
+            this.draft.set(document.version === 4 ? document : null);
+            this.error.set('');
+        } catch (error: unknown) {
+            this.draft.set(null);
+            this.error.set(error instanceof Error ? error.message : 'Проверьте JSON');
         }
     }
 
@@ -351,7 +519,7 @@ export class ScenarioEditorComponent {
             const json = serializeScenario(parseScenario(this.source));
 
             localStorage.setItem(SCENARIO_STORAGE_KEY, json);
-            void this.router.navigateByUrl('/spike/learn');
+            void this.router.navigateByUrl('/learn');
         } catch (error: unknown) {
             this.error.set(
                 error instanceof Error ? error.message : 'Не удалось сохранить сценарий',

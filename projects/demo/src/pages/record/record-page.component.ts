@@ -168,6 +168,12 @@ export default class RecordPageComponent {
         }
     }
 
+    public actionLabel(action: SemanticAction): string {
+        return {click: 'Нажатие', input: 'Ввод', select: 'Выбор', navigation: 'Переход'}[
+            action.kind
+        ];
+    }
+
     public name(action: SemanticAction): string {
         if (action.kind === 'navigation') {
             return action.pathname;

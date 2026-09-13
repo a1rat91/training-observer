@@ -1,13 +1,17 @@
+import {HttpClient} from '@angular/common/http';
 import {
+    afterNextRender,
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
     inject,
     NgZone,
     signal,
+    viewChild,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormsModule} from '@angular/forms';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router, RouterLink} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiTextarea} from '@taiga-ui/kit';
 import {
@@ -18,6 +22,7 @@ import {
     ScenarioRuntime,
 } from '@training-observer/core';
 import {AreaRegistryService} from '@training-observer/core/angular';
+import {catchError, of, switchMap, tap} from 'rxjs';
 
 import {RECORDING_IMPORT_KEY, SCENARIO_STORAGE_KEY} from '../scenario-storage';
 import {DEMO_AREAS} from '../workspace/area-definitions';
@@ -26,19 +31,31 @@ import {ProcedureShellComponent} from '../workspace/procedure-shell.component';
 @Component({
     standalone: true,
     selector: 'learn-page',
-    imports: [FormsModule, ProcedureShellComponent, TuiButton, TuiTextarea, TuiTextfield],
+    imports: [
+        FormsModule,
+        ProcedureShellComponent,
+        RouterLink,
+        TuiButton,
+        TuiTextarea,
+        TuiTextfield,
+    ],
     templateUrl: './learn-page.component.html',
     styleUrl: '../record/record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
     providers: [AreaRegistryService],
 })
 export default class LearnPageComponent {
+    private readonly route = inject(ActivatedRoute);
+    private readonly http = inject(HttpClient);
+    private readonly workspace = viewChild.required(ProcedureShellComponent);
     private readonly areas = inject(AreaRegistryService);
     private readonly zone = inject(NgZone);
     private readonly destroyRef = inject(DestroyRef);
     private runtime?: ScenarioRuntime;
     private readonly router = inject(Router);
 
+    public readonly loading = signal(false);
+    public readonly example = signal(false);
     public readonly importedRecording = signal<Recording | null>(null);
     public readonly current = signal<RuntimeSnapshot | null>(null);
     public readonly error = signal('');
@@ -64,7 +81,7 @@ export default class LearnPageComponent {
         ambiguous: 'Неоднозначность',
         broken: 'Не удалось проверить цель',
         timedOut: 'Время ожидания истекло',
-        finalizing: 'Ожидаем результат процедуры',
+        finalizing: 'Ожидаем итоговый результат',
         completed: 'Обучение завершено',
         stopped: 'Обучение остановлено',
     };
@@ -77,6 +94,47 @@ export default class LearnPageComponent {
         }
 
         this.destroyRef.onDestroy(() => this.runtime?.stop());
+        afterNextRender(() => {
+            const savedSource = this.source;
+
+            this.route.queryParamMap
+                .pipe(
+                    tap((params) => {
+                        this.runtime?.stop();
+                        this.current.set(null);
+                        this.error.set('');
+                        this.example.set(params.has('example'));
+                        this.loading.set(true);
+                        this.workspace().reset();
+                    }),
+                    switchMap((params) =>
+                        params.has('example')
+                            ? this.http
+                                  .get('assets/example-scenario.json', {
+                                      responseType: 'text',
+                                  })
+                                  .pipe(
+                                      catchError(() => {
+                                          this.error.set(
+                                              'Не удалось загрузить готовый пример. Обновите страницу.',
+                                          );
+
+                                          return of('');
+                                      }),
+                                  )
+                            : of(savedSource),
+                    ),
+                    takeUntilDestroyed(this.destroyRef),
+                )
+                .subscribe((source) => {
+                    this.source = source;
+                    this.loading.set(false);
+
+                    if (source) {
+                        this.start(this.workspace().surface().nativeElement);
+                    }
+                });
+        });
     }
 
     public start(root: HTMLElement): void {
@@ -126,7 +184,10 @@ export default class LearnPageComponent {
             this.zone.runOutsideAngular(() => {
                 this.runtime = new ScenarioRuntime(root, scenario, {
                     areas: registry,
-                    routePairs: [{recorded: '/spike/record', current: '/spike/learn'}],
+                    routePairs: [
+                        {recorded: '/record', current: '/learn'},
+                        {recorded: '/spike/record', current: '/learn'},
+                    ],
                     onUpdate: (snapshot) =>
                         this.zone.run(() => {
                             if (snapshot.stepId !== this.current()?.stepId) {
@@ -150,7 +211,7 @@ export default class LearnPageComponent {
             const recording = parseRecording(this.source);
 
             sessionStorage.setItem(RECORDING_IMPORT_KEY, JSON.stringify(recording));
-            void this.router.navigateByUrl('/spike/record');
+            void this.router.navigateByUrl('/record');
         } catch (error: unknown) {
             this.importedRecording.set(null);
             this.error.set(
