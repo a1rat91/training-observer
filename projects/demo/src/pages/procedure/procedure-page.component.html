@@ -1,0 +1,190 @@
+<section class="page">
+    <header>
+        <p class="eyebrow">Тестовый плеер · Taiga UI 4</p>
+        <h1>Заявка на обучение</h1>
+        <p>
+            Заполните данные сотрудника. После отправки сервер добавит поля выбранного курса, затем предложит проверить
+            заявку.
+        </p>
+    </header>
+    <details
+        class="settings"
+        [open]="!session()"
+    >
+        <summary>Условия тестового прохождения</summary>
+        <p>Локальный HTTP backend эмулирует процедуру. Настройки применяются при начале новой заявки.</p>
+        <div class="settings-fields">
+            <tui-textfield>
+                <label tuiLabel>Расположение полей</label>
+                <input
+                    tuiSelect
+                    [(ngModel)]="layout"
+                />
+                <tui-data-list-wrapper
+                    *tuiTextfieldDropdown
+                    new
+                    [items]="layouts"
+                />
+            </tui-textfield>
+            <tui-textfield>
+                <label tuiLabel>Поведение сервера</label>
+                <input
+                    tuiSelect
+                    [(ngModel)]="profile"
+                />
+                <tui-data-list-wrapper
+                    *tuiTextfieldDropdown
+                    new
+                    [items]="profiles"
+                />
+            </tui-textfield>
+        </div>
+    </details>
+    <div class="toolbar">
+        <button
+            tuiButton
+            type="button"
+            (click)="start()"
+        >
+            Новая процедура
+        </button>
+        @if (session() || pending()) {
+            <button
+                appearance="secondary"
+                tuiButton
+                type="button"
+                (click)="reset()"
+            >
+                Сбросить
+            </button>
+        }
+    </div>
+    @if (pending()) {
+        <p
+            role="status"
+            class="notice"
+        >
+            Ожидаем ответ сервера…
+        </p>
+    }
+    @if (error()) {
+        <div
+            role="alert"
+            class="error notice"
+        >
+            <p>{{ error() }}</p>
+            @if (canRetry()) {
+                <p>Повтор будет отправлен с теми же данными. «Новая процедура» начинает заявку заново.</p>
+                <button
+                    tuiButton
+                    type="button"
+                    [disabled]="pending()"
+                    (click)="retry()"
+                >
+                    Повторить
+                </button>
+            }
+        </div>
+    }
+    @if (session(); as current) {
+        @if (current.completion; as completion) {
+            <section
+                aria-label="Результат заявки"
+                class="card completion"
+            >
+                <h2>{{ completion.title }}</h2>
+                <p>
+                    Номер заявки:
+                    <strong>{{ completion.applicationNumber }}</strong>
+                </p>
+                <p>Процедура завершена. Можно начать новое независимое прохождение.</p>
+            </section>
+        }
+        @if (current.screen; as screen) {
+            @for (version of [epoch()]; track version) {
+                <form
+                    [attr.aria-busy]="pending()"
+                    [attr.aria-label]="screen.title"
+                    [formGroup]="form"
+                    (ngSubmit)="advance('next')"
+                >
+                    <h2>{{ screen.title }}</h2>
+                    @if (screen.summary; as summary) {
+                        <dl class="card summary">
+                            @for (row of summary; track row.label) {
+                                <dt>{{ row.label }}</dt>
+                                <dd>{{ row.value || 'Не указано' }}</dd>
+                            }
+                        </dl>
+                    }
+                    @for (section of screen.sections; track section.key) {
+                        <fieldset class="card">
+                            <legend>{{ section.title }}</legend>
+                            @if (activeLayout === layouts[0]) {
+                                <div class="fields">
+                                    @for (field of section.fields; track field.key) {
+                                        <ng-container
+                                            [ngTemplateOutlet]="controlTemplate"
+                                            [ngTemplateOutletContext]="{$implicit: field}"
+                                        />
+                                    }
+                                </div>
+                            } @else {
+                                <div class="alternate">
+                                    @for (field of section.fields.slice().reverse(); track field.key) {
+                                        <section class="field-wrapper">
+                                            <div class="field-content">
+                                                <ng-container
+                                                    [ngTemplateOutlet]="controlTemplate"
+                                                    [ngTemplateOutletContext]="{$implicit: field}"
+                                                />
+                                            </div>
+                                        </section>
+                                    }
+                                </div>
+                            }
+                        </fieldset>
+                    }
+                    <div class="toolbar">
+                        @for (action of screen.actions; track action.action) {
+                            @if (action.action === 'next') {
+                                <button
+                                    tuiButton
+                                    type="submit"
+                                    [disabled]="pending()"
+                                >
+                                    @if (activeLayout === layouts[1]) {
+                                        <span aria-hidden="true">→</span>
+                                    }
+                                    <span>{{ action.label }}</span>
+                                </button>
+                            } @else {
+                                <button
+                                    appearance="secondary"
+                                    tuiButton
+                                    type="button"
+                                    [disabled]="pending()"
+                                    (click)="advance('back')"
+                                >
+                                    {{ action.label }}
+                                </button>
+                            }
+                        }
+                    </div>
+                </form>
+            }
+        }
+    } @else if (!pending()) {
+        <p class="notice">Нажмите «Новая процедура», чтобы получить первую форму с сервера.</p>
+    }
+</section>
+<ng-template
+    #controlTemplate
+    let-field
+>
+    <procedure-field
+        [control]="control(field.key)"
+        [error]="fieldErrors()[field.key] || ''"
+        [field]="field"
+    />
+</ng-template>

@@ -1,0 +1,122 @@
+.page {
+    max-inline-size: 65rem;
+    margin: auto;
+    padding: 2rem;
+}
+
+header {
+    margin-block-end: 1.5rem;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+}
+
+p {
+    line-height: 1.5;
+}
+
+.eyebrow {
+    color: var(--tui-text-secondary);
+}
+
+.settings {
+    padding: 1rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.settings-fields,
+.fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-block: 1.5rem;
+}
+
+.card {
+    padding: 1.5rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+    margin: 1rem 0;
+    min-inline-size: 0;
+}
+
+legend {
+    padding: 0 0.5rem;
+    font-weight: 600;
+}
+
+.notice {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: var(--tui-background-neutral-1);
+}
+
+.error {
+    color: var(--tui-text-negative);
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1rem;
+}
+
+dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+dt {
+    color: var(--tui-text-secondary);
+}
+
+.alternate {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.field-wrapper {
+    padding: 1rem;
+    background: var(--tui-background-neutral-1);
+    border-radius: 0.75rem;
+}
+
+.field-content {
+    max-inline-size: 36rem;
+    margin-inline-start: auto;
+}
+
+.completion {
+    border-color: var(--tui-status-positive);
+}
+
+@media (max-width: 700px) {
+    .page {
+        padding: 1rem;
+    }
+
+    .settings-fields,
+    .fields,
+    .summary {
+        grid-template-columns: 1fr;
+    }
+}

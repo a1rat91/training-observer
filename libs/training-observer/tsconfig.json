@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "types": ["jest", "node"],
+        "noEmit": true,
+        "allowJs": true,
+        "baseUrl": "../..",
+        "paths": {
+            "@training-observer/core": ["libs/training-observer/src/index.ts"]
+        }
+    },
+    "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

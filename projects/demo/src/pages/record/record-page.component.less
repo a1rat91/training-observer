@@ -1,0 +1,129 @@
+:host {
+    display: block;
+    padding: 0;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 27rem;
+    gap: 1rem;
+    align-items: start;
+}
+
+.player {
+    min-inline-size: 0;
+}
+
+aside {
+    position: sticky;
+    top: 1rem;
+    background: var(--tui-background-base);
+    max-block-size: calc(100vh - 3rem);
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+li {
+    margin: 0.75rem 0;
+    overflow-wrap: anywhere;
+}
+
+.value {
+    white-space: pre-wrap;
+}
+
+.recorded-actions {
+    max-block-size: 22rem;
+    overflow: auto;
+}
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 950px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    aside {
+        position: static;
+        grid-row: 1;
+        max-block-size: 26rem;
+    }
+}
+
+.eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--tui-text-action);
+    font-weight: bold;
+}
+
+.workflow {
+    display: flex;
+    list-style: none;
+    gap: 1rem;
+    padding: 0;
+    margin-block-end: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.workflow li {
+    padding-block: 0.5rem;
+    border-block-end: 2px solid transparent;
+    color: var(--tui-text-secondary);
+}
+
+.workflow .current {
+    border-block-end-color: var(--tui-border-focus);
+    color: var(--tui-text-primary);
+    font-weight: bold;
+}
+
+.notice {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: var(--tui-background-neutral-1);
+}
+
+.advanced {
+    margin-block: 1rem;
+    padding-block: 1rem;
+    border-block-start: 1px solid var(--tui-border-normal);
+}
+
+.empty {
+    max-inline-size: 48rem;
+    padding: 2rem;
+    background: var(--tui-background-base);
+    border-radius: 1rem;
+}
+
+@media (min-width: 951px) {
+    .workspace.editing {
+        grid-template-columns: minmax(0, 0.9fr) minmax(28rem, 1.1fr);
+    }
+
+    .editing aside {
+        position: static;
+        max-block-size: none;
+        overflow: visible;
+    }
+}

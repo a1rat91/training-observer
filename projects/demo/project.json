@@ -9,6 +9,14 @@
         "build": {
             "configurations": {
                 "development": {},
+                "e2e": {
+                    "fileReplacements": [
+                        {
+                            "replace": "projects/demo/src/environments/environment.ts",
+                            "with": "projects/demo/src/environments/environment.e2e.ts"
+                        }
+                    ]
+                },
                 "github": {
                     "baseHref": "/training-observer/",
                     "budgets": [
@@ -64,12 +72,6 @@
                         "input": "projects/demo/src/assets/",
                         "output": "./assets/"
                     },
-                    "projects/demo/src/favicon.ico",
-                    {
-                        "glob": "**/*",
-                        "input": "node_modules/@taiga-ui/icons/src",
-                        "output": "assets/taiga-ui/icons"
-                    },
                     {
                         "glob": "**/*",
                         "input": "node_modules/@taiga-ui/icons/src",
@@ -115,6 +117,9 @@
         },
         "serve": {
             "configurations": {
+                "e2e": {
+                    "buildTarget": "demo:build:e2e"
+                },
                 "development": {
                     "buildTarget": "demo:build:development"
                 },

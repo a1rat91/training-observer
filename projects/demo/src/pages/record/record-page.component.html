@@ -1,0 +1,277 @@
+<header>
+    <p class="eyebrow">АДМИНИСТРАТОР</p>
+    <h1>Запишите свой сценарий</h1>
+    <p>
+        Сначала запишите действия в приложении слева. Затем остановите запись, удалите лишнее и подготовьте задания
+        справа.
+    </p>
+    <p class="notice">
+        После создания черновика раскройте «Обратная связь и варианты» у нужного задания: задайте сообщения об успехе и
+        неверном значении. Для альтернативных действий создайте группу вариантов и привяжите её к заданию.
+    </p>
+    <ol class="workflow">
+        <li [class.current]="!recording() || running()">1. Запись действий</li>
+        <li [class.current]="recording() && !running()">2. Подготовка заданий</li>
+        <li>3. Проверка в тренировке</li>
+    </ol>
+</header>
+<div
+    class="workspace"
+    [class.editing]="recording() && !running()"
+>
+    <procedure-shell
+        #workspace
+        class="player"
+    />
+    <aside aria-label="Панель записи">
+        <h2>
+            {{
+                paused()
+                    ? 'Выбор элементов — запись на паузе'
+                    : running()
+                      ? 'Идёт запись'
+                      : recording()
+                        ? 'Действия записаны'
+                        : 'Начните с записи'
+            }}
+        </h2>
+        @if (imported()) {
+            <p role="status">
+                Запись импортирована. Не включайте запись повторно. Пройдите процедуру слева до успешного результата,
+                затем выберите признак завершения и создайте черновик сценария. Сохранённые действия уже доступны ниже.
+            </p>
+        }
+        <p>
+            {{
+                paused()
+                    ? 'Сейчас вы выбираете элементы группы. Действия не записываются. Сохраните группу или отмените выбор — запись продолжится в том же журнале.'
+                    : running()
+                      ? 'Сейчас записываются только действия в приложении слева. После последнего действия нажмите «Остановить запись»: появятся удаление действий и редактор заданий.'
+                      : recording()
+                        ? 'Сначала проверьте журнал ниже и удалите лишнее. Затем подготовьте сценарий. Действия в приложении больше не записываются — можно вернуться на нужный экран.'
+                        : 'Нажмите «Начать запись», затем выберите «Заявка на обучение» в поиске слева.'
+            }}
+        </p>
+        <p class="notice">
+            Текст засчитывается после выхода из поля — нажмите Tab. Клик и выбор варианта записываются сразу.
+        </p>
+        <div class="actions">
+            @if (!running()) {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="start(workspace.surface().nativeElement)"
+                >
+                    Начать запись
+                </button>
+            } @else {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="stop()"
+                >
+                    Остановить запись
+                </button>
+            }
+        </div>
+        @if (running()) {
+            <p role="status">
+                Редактирование заданий появится после остановки. Группу вариантов можно создать сейчас: на время выбора
+                запись приостановится, после «Готово» или отмены продолжится в том же журнале.
+            </p>
+        } @else if (recording()) {
+            <p>
+                «Начать запись» создаст новый журнал вместо текущего. Для редактирования повторно включать запись не
+                нужно.
+            </p>
+        }
+        @if (error()) {
+            <p role="alert">{{ error() }}</p>
+        }
+        @if (recording(); as report) {
+            <p role="status">Записано действий: {{ report.actions.length }}</p>
+            @for (diagnostic of report.diagnostics; track $index) {
+                <p role="alert">{{ diagnostic.message }}</p>
+            }
+            <h3>Записанные действия</h3>
+            @if (!running()) {
+                <p>
+                    После остановки удалите лишние действия. Номера оставшихся действий сохраняются. После изменений
+                    пересоберите черновик ниже; авторские правки будут сохранены, конфликты показаны отдельно.
+                </p>
+            }
+            @if (!running() && canUndo()) {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="undo()"
+                >
+                    Отменить удаление
+                </button>
+            }
+            <ol
+                aria-label="Записанные действия"
+                class="recorded-actions"
+            >
+                @for (action of report.actions; track action.id) {
+                    <li>
+                        <strong>{{ actionLabel(action) }} · {{ name(action) }}</strong>
+                        <div class="value">{{ value(action) }}</div>
+                        @if (!running()) {
+                            <button
+                                appearance="secondary"
+                                size="s"
+                                tuiButton
+                                type="button"
+                                [attr.aria-label]="'Удалить действие ' + action.sequence"
+                                (click)="remove(action)"
+                            >
+                                Удалить
+                            </button>
+                        }
+                    </li>
+                } @empty {
+                    <li>
+                        {{
+                            running()
+                                ? 'Пока нет действий. Выполните действие в приложении слева.'
+                                : 'Нет действий. Отмените удаление или начните новую запись.'
+                        }}
+                    </li>
+                }
+            </ol>
+            @if (!running() && (report.actions.length || canUndo())) {
+                <scenario-editor
+                    [elementGroups]="groupPicker.groups()"
+                    [recording]="report"
+                    [root]="workspace.surface().nativeElement"
+                />
+            }
+        }
+        <details class="advanced">
+            <summary (pointerdown)="$event.preventDefault()">Группы вариантов</summary>
+            <p>
+                Соберите альтернативные элементы, например «Назад / Справка / Далее». После сохранения состава привяжите
+                его к заданию в «Обратная связь и варианты». Здесь выбираются элементы, а в задании — их реакции.
+            </p>
+            <ol>
+                <li>Откройте нужный экран. Группу можно создать и во время записи действий.</li>
+                <li>
+                    Нажмите «Создать группу вариантов» и выберите элементы. Реальные кнопки в этом режиме не
+                    срабатывают.
+                </li>
+                <li>
+                    Нажмите «Готово». Состав останется в этом браузере; его можно повторно открыть через «Изменить».
+                </li>
+            </ol>
+            <p>
+                Выбор временно приостанавливает запись. Незавершённый ввод отменяется; после выхода из выбора его нужно
+                завершить заново. Клики выбора не попадают в журнал.
+            </p>
+            <element-group-picker
+                #groupPicker
+                [root]="workspace.surface().nativeElement"
+                (selectionClosed)="resumeAfterSelection()"
+                (selectionStarted)="pauseForSelection()"
+            />
+        </details>
+        <details class="advanced">
+            <summary>Настройки записи и диагностика</summary>
+            <p>
+                Для обычной записи менять ничего не нужно. Здесь можно выбрать области наблюдения, скачать рабочий
+                журнал и проверить поиск элементов.
+            </p>
+            @if (!running()) {
+                <label>
+                    <input
+                        tuiCheckbox
+                        type="checkbox"
+                        [(ngModel)]="captureValues"
+                    />
+                    Сохранять значения полей
+                </label>
+            } @else {
+                <p>
+                    Значения полей: {{ captureValues ? 'сохраняются' : 'не сохраняются' }}. Эту настройку выбирают перед
+                    началом записи.
+                </p>
+            }
+            <p>
+                Пароли, файлы и одноразовые коды скрываются. Записываются действия в выбранных микрофронтах и связанных
+                с ними dropdown.
+            </p>
+            <details aria-label="Границы микрофронтов">
+                <summary>Границы микрофронтов</summary>
+                <p>Выберите MF для наблюдения. Изменения применяются и во время записи.</p>
+                <p>Запись v3 сохраняет привязки к микрофронтам. При прохождении цели ищутся только в своих областях.</p>
+                <ul>
+                    @for (area of areaRegistry.areas(); track area.key) {
+                        <li>
+                            <label>
+                                <input
+                                    tuiCheckbox
+                                    type="checkbox"
+                                    [ngModel]="area.observe"
+                                    (ngModelChange)="areaRegistry.setObserved(area.key, $event)"
+                                />
+                                Наблюдать {{ area.key }}
+                            </label>
+                            {{ area.key }} · {{ area.status }} · экземпляров: {{ area.matches }} · поколение:
+                            {{ area.generation }}
+                        </li>
+                    }
+                </ul>
+            </details>
+            @if (recording() && !running()) {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="download()"
+                >
+                    Скачать запись
+                </button>
+                <p>
+                    «Скачать запись» сохраняет рабочий журнал. Для обучения используйте «Сохранить и открыть
+                    прохождение» в редакторе сценария.
+                </p>
+                @if (recording()?.actions?.length) {
+                    <button
+                        size="s"
+                        tuiButton
+                        type="button"
+                        (click)="check()"
+                    >
+                        Проверить поиск
+                    </button>
+                }
+            }
+            @if (resolutions().length) {
+                <section aria-label="Результаты поиска">
+                    <h3>Поиск в текущем экране</h3>
+                    <p>
+                        Результат на момент проверки. Поля прошлых экранов могут отсутствовать. После изменения формы
+                        нажмите проверку снова.
+                    </p>
+                    @for (entry of resolutions(); track entry.report.targetId) {
+                        <details>
+                            <summary>{{ entry.name }} · {{ entry.report.status }}</summary>
+                            <pre>{{ json(entry.report) }}</pre>
+                        </details>
+                    }
+                </section>
+            }
+            @if (recording(); as report) {
+                <details>
+                    <summary>Наблюдаемые состояния (последние 10)</summary>
+                    <p>Изменения от сервера и пересоздание полей — состояния, а не действия пользователя.</p>
+                    <p>Элементов: {{ report.descriptors.length }} · Состояний: {{ report.states.length }}</p>
+                    <pre>{{ json(report.states.slice(-10)) }}</pre>
+                </details>
+            }
+        </details>
+    </aside>
+</div>

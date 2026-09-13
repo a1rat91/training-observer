@@ -1,0 +1,127 @@
+<details>
+    <summary>Обратная связь и варианты</summary>
+    <p>
+        Ожидаемое действие — действие этого задания из записи. Успех сообщается после проверки результата; неверный ввод
+        — после выхода из поля. Сообщения необязательны.
+    </p>
+    <tui-textfield>
+        <label tuiLabel>Сообщение об успехе</label>
+        <input
+            tuiTextfield
+            [ngModel]="job().feedback?.success ?? ''"
+            (ngModelChange)="message('success', $event)"
+        />
+    </tui-textfield>
+    @if (job().action.kind === 'input' || job().action.kind === 'select') {
+        <tui-textfield>
+            <label tuiLabel>Сообщение при неверном значении</label>
+            <input
+                tuiTextfield
+                [ngModel]="job().feedback?.mismatch ?? ''"
+                (ngModelChange)="message('mismatch', $event)"
+            />
+        </tui-textfield>
+    }
+    <p>
+        Для других кнопок или полей создайте состав в разделе «Группы вариантов», затем привяжите его здесь. Все
+        альтернативы сначала допустимы. Ожидаемые действия этого экрана исключаются из альтернатив.
+    </p>
+    @for (group of groups(); track group.id) {
+        <button
+            appearance="secondary"
+            size="s"
+            tuiButton
+            type="button"
+            (click)="attach.emit(group)"
+        >
+            Привязать {{ group.title }}
+        </button>
+    } @empty {
+        <p>Сохранённых составов пока нет.</p>
+    }
+    @for (group of job().choiceGroups ?? []; track group.id) {
+        <section [attr.aria-label]="'Привязанная группа ' + group.title">
+            <h5>{{ group.title }}</h5>
+            <p>Эти правила действуют, пока задание доступно. Они не блокируют приложение и не засчитывают задание.</p>
+            <button
+                appearance="secondary"
+                size="s"
+                tuiButton
+                type="button"
+                (click)="remove(group.id)"
+            >
+                Удалить привязку {{ group.title }}
+            </button>
+            @for (entry of group.variants; track entry.id) {
+                <div
+                    class="variant"
+                    [attr.aria-label]="'Вариант ' + name(entry)"
+                >
+                    <strong>{{ name(entry) }}</strong>
+                    <p>
+                        {{
+                            entry.action.kind === 'click'
+                                ? 'Клик'
+                                : entry.action.kind === 'input'
+                                  ? 'Завершённый ввод'
+                                  : 'Подтверждённый выбор'
+                        }}
+                    </p>
+                    @if (isBoolean(entry)) {
+                        <label>
+                            <input
+                                tuiCheckbox
+                                type="checkbox"
+                                [ngModel]="raw(entry)"
+                                (ngModelChange)="value(group.id, entry, $event)"
+                            />
+                            Реагировать на включённое состояние
+                        </label>
+                    } @else if (raw(entry) !== null) {
+                        <tui-textfield>
+                            <label tuiLabel>Значение варианта</label>
+                            <input
+                                tuiTextfield
+                                [ngModel]="raw(entry)"
+                                (ngModelChange)="value(group.id, entry, $event)"
+                            />
+                        </tui-textfield>
+                    }
+                    <label>
+                        <input
+                            tuiCheckbox
+                            type="checkbox"
+                            [ngModel]="entry.outcome === 'error'"
+                            (ngModelChange)="variant(group.id, entry.id, {outcome: $event ? 'error' : 'allowed'})"
+                        />
+                        Считать ошибочным вариантом
+                    </label>
+                    <p>
+                        {{
+                            entry.outcome === 'error'
+                                ? 'Ошибка только при этом действии и значении.'
+                                : 'Допустимое действие, без ошибки.'
+                        }}
+                    </p>
+                    <tui-textfield>
+                        <label tuiLabel>Сообщение варианта</label>
+                        <input
+                            tuiTextfield
+                            [ngModel]="entry.message ?? ''"
+                            (ngModelChange)="variant(group.id, entry.id, {message: $event})"
+                        />
+                    </tui-textfield>
+                    <button
+                        appearance="secondary"
+                        size="s"
+                        tuiButton
+                        type="button"
+                        (click)="remove(group.id, entry.id)"
+                    >
+                        Убрать вариант {{ name(entry) }}
+                    </button>
+                </div>
+            }
+        </section>
+    }
+</details>

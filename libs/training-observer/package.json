@@ -1,22 +1,35 @@
 {
     "name": "@training-observer/core",
-    "version": "0.0.0",
-    "description": "Angular-библиотека для снимка DOM, native-состояний контролов и автоматического наблюдения",
+    "version": "0.1.0",
+    "description": "Headless DOM observation and deterministic training runtime",
     "repository": {
         "type": "git",
-        "url": "https://github.com/a1rat91/training-observer.git"
+        "url": "https://github.com/a1rat91/training-observer",
+        "directory": "libs/training-observer"
     },
     "license": "Apache-2.0",
     "author": {
         "name": "Airat Khairullin",
-        "email": "a1rat91@yandex.ru"
+        "email": "a1rat91@yandex.ru",
+        "url": "https://t.me/a1rat91"
     },
     "sideEffects": false,
     "dependencies": {
-        "tslib": "^2.8.1"
+        "@medv/finder": "4.0.2",
+        "dom-accessibility-api": "0.7.1",
+        "tslib": "^2.8.1",
+        "xstate": "5.32.6"
     },
     "peerDependencies": {
-        "@angular/common": "^19.0.0",
-        "@angular/core": "^19.0.0"
+        "@angular/common": "^19.2.0",
+        "@angular/core": "^19.2.0"
+    },
+    "peerDependenciesMeta": {
+        "@angular/common": {
+            "optional": true
+        },
+        "@angular/core": {
+            "optional": true
+        }
     }
 }

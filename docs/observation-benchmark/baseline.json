@@ -1,0 +1,349 @@
+{
+    "label": "baseline",
+    "revision": "98575d2cd10f4cd68589feac1e6eda9d60e11365",
+    "workingTree": false,
+    "bundleSha256": "1cb961b8ee7cf56d5ee00fec2c956ef58d1998f2838a508f19fa4f5be36ed1bf",
+    "fixtureSha256": "9ad5a54402b468451d70d980ba9bf9b7612843ea83af935fd6b4ef7f0a41699e",
+    "browser": "152.0.7977.83",
+    "platform": "darwin/arm64",
+    "date": "2026-09-13T13:38:14.579Z",
+    "rounds": 12,
+    "cases": [
+        {
+            "mode": "record",
+            "selected": 12,
+            "neighbor": 12,
+            "multiple": false,
+            "warmup": {
+                "queries": 290,
+                "documentQueries": 0,
+                "features": 195,
+                "resolves": 0,
+                "selectedReads": 36,
+                "neighborReads": 0
+            },
+            "idle": {
+                "queries": 49,
+                "documentQueries": 0,
+                "features": 0,
+                "resolves": 0,
+                "selectedReads": 156,
+                "neighborReads": 0,
+                "durationMs": 1336.2999999821186
+            },
+            "actions": {
+                "queries": 24,
+                "documentQueries": 0,
+                "features": 24,
+                "resolves": 0,
+                "selectedReads": 96,
+                "neighborReads": 0
+            },
+            "remount": {
+                "queries": 470,
+                "documentQueries": 0,
+                "features": 312,
+                "resolves": 0,
+                "selectedReads": 96,
+                "neighborReads": 0
+            },
+            "activeResources": {
+                "intervals": 1,
+                "observers": 3,
+                "documentListeners": 7
+            },
+            "stoppedResources": {
+                "intervals": 0,
+                "observers": 0,
+                "documentListeners": 0
+            },
+            "latency": {
+                "medianMs": 5.199999988079071,
+                "p95Ms": 7.0999999940395355
+            },
+            "committed": 12,
+            "retainedNodeDelta": 0,
+            "settledNodeDelta": 0
+        },
+        {
+            "mode": "record",
+            "selected": 12,
+            "neighbor": 1200,
+            "multiple": false,
+            "warmup": {
+                "queries": 290,
+                "documentQueries": 0,
+                "features": 195,
+                "resolves": 0,
+                "selectedReads": 36,
+                "neighborReads": 0
+            },
+            "idle": {
+                "queries": 49,
+                "documentQueries": 0,
+                "features": 0,
+                "resolves": 0,
+                "selectedReads": 156,
+                "neighborReads": 0,
+                "durationMs": 1334.2999999821186
+            },
+            "actions": {
+                "queries": 25,
+                "documentQueries": 0,
+                "features": 24,
+                "resolves": 0,
+                "selectedReads": 108,
+                "neighborReads": 0
+            },
+            "remount": {
+                "queries": 469,
+                "documentQueries": 0,
+                "features": 312,
+                "resolves": 0,
+                "selectedReads": 84,
+                "neighborReads": 0
+            },
+            "activeResources": {
+                "intervals": 1,
+                "observers": 3,
+                "documentListeners": 7
+            },
+            "stoppedResources": {
+                "intervals": 0,
+                "observers": 0,
+                "documentListeners": 0
+            },
+            "latency": {
+                "medianMs": 10.700000017881393,
+                "p95Ms": 12.099999994039536
+            },
+            "committed": 12,
+            "retainedNodeDelta": 0,
+            "settledNodeDelta": 0
+        },
+        {
+            "mode": "record",
+            "selected": 120,
+            "neighbor": 1200,
+            "multiple": true,
+            "warmup": {
+                "queries": 15856,
+                "documentQueries": 0,
+                "features": 15039,
+                "resolves": 0,
+                "selectedReads": 396,
+                "neighborReads": 0
+            },
+            "idle": {
+                "queries": 62,
+                "documentQueries": 0,
+                "features": 0,
+                "resolves": 0,
+                "selectedReads": 1716,
+                "neighborReads": 0,
+                "durationMs": 1337.5
+            },
+            "actions": {
+                "queries": 26,
+                "documentQueries": 0,
+                "features": 24,
+                "resolves": 0,
+                "selectedReads": 228,
+                "neighborReads": 0
+            },
+            "remount": {
+                "queries": 30496,
+                "documentQueries": 0,
+                "features": 29040,
+                "resolves": 0,
+                "selectedReads": 768,
+                "neighborReads": 0
+            },
+            "activeResources": {
+                "intervals": 1,
+                "observers": 4,
+                "documentListeners": 7
+            },
+            "stoppedResources": {
+                "intervals": 0,
+                "observers": 0,
+                "documentListeners": 0
+            },
+            "latency": {
+                "medianMs": 10.400000005960464,
+                "p95Ms": 12.5
+            },
+            "committed": 12,
+            "retainedNodeDelta": 6930,
+            "settledNodeDelta": 0
+        },
+        {
+            "mode": "runtime",
+            "selected": 12,
+            "neighbor": 12,
+            "multiple": false,
+            "warmup": {
+                "queries": 390,
+                "documentQueries": 0,
+                "features": 243,
+                "resolves": 4,
+                "selectedReads": 36,
+                "neighborReads": 0
+            },
+            "idle": {
+                "queries": 1924,
+                "documentQueries": 0,
+                "features": 900,
+                "resolves": 75,
+                "selectedReads": 156,
+                "neighborReads": 0,
+                "durationMs": 1341.9000000059605
+            },
+            "actions": {
+                "queries": 2500,
+                "documentQueries": 0,
+                "features": 1212,
+                "resolves": 99,
+                "selectedReads": 108,
+                "neighborReads": 0
+            },
+            "remount": {
+                "queries": 994,
+                "documentQueries": 0,
+                "features": 564,
+                "resolves": 21,
+                "selectedReads": 84,
+                "neighborReads": 0
+            },
+            "activeResources": {
+                "intervals": 2,
+                "observers": 4,
+                "documentListeners": 7
+            },
+            "stoppedResources": {
+                "intervals": 0,
+                "observers": 0,
+                "documentListeners": 0
+            },
+            "latency": {
+                "medianMs": 6.5,
+                "p95Ms": 7.800000011920929
+            },
+            "committed": "stopped",
+            "retainedNodeDelta": 0,
+            "settledNodeDelta": 0
+        },
+        {
+            "mode": "runtime",
+            "selected": 12,
+            "neighbor": 1200,
+            "multiple": false,
+            "warmup": {
+                "queries": 390,
+                "documentQueries": 0,
+                "features": 243,
+                "resolves": 4,
+                "selectedReads": 36,
+                "neighborReads": 0
+            },
+            "idle": {
+                "queries": 1924,
+                "documentQueries": 0,
+                "features": 900,
+                "resolves": 75,
+                "selectedReads": 156,
+                "neighborReads": 0,
+                "durationMs": 1336.800000011921
+            },
+            "actions": {
+                "queries": 2576,
+                "documentQueries": 0,
+                "features": 1248,
+                "resolves": 102,
+                "selectedReads": 120,
+                "neighborReads": 0
+            },
+            "remount": {
+                "queries": 994,
+                "documentQueries": 0,
+                "features": 564,
+                "resolves": 21,
+                "selectedReads": 84,
+                "neighborReads": 0
+            },
+            "activeResources": {
+                "intervals": 2,
+                "observers": 4,
+                "documentListeners": 7
+            },
+            "stoppedResources": {
+                "intervals": 0,
+                "observers": 0,
+                "documentListeners": 0
+            },
+            "latency": {
+                "medianMs": 14.900000005960464,
+                "p95Ms": 21.400000005960464
+            },
+            "committed": "stopped",
+            "retainedNodeDelta": 0,
+            "settledNodeDelta": 0
+        },
+        {
+            "mode": "runtime",
+            "selected": 120,
+            "neighbor": 1200,
+            "multiple": true,
+            "warmup": {
+                "queries": 16820,
+                "documentQueries": 0,
+                "features": 15519,
+                "resolves": 4,
+                "selectedReads": 396,
+                "neighborReads": 0
+            },
+            "idle": {
+                "queries": 18862,
+                "documentQueries": 0,
+                "features": 9360,
+                "resolves": 78,
+                "selectedReads": 1848,
+                "neighborReads": 0,
+                "durationMs": 1398.2000000178814
+            },
+            "actions": {
+                "queries": 29685,
+                "documentQueries": 0,
+                "features": 14784,
+                "resolves": 123,
+                "selectedReads": 1284,
+                "neighborReads": 0
+            },
+            "remount": {
+                "queries": 34834,
+                "documentQueries": 0,
+                "features": 31200,
+                "resolves": 18,
+                "selectedReads": 768,
+                "neighborReads": 0
+            },
+            "activeResources": {
+                "intervals": 2,
+                "observers": 5,
+                "documentListeners": 7
+            },
+            "stoppedResources": {
+                "intervals": 0,
+                "observers": 0,
+                "documentListeners": 0
+            },
+            "latency": {
+                "medianMs": 130.59999999403954,
+                "p95Ms": 135.40000000596046
+            },
+            "committed": "stopped",
+            "retainedNodeDelta": 6930,
+            "settledNodeDelta": 0
+        }
+    ]
+}

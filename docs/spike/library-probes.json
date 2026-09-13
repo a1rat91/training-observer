@@ -1,0 +1,5045 @@
+{
+    "sourceHashes": {
+        "fixture.mjs": "2d06c76495c4a329aa6c7d88180dc4c990f07d23da2cc1614a9240efe74f312a",
+        "libraries.mjs": "e790fbb8d830e4ec74958e3618e4a3a5b31dc6a1017b58b3d21e61dcceaf4445",
+        "run.mjs": "25e197b183f502e19ccb2866437e031958d135556f2c0fb61a6463fea8b6c8ac"
+    },
+    "schemaVersion": 1,
+    "generatedAt": "2026-09-11T17:57:02.258Z",
+    "node": "v24.20.0",
+    "packages": {
+        "dom-to-locator": {
+            "version": "1.0.0",
+            "license": "BSD-3-Clause"
+        },
+        "@mizchi/selector-generator": {
+            "version": "1.50.0-next",
+            "license": "Apache-2.0"
+        },
+        "@medv/finder": {
+            "version": "4.0.2",
+            "license": "MIT"
+        },
+        "dom-accessibility-api": {
+            "version": "0.7.1",
+            "license": "MIT"
+        },
+        "rrweb": {
+            "version": "2.1.4",
+            "license": "MIT"
+        },
+        "xstate": {
+            "version": "5.32.6",
+            "license": "MIT"
+        },
+        "driver.js": {
+            "version": "1.8.0",
+            "license": "MIT"
+        },
+        "@taiga-ui/core": {
+            "version": "4.98.0",
+            "license": "Apache-2.0"
+        },
+        "@taiga-ui/kit": {
+            "version": "4.98.0",
+            "license": "Apache-2.0"
+        },
+        "@angular/core": {
+            "version": "19.2.25",
+            "license": "MIT"
+        },
+        "@playwright/test": {
+            "version": "1.62.1",
+            "license": "Apache-2.0"
+        },
+        "esbuild": {
+            "version": "0.28.0",
+            "license": "MIT"
+        },
+        "less": {
+            "version": "4.2.2",
+            "license": "Apache-2.0"
+        }
+    },
+    "bundleSizes": {
+        "dom-to-locator": {
+            "minifiedBytes": 79397,
+            "gzipBytes": 22602
+        },
+        "@mizchi/selector-generator": {
+            "minifiedBytes": 135476,
+            "gzipBytes": 39456
+        },
+        "@medv/finder": {
+            "minifiedBytes": 3543,
+            "gzipBytes": 1628
+        },
+        "dom-accessibility-api": {
+            "minifiedBytes": 15235,
+            "gzipBytes": 4948
+        },
+        "rrweb": {
+            "minifiedBytes": 261088,
+            "gzipBytes": 81940
+        },
+        "xstate": {
+            "minifiedBytes": 46942,
+            "gzipBytes": 15074
+        },
+        "driver.js": {
+            "minifiedBytes": 25543,
+            "gzipBytes": 7385
+        },
+        "rrweb-record-only": {
+            "minifiedBytes": 181921,
+            "gzipBytes": 58172
+        }
+    },
+    "rows": [
+        {
+            "variant": "baseline",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 10.633166999999958
+        },
+        {
+            "variant": "baseline",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.08199999999988
+        },
+        {
+            "variant": "baseline",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8930420000001504
+        },
+        {
+            "variant": "baseline",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0464170000000195
+        },
+        {
+            "variant": "baseline",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.614375000000109
+        },
+        {
+            "variant": "baseline",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7449169999999867
+        },
+        {
+            "variant": "baseline",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.17779100000007
+        },
+        {
+            "variant": "baseline",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3080419999996593
+        },
+        {
+            "variant": "baseline",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 7.084082999999737
+        },
+        {
+            "variant": "baseline",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.434541999999965
+        },
+        {
+            "variant": "baseline",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 7.154999999999745
+        },
+        {
+            "variant": "baseline",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.640292000000045
+        },
+        {
+            "variant": "baseline",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.288332999999966
+        },
+        {
+            "variant": "baseline",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.205666999999721
+        },
+        {
+            "variant": "baseline",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.485541999999896
+        },
+        {
+            "variant": "baseline",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.870625000000018
+        },
+        {
+            "variant": "baseline",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.333499999999731
+        },
+        {
+            "variant": "baseline",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.000416999999743
+        },
+        {
+            "variant": "baseline",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.67837499999996
+        },
+        {
+            "variant": "baseline",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9675829999996495
+        },
+        {
+            "variant": "baseline",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.352292000000034
+        },
+        {
+            "variant": "baseline",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7399169999998776
+        },
+        {
+            "variant": "baseline",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8437079999998787
+        },
+        {
+            "variant": "baseline",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.888500000000022
+        },
+        {
+            "variant": "baseline",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.428624999999556
+        },
+        {
+            "variant": "baseline",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.846791999999823
+        },
+        {
+            "variant": "baseline",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.631750000000011
+        },
+        {
+            "variant": "baseline",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.919790999999805
+        },
+        {
+            "variant": "baseline",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.708165999999892
+        },
+        {
+            "variant": "baseline",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.377958000000035
+        },
+        {
+            "variant": "baseline",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2714999999998327
+        },
+        {
+            "variant": "baseline",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.594833999999992
+        },
+        {
+            "variant": "baseline",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.749582999999802
+        },
+        {
+            "variant": "baseline",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.5827919999996993
+        },
+        {
+            "variant": "baseline",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.167833999999857
+        },
+        {
+            "variant": "baseline",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 7.970583000000261
+        },
+        {
+            "variant": "baseline",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.8419999999996435
+        },
+        {
+            "variant": "baseline",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7936249999997926
+        },
+        {
+            "variant": "baseline",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.407749999999851
+        },
+        {
+            "variant": "baseline",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8894579999996495
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.731249999999818
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8310420000002523
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3737080000000788
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.15329200000042
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3274579999997513
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8983330000000933
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.674582999999984
+        },
+        {
+            "variant": "baseline",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.6753749999998035
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7573750000001382
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.547291999999743
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7161670000000413
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9152909999997974
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.338792000000012
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.449749999999767
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.831500000000233
+        },
+        {
+            "variant": "baseline",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.742917000000034
+        },
+        {
+            "variant": "layout",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 7.308708000000024
+        },
+        {
+            "variant": "layout",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.1451249999995525
+        },
+        {
+            "variant": "layout",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.032791999999972
+        },
+        {
+            "variant": "layout",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.361417000000074
+        },
+        {
+            "variant": "layout",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.599167000000307
+        },
+        {
+            "variant": "layout",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.610125000000153
+        },
+        {
+            "variant": "layout",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.545375000000149
+        },
+        {
+            "variant": "layout",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0273329999999987
+        },
+        {
+            "variant": "layout",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.1887499999998
+        },
+        {
+            "variant": "layout",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1546669999997903
+        },
+        {
+            "variant": "layout",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1948750000001382
+        },
+        {
+            "variant": "layout",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8800419999997757
+        },
+        {
+            "variant": "layout",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.5417499999998654
+        },
+        {
+            "variant": "layout",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4301660000000993
+        },
+        {
+            "variant": "layout",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.5574589999996533
+        },
+        {
+            "variant": "layout",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9068750000001273
+        },
+        {
+            "variant": "layout",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.236583999999766
+        },
+        {
+            "variant": "layout",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9973329999997986
+        },
+        {
+            "variant": "layout",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4507920000000922
+        },
+        {
+            "variant": "layout",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1622919999999795
+        },
+        {
+            "variant": "layout",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3660829999998896
+        },
+        {
+            "variant": "layout",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.736667000000125
+        },
+        {
+            "variant": "layout",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9592499999998836
+        },
+        {
+            "variant": "layout",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1272500000000036
+        },
+        {
+            "variant": "layout",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.502875000000131
+        },
+        {
+            "variant": "layout",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.950417000000016
+        },
+        {
+            "variant": "layout",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0070409999998446
+        },
+        {
+            "variant": "layout",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.877875000000131
+        },
+        {
+            "variant": "layout",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.418416999999863
+        },
+        {
+            "variant": "layout",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1790000000000873
+        },
+        {
+            "variant": "layout",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2074580000003152
+        },
+        {
+            "variant": "layout",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.686667000000398
+        },
+        {
+            "variant": "layout",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.009749999999713
+        },
+        {
+            "variant": "layout",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.173874999999953
+        },
+        {
+            "variant": "layout",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.7123329999999441
+        },
+        {
+            "variant": "layout",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.577958000000308
+        },
+        {
+            "variant": "layout",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.552874999999858
+        },
+        {
+            "variant": "layout",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.186749999999847
+        },
+        {
+            "variant": "layout",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.5470829999999296
+        },
+        {
+            "variant": "layout",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.45279200000004494
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9494999999997162
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.789582999999766
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.7358330000001843
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.7339579999998023
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.075916000000234
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.086750000000393
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.5850839999998243
+        },
+        {
+            "variant": "layout",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.49262499999986176
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.040458999999828
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.900500000000193
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.6208750000000691
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.42891599999984464
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.766041999999743
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.8437910000002375
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.6161670000001322
+        },
+        {
+            "variant": "layout",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.47383399999989706
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.5617919999999685
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.399249999999938
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.4885840000001735
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.079624999999851
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.053042000000005
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.152125000000069
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 9.053750000000036
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0470000000000255
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3595000000000255
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.794958000000406
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.046582999999828
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9898330000000897
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4570420000000013
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.093417000000045
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.45679199999995
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.637208999999984
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.549540999999863
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.970666999999594
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.826666999999816
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.528374999999869
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6073750000000473
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8479999999999563
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.65820900000017
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.411333999999897
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0000420000001213
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.424582999999984
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.096999999999753
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9567919999999503
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.633458999999675
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0596669999999904
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.0095830000000205
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7577919999998812
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.045249999999669
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.5673750000000837
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.762709000000086
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3885419999996884
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.6032920000002377
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9739589999999225
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.989083999999821
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.930916999999681
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.5087499999999636
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8956249999996544
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.066291999999976
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1765000000000327
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.892667000000074
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.336583999999675
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.9509579999999005
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1090000000003783
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7618750000001455
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.476375000000189
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.83258399999977
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.368332999999893
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7105000000001382
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3634580000002643
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.51129200000014
+        },
+        {
+            "variant": "regenerated-ids",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.159458000000086
+        },
+        {
+            "variant": "renamed",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.2630410000001575
+        },
+        {
+            "variant": "renamed",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.9150830000003225
+        },
+        {
+            "variant": "renamed",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8606250000002547
+        },
+        {
+            "variant": "renamed",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 10.75149999999985
+        },
+        {
+            "variant": "renamed",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.885791000000154
+        },
+        {
+            "variant": "renamed",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.6256250000001273
+        },
+        {
+            "variant": "renamed",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.956125000000611
+        },
+        {
+            "variant": "renamed",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.5961669999996957
+        },
+        {
+            "variant": "renamed",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.9185000000006767
+        },
+        {
+            "variant": "renamed",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1272500000004584
+        },
+        {
+            "variant": "renamed",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.094958000000588
+        },
+        {
+            "variant": "renamed",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.763249999999971
+        },
+        {
+            "variant": "renamed",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.8572080000003552
+        },
+        {
+            "variant": "renamed",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3796250000004875
+        },
+        {
+            "variant": "renamed",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8537500000002183
+        },
+        {
+            "variant": "renamed",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6902909999998883
+        },
+        {
+            "variant": "renamed",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.044499999999971
+        },
+        {
+            "variant": "renamed",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6292499999999563
+        },
+        {
+            "variant": "renamed",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.616334000000279
+        },
+        {
+            "variant": "renamed",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.5790829999996276
+        },
+        {
+            "variant": "renamed",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0779160000001866
+        },
+        {
+            "variant": "renamed",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.901249999999891
+        },
+        {
+            "variant": "renamed",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6315000000004147
+        },
+        {
+            "variant": "renamed",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1355419999999867
+        },
+        {
+            "variant": "renamed",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.540541999999732
+        },
+        {
+            "variant": "renamed",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7631670000000668
+        },
+        {
+            "variant": "renamed",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.751083000000108
+        },
+        {
+            "variant": "renamed",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.84570900000017
+        },
+        {
+            "variant": "renamed",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2206249999999272
+        },
+        {
+            "variant": "renamed",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3802919999998267
+        },
+        {
+            "variant": "renamed",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.750415999999859
+        },
+        {
+            "variant": "renamed",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7115420000000086
+        },
+        {
+            "variant": "renamed",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.231540999999197
+        },
+        {
+            "variant": "renamed",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4827500000001237
+        },
+        {
+            "variant": "renamed",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.661250000000109
+        },
+        {
+            "variant": "renamed",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.812332999999853
+        },
+        {
+            "variant": "renamed",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3836249999994834
+        },
+        {
+            "variant": "renamed",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8306659999998374
+        },
+        {
+            "variant": "renamed",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.5517500000005384
+        },
+        {
+            "variant": "renamed",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.136750000000575
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.5214999999998327
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9400000000005093
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.946791000000303
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.829000000000633
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7580000000007203
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.6154999999998836
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8859169999996084
+        },
+        {
+            "variant": "renamed",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.791457999999693
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1051250000000437
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9925410000005286
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.999333000000661
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3350829999999405
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.573333000000275
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.485000000000582
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.811250000000655
+        },
+        {
+            "variant": "renamed",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8856660000001284
+        },
+        {
+            "variant": "duplicate",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 3.1782920000005106
+        },
+        {
+            "variant": "duplicate",
+            "id": "text",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 1.0744999999997162
+        },
+        {
+            "variant": "duplicate",
+            "id": "text",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 1.0672500000000582
+        },
+        {
+            "variant": "duplicate",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.9660420000000158
+        },
+        {
+            "variant": "duplicate",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 1.0456249999997453
+        },
+        {
+            "variant": "duplicate",
+            "id": "email",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.679957999999715
+        },
+        {
+            "variant": "duplicate",
+            "id": "email",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5447919999996884
+        },
+        {
+            "variant": "duplicate",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.8164589999996679
+        },
+        {
+            "variant": "duplicate",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.8997499999995853
+        },
+        {
+            "variant": "duplicate",
+            "id": "select",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.65887500000008
+        },
+        {
+            "variant": "duplicate",
+            "id": "select",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5637079999996786
+        },
+        {
+            "variant": "duplicate",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7277500000000146
+        },
+        {
+            "variant": "duplicate",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.9997089999997115
+        },
+        {
+            "variant": "duplicate",
+            "id": "number",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7310419999994338
+        },
+        {
+            "variant": "duplicate",
+            "id": "number",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.6469999999999345
+        },
+        {
+            "variant": "duplicate",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5339999999996508
+        },
+        {
+            "variant": "duplicate",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7576669999998558
+        },
+        {
+            "variant": "duplicate",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.6369999999997162
+        },
+        {
+            "variant": "duplicate",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.6063340000000608
+        },
+        {
+            "variant": "duplicate",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.4859580000002097
+        },
+        {
+            "variant": "duplicate",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7883750000000873
+        },
+        {
+            "variant": "duplicate",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5942079999995258
+        },
+        {
+            "variant": "duplicate",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5098749999997381
+        },
+        {
+            "variant": "duplicate",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.4945420000003651
+        },
+        {
+            "variant": "duplicate",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.8012909999997646
+        },
+        {
+            "variant": "duplicate",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7087500000006912
+        },
+        {
+            "variant": "duplicate",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5229159999998956
+        },
+        {
+            "variant": "duplicate",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5701659999995172
+        },
+        {
+            "variant": "duplicate",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.9126249999999345
+        },
+        {
+            "variant": "duplicate",
+            "id": "date",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7832090000001699
+        },
+        {
+            "variant": "duplicate",
+            "id": "date",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5301250000002256
+        },
+        {
+            "variant": "duplicate",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.4515830000000278
+        },
+        {
+            "variant": "duplicate",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 1.5422499999995125
+        },
+        {
+            "variant": "duplicate",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.9005420000003141
+        },
+        {
+            "variant": "duplicate",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.680583000000297
+        },
+        {
+            "variant": "duplicate",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.7209169999996448
+        },
+        {
+            "variant": "duplicate",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.8384589999996024
+        },
+        {
+            "variant": "duplicate",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.5685840000005555
+        },
+        {
+            "variant": "duplicate",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.45987499999955617
+        },
+        {
+            "variant": "duplicate",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 2,
+            "outcome": "ambiguous",
+            "queryMs": 0.43266700000003766
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2849169999999503
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3085840000003373
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1537500000004
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8471669999998994
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.550166999999419
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.107042000000547
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.280834000000141
+        },
+        {
+            "variant": "duplicate",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.624499999999898
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.9639589999997042
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1139579999999114
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0288339999997334
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.983749999999418
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.482833000000028
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.235750000000735
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.058708999999908
+        },
+        {
+            "variant": "duplicate",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.72912499999984
+        },
+        {
+            "variant": "removed",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.5972090000004755
+        },
+        {
+            "variant": "removed",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.108041999999841
+        },
+        {
+            "variant": "removed",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9507910000002084
+        },
+        {
+            "variant": "removed",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.070875000000342
+        },
+        {
+            "variant": "removed",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.64587500000016
+        },
+        {
+            "variant": "removed",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7119590000002063
+        },
+        {
+            "variant": "removed",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.76666700000078
+        },
+        {
+            "variant": "removed",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0389169999998558
+        },
+        {
+            "variant": "removed",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6317500000004657
+        },
+        {
+            "variant": "removed",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.499832999999853
+        },
+        {
+            "variant": "removed",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6898330000003625
+        },
+        {
+            "variant": "removed",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.0022079999998823
+        },
+        {
+            "variant": "removed",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8073330000006536
+        },
+        {
+            "variant": "removed",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.774000000000342
+        },
+        {
+            "variant": "removed",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.553834000000279
+        },
+        {
+            "variant": "removed",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6743749999996
+        },
+        {
+            "variant": "removed",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.156540999999379
+        },
+        {
+            "variant": "removed",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.777291000000332
+        },
+        {
+            "variant": "removed",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6563749999995707
+        },
+        {
+            "variant": "removed",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.5570419999994556
+        },
+        {
+            "variant": "removed",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.167500000000473
+        },
+        {
+            "variant": "removed",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9879579999997077
+        },
+        {
+            "variant": "removed",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.090957999999773
+        },
+        {
+            "variant": "removed",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6210839999994278
+        },
+        {
+            "variant": "removed",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2327079999995476
+        },
+        {
+            "variant": "removed",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.187792000000627
+        },
+        {
+            "variant": "removed",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8322500000003856
+        },
+        {
+            "variant": "removed",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9916669999993246
+        },
+        {
+            "variant": "removed",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.958209000000352
+        },
+        {
+            "variant": "removed",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8725000000004
+        },
+        {
+            "variant": "removed",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.913124999999127
+        },
+        {
+            "variant": "removed",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.766291999999339
+        },
+        {
+            "variant": "removed",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 1.3026669999999285
+        },
+        {
+            "variant": "removed",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.7969999999995707
+        },
+        {
+            "variant": "removed",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.124666000000616
+        },
+        {
+            "variant": "removed",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 2.6775419999994483
+        },
+        {
+            "variant": "removed",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4263339999997697
+        },
+        {
+            "variant": "removed",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4509589999997843
+        },
+        {
+            "variant": "removed",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.8449590000000171
+        },
+        {
+            "variant": "removed",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 0,
+            "outcome": "missing",
+            "queryMs": 0.5253750000001673
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2478749999991123
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1756249999998545
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.829957999999351
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.780541999999514
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4785000000001673
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.065625000000182
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.72716599999967
+        },
+        {
+            "variant": "removed",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.712792000000263
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3301250000004075
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9772499999999127
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.979750000000422
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.739582999999584
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4165839999996024
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1705000000001746
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.972041999999419
+        },
+        {
+            "variant": "removed",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4742080000005444
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.781417000000147
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.409667000000809
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.7057080000004134
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.68737499999952
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1341250000004948
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.18762500000048
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.12670799999978
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1109580000002097
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7519170000005033
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1509580000001733
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.560708999999406
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0347090000004755
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4203329999991183
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1908329999996567
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.475333000000319
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.458750000000691
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.063916000000063
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.738832999999431
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.888958999999886
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6112920000005033
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.320374999999331
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.939792000000125
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9966660000000047
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.48633400000017
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.532917000000452
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7770840000002863
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.765374999999949
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.5201670000005834
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.925167000000329
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.018207999999504
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.426332999999431
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.514874999999847
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.4372080000002825
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.675459000000046
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9977499999995416
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7490000000007058
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.002459000000272
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4288750000005166
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.708415999999488
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6884999999992942
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1024999999999636
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 7.591625000000022
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.095416000000114
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8006249999998545
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7728329999999914
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.564667000000554
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0020839999997406
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6685410000000047
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 2.847041999999419
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.4048750000001746
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 5.961709000000155
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 2.8318329999992784
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.513625000000502
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.3777500000005602
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 5.812084000000141
+        },
+        {
+            "variant": "swap-indistinguishable",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.1275000000005093
+        },
+        {
+            "variant": "css-trap",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.00683300000037
+        },
+        {
+            "variant": "css-trap",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.26825000000008
+        },
+        {
+            "variant": "css-trap",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.695958000000246
+        },
+        {
+            "variant": "css-trap",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.405000000000655
+        },
+        {
+            "variant": "css-trap",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.8069580000001224
+        },
+        {
+            "variant": "css-trap",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0501670000003287
+        },
+        {
+            "variant": "css-trap",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8689589999994496
+        },
+        {
+            "variant": "css-trap",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6132079999997586
+        },
+        {
+            "variant": "css-trap",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3374579999999696
+        },
+        {
+            "variant": "css-trap",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2226670000000013
+        },
+        {
+            "variant": "css-trap",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8403339999995296
+        },
+        {
+            "variant": "css-trap",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6457909999999174
+        },
+        {
+            "variant": "css-trap",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2226250000003347
+        },
+        {
+            "variant": "css-trap",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.825249999999869
+        },
+        {
+            "variant": "css-trap",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.7111250000007203
+        },
+        {
+            "variant": "css-trap",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.790415999999823
+        },
+        {
+            "variant": "css-trap",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.051416000000245
+        },
+        {
+            "variant": "css-trap",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7652079999998023
+        },
+        {
+            "variant": "css-trap",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.596082999999453
+        },
+        {
+            "variant": "css-trap",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6124170000002778
+        },
+        {
+            "variant": "css-trap",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.4619579999998678
+        },
+        {
+            "variant": "css-trap",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8409169999995356
+        },
+        {
+            "variant": "css-trap",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.774500000000444
+        },
+        {
+            "variant": "css-trap",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.6183329999994385
+        },
+        {
+            "variant": "css-trap",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.086833999999726
+        },
+        {
+            "variant": "css-trap",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7984580000002097
+        },
+        {
+            "variant": "css-trap",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2650830000002316
+        },
+        {
+            "variant": "css-trap",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7934580000001006
+        },
+        {
+            "variant": "css-trap",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0783339999998134
+        },
+        {
+            "variant": "css-trap",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.717083000000457
+        },
+        {
+            "variant": "css-trap",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.956083000000035
+        },
+        {
+            "variant": "css-trap",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.706333000000086
+        },
+        {
+            "variant": "css-trap",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.323333999999704
+        },
+        {
+            "variant": "css-trap",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1580409999996846
+        },
+        {
+            "variant": "css-trap",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 2.779125000000022
+        },
+        {
+            "variant": "css-trap",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 2.7082919999993464
+        },
+        {
+            "variant": "css-trap",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2270419999995283
+        },
+        {
+            "variant": "css-trap",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7589160000006814
+        },
+        {
+            "variant": "css-trap",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.71862499999952
+        },
+        {
+            "variant": "css-trap",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.698207999999795
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1866250000002765
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0832500000005894
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.6681250000001455
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.894583000000239
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9906249999994543
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7812910000002375
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.732332999999926
+        },
+        {
+            "variant": "css-trap",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8796250000004875
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.261500000000524
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.71612499999992
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8586670000004233
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.674707999999555
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2280829999999696
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.070334000000003
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2489580000001297
+        },
+        {
+            "variant": "css-trap",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.5488750000004075
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "text",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 10.763207999999395
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "text",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2676659999997355
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "text",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.710374999999658
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "text",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.568457999999737
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "email",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.754541999999674
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "email",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.2840839999998934
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "email",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8530000000000655
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "email",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.816791999999623
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "select",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.067250000000058
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "select",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.61712499999976
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "select",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.945292000000336
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "select",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.545666999999412
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "number",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.3412920000000668
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "number",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.305292000000009
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "number",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.954584000000068
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "number",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.664875000000393
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "checkbox",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9487499999995634
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "checkbox",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.854500000000371
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "checkbox",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.493875000000116
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "checkbox",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.780416999999943
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "switch",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.0101250000006985
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "switch",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.624667000000045
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "switch",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.036125000000538
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "switch",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.988916999999674
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "textarea",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.08075000000008
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "textarea",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8325000000004366
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "textarea",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 7.362584000000425
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "textarea",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.801542000000154
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "date",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.238459000000148
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "date",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8329579999999623
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "date",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.276542000000518
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "date",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.445625000000291
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "continue",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 4.063958000000639
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "continue",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.1179160000001502
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "continue",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 5.730083999999806
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "continue",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "wrong",
+            "queryMs": 3.3863750000000437
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "icon-button",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.446082999999817
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "icon-button",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.580832999999984
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "icon-button",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.9207079999996495
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "icon-button",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 8.092792000000372
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-anna",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.202166999999463
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-anna",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7021670000003724
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-anna",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.1658330000000205
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-anna",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.095000000000255
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-boris",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.838542000000416
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-boris",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8108340000007956
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-boris",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.8722090000001117
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "repeat-boris",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 5.906417000000147
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-a",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 4.211290999999619
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-a",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.214708000000428
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-a",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7124589999993987
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-a",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.761540999999852
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-b",
+            "library": "dom-to-locator",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 6.340041000000383
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-b",
+            "library": "mizchi",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 3.498458000000028
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-b",
+            "library": "finder-default",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.758040999999139
+        },
+        {
+            "variant": "semantic-trap",
+            "id": "indistinguishable-b",
+            "library": "finder-filtered",
+            "count": 1,
+            "outcome": "correct",
+            "queryMs": 2.7714590000005046
+        }
+    ],
+    "checks": {
+        "recordedTargets": 14,
+        "dropdown": {
+            "outsideForm": true,
+            "name": {
+                "role": "option",
+                "name": "Angular"
+            },
+            "ownerMarkup": "<input _ngcontent-ng-c2155256558=\"\" tuiappearance=\"\" tuiappearancev=\"4.98.0\" tuitextfield=\"\" tuiselectlike=\"\" inputmode=\"none\" spellcheck=\"false\" autocomplete=\"off\" tuiselect=\"\" name=\"course\" aria-expanded=\"true\" aria-controls=\"tui_8mtx9dew4\" aria-haspopup=\"listbox\" role=\"combobox\" data-appearance=\"textfield\" data-focus=\"true\" id=\"tui_7mtx9dew3\" class=\"_empty ng-untouched ng-pristine ng-valid\" style=\"\">"
+        },
+        "optionGenerators": {
+            "dom-to-locator": {
+                "selector": "internal:role=option[name=\"Angular\"i]",
+                "variants": ["getByRole('option', { name: 'Angular' })", "getByRole('option').first()"],
+                "durationMs": 1
+            },
+            "mizchi": {
+                "selector": "internal:role=option[name=\"Angular\"i]",
+                "variants": ["getByRole('option', { name: 'Angular' })", "getByRole('option').first()"],
+                "durationMs": 1.0999999940395355
+            },
+            "finder-default": {
+                "selector": "[role=\"listbox\"] > button:nth-of-type(1)",
+                "variants": [],
+                "durationMs": 0.20000000298023224
+            },
+            "finder-filtered": {
+                "selector": "tui-data-list > button:nth-of-type(1)",
+                "variants": [],
+                "durationMs": 0
+            }
+        },
+        "rrweb": {
+            "courseMirrorId": 78,
+            "eventCount": 41,
+            "byteLength": 313472,
+            "eventsByType": {
+                "2": 1,
+                "3": 39,
+                "4": 1
+            },
+            "incrementalBySource": {
+                "0": 20,
+                "2": 14,
+                "5": 5
+            },
+            "inputEvents": [
+                {
+                    "source": 5,
+                    "text": "*****************",
+                    "isChecked": false,
+                    "id": 50
+                },
+                {
+                    "source": 5,
+                    "text": "on",
+                    "isChecked": false,
+                    "id": 232
+                },
+                {
+                    "source": 5,
+                    "text": "on",
+                    "isChecked": false,
+                    "id": 236
+                },
+                {
+                    "source": 5,
+                    "text": "*******",
+                    "isChecked": false,
+                    "id": 78
+                },
+                {
+                    "source": 5,
+                    "text": "on",
+                    "isChecked": true,
+                    "id": 105
+                }
+            ],
+            "nativeEvents": [
+                {
+                    "type": "input",
+                    "tag": "input",
+                    "role": null,
+                    "name": "employee",
+                    "value": "Ирина-Тест-Секрет",
+                    "text": ""
+                },
+                {
+                    "type": "change",
+                    "tag": "input",
+                    "role": null,
+                    "name": "employee",
+                    "value": "Ирина-Тест-Секрет",
+                    "text": ""
+                },
+                {
+                    "type": "click",
+                    "tag": "input",
+                    "role": "combobox",
+                    "name": "course",
+                    "value": "",
+                    "text": ""
+                },
+                {
+                    "type": "click",
+                    "tag": "button",
+                    "role": "option",
+                    "name": null,
+                    "value": "",
+                    "text": "Angular"
+                },
+                {
+                    "type": "click",
+                    "tag": "input",
+                    "role": null,
+                    "name": "consent",
+                    "value": "on",
+                    "text": ""
+                },
+                {
+                    "type": "input",
+                    "tag": "input",
+                    "role": null,
+                    "name": "consent",
+                    "value": "on",
+                    "text": ""
+                },
+                {
+                    "type": "change",
+                    "tag": "input",
+                    "role": null,
+                    "name": "consent",
+                    "value": "on",
+                    "text": ""
+                }
+            ],
+            "selectedDisplay": "Angular",
+            "containsUnmaskedTypedValue": false,
+            "mirrorLifecycle": {
+                "oldId": 50,
+                "newId": 449,
+                "oldDisconnected": true,
+                "changed": true
+            }
+        },
+        "driver": {
+            "activeElementMatches": true,
+            "targetClasses": "ng-valid ng-dirty ng-touched driver-active-element",
+            "popoverVisible": true,
+            "staleAfterReplace": true,
+            "reboundToReplacement": true,
+            "targetClassCleaned": true,
+            "overlayRemoved": true,
+            "popoverRemoved": true
+        },
+        "pageErrors": [],
+        "xstate": {
+            "guardAndFailureTrace": ["editing", "editing", "waiting", "editing", "waiting", "done"],
+            "obsoleteActorSignalAborted": true,
+            "lateResultIgnored": true,
+            "currentResultAccepted": true
+        }
+    },
+    "browser": "152.0.7977.83",
+    "provenance": {
+        "mizchiPlaywrightVersion": "1.50.0-next",
+        "mizchiPlaywrightHash": "1afb56ee1b63ffbb972a1773432979b865878072"
+    },
+    "recorded": [
+        {
+            "id": "text",
+            "oracleSelector": "input[name=employee]",
+            "fingerprint": {
+                "role": "textbox",
+                "name": "ФИО"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=textbox[name=\"ФИО\"i]",
+                    "variants": ["getByRole('textbox', { name: 'ФИО' })", "getByLabel('ФИО')"],
+                    "durationMs": 5.300000011920929
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"ФИО\"i",
+                    "variants": ["getByLabel('ФИО')"],
+                    "durationMs": 2.5
+                },
+                "finder-default": {
+                    "selector": "[name=\"employee\"]",
+                    "variants": [],
+                    "durationMs": 1.300000011920929
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"employee\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "email",
+            "oracleSelector": "input[name=email]",
+            "fingerprint": {
+                "role": "textbox",
+                "name": "Рабочая почта"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=textbox[name=\"Рабочая почта\"i]",
+                    "variants": ["getByRole('textbox', { name: 'Рабочая почта' })", "getByLabel('Рабочая почта')"],
+                    "durationMs": 1
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Рабочая почта\"i",
+                    "variants": ["getByLabel('Рабочая почта')"],
+                    "durationMs": 0.5
+                },
+                "finder-default": {
+                    "selector": "[name=\"email\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                },
+                "finder-filtered": {
+                    "selector": "[type=\"email\"]",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                }
+            }
+        },
+        {
+            "id": "select",
+            "oracleSelector": "input[tuiSelect]",
+            "fingerprint": {
+                "role": "combobox",
+                "name": "Курс"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=combobox[name=\"Курс\"i]",
+                    "variants": ["getByRole('combobox', { name: 'Курс' })", "getByLabel('Курс')"],
+                    "durationMs": 0.7000000029802322
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Курс\"i",
+                    "variants": ["getByLabel('Курс')"],
+                    "durationMs": 0.5999999940395355
+                },
+                "finder-default": {
+                    "selector": "[name=\"course\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"course\"]",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                }
+            }
+        },
+        {
+            "id": "number",
+            "oracleSelector": "input[tuiInputNumber]",
+            "fingerprint": {
+                "role": "textbox",
+                "name": "Бюджет"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=textbox[name=\"Бюджет\"i]",
+                    "variants": ["getByRole('textbox', { name: 'Бюджет' })", "getByLabel('Бюджет')"],
+                    "durationMs": 0.9000000059604645
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Бюджет\"i",
+                    "variants": ["getByLabel('Бюджет')"],
+                    "durationMs": 0.5
+                },
+                "finder-default": {
+                    "selector": "[name=\"budget\"]",
+                    "variants": [],
+                    "durationMs": 0.29999999701976776
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"budget\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "checkbox",
+            "oracleSelector": "input[tuiCheckbox]",
+            "fingerprint": {
+                "role": "checkbox",
+                "name": "Согласие"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=checkbox[name=\"Согласие\"i]",
+                    "variants": ["getByRole('checkbox', { name: 'Согласие' })", "getByLabel('Согласие')"],
+                    "durationMs": 0.7999999970197678
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Согласие\"i",
+                    "variants": ["getByLabel('Согласие')"],
+                    "durationMs": 0.5
+                },
+                "finder-default": {
+                    "selector": "[name=\"consent\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"consent\"]",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                }
+            }
+        },
+        {
+            "id": "switch",
+            "oracleSelector": "input[tuiSwitch]",
+            "fingerprint": {
+                "role": "switch",
+                "name": "Нужен наставник"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=switch[name=\"Нужен наставник\"i]",
+                    "variants": ["getByRole('switch', { name: 'Нужен наставник' })", "getByLabel('Нужен наставник')"],
+                    "durationMs": 0.7000000029802322
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Нужен наставник\"i",
+                    "variants": ["getByLabel('Нужен наставник')"],
+                    "durationMs": 0.5
+                },
+                "finder-default": {
+                    "selector": "[role=\"switch\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"mentor\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "textarea",
+            "oracleSelector": "textarea[tuiTextarea]",
+            "fingerprint": {
+                "role": "textbox",
+                "name": "Комментарий"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=textbox[name=\"Комментарий\"i]",
+                    "variants": ["getByRole('textbox', { name: 'Комментарий' })", "getByLabel('Комментарий')"],
+                    "durationMs": 0.800000011920929
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Комментарий\"i",
+                    "variants": ["getByLabel('Комментарий')"],
+                    "durationMs": 0.5
+                },
+                "finder-default": {
+                    "selector": "[name=\"comment\"]",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"comment\"]",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                }
+            }
+        },
+        {
+            "id": "date",
+            "oracleSelector": "input[tuiInputDate]",
+            "fingerprint": {
+                "role": "textbox",
+                "name": "Дата начала"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=textbox[name=\"Дата начала\"i]",
+                    "variants": ["getByRole('textbox', { name: 'Дата начала' })", "getByLabel('Дата начала')"],
+                    "durationMs": 0.7000000029802322
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Дата начала\"i",
+                    "variants": ["getByLabel('Дата начала')"],
+                    "durationMs": 0.4000000059604645
+                },
+                "finder-default": {
+                    "selector": "[name=\"date\"]",
+                    "variants": [],
+                    "durationMs": 0.29999999701976776
+                },
+                "finder-filtered": {
+                    "selector": "[name=\"date\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "continue",
+            "oracleSelector": "form > button:first-of-type",
+            "fingerprint": {
+                "role": "button",
+                "name": "Продолжить"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=button[name=\"Продолжить\"i]",
+                    "variants": ["getByRole('button', { name: 'Продолжить' })", "getByRole('button').nth(1)"],
+                    "durationMs": 4.5
+                },
+                "mizchi": {
+                    "selector": "internal:role=button[name=\"Продолжить\"i]",
+                    "variants": [
+                        "getByRole('button', { name: 'Продолжить' })",
+                        "getByLabel('Заявка на обучение').getByRole('button').nth(1)"
+                    ],
+                    "durationMs": 3
+                },
+                "finder-default": {
+                    "selector": "form > button:nth-of-type(1)",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                },
+                "finder-filtered": {
+                    "selector": "form > button:nth-of-type(1)",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "icon-button",
+            "oracleSelector": "button[aria-label=\"Открыть справку\"]",
+            "fingerprint": {
+                "role": "button",
+                "name": "Открыть справку"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=button[name=\"Открыть справку\"i]",
+                    "variants": ["getByRole('button', { name: 'Открыть справку' })", "getByLabel('Открыть справку')"],
+                    "durationMs": 0.8999999910593033
+                },
+                "mizchi": {
+                    "selector": "internal:label=\"Открыть справку\"i",
+                    "variants": ["getByLabel('Открыть справку')"],
+                    "durationMs": 0.29999999701976776
+                },
+                "finder-default": {
+                    "selector": "form > button:nth-of-type(2)",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                },
+                "finder-filtered": {
+                    "selector": "form > button:nth-of-type(2)",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "repeat-anna",
+            "oracleSelector": "fieldset:nth-of-type(1) button",
+            "fingerprint": {
+                "role": "button",
+                "name": "Редактировать"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=group[name=\"Анна\"i] >> internal:role=button",
+                    "variants": [
+                        "getByRole('group', { name: 'Анна' }).getByRole('button')",
+                        "getByRole('button').nth(3)"
+                    ],
+                    "durationMs": 2.5999999940395355
+                },
+                "mizchi": {
+                    "selector": "internal:role=group[name=\"Анна\"i] >> internal:role=button",
+                    "variants": ["getByRole('group', { name: 'Анна' }).getByRole('button')"],
+                    "durationMs": 2.5
+                },
+                "finder-default": {
+                    "selector": "fieldset:nth-of-type(1) > [data-appearance=\"primary\"]",
+                    "variants": [],
+                    "durationMs": 0.10000000894069672
+                },
+                "finder-filtered": {
+                    "selector": "fieldset:nth-of-type(1) > [type=\"button\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "repeat-boris",
+            "oracleSelector": "fieldset:nth-of-type(2) button",
+            "fingerprint": {
+                "role": "button",
+                "name": "Редактировать"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=group[name=\"Борис\"i] >> internal:role=button",
+                    "variants": [
+                        "getByRole('group', { name: 'Борис' }).getByRole('button')",
+                        "getByRole('button').nth(4)"
+                    ],
+                    "durationMs": 2
+                },
+                "mizchi": {
+                    "selector": "internal:role=group[name=\"Борис\"i] >> internal:role=button",
+                    "variants": ["getByRole('group', { name: 'Борис' }).getByRole('button')"],
+                    "durationMs": 2.2000000029802322
+                },
+                "finder-default": {
+                    "selector": "fieldset:nth-of-type(2) > [data-appearance=\"primary\"]",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                },
+                "finder-filtered": {
+                    "selector": "fieldset:nth-of-type(2) > [type=\"button\"]",
+                    "variants": [],
+                    "durationMs": 0.10000000894069672
+                }
+            }
+        },
+        {
+            "id": "indistinguishable-a",
+            "oracleSelector": "section button:first-child",
+            "fingerprint": {
+                "role": "button",
+                "name": "Действие"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=button[name=\"Действие\"i] >> nth=0",
+                    "variants": ["getByRole('button', { name: 'Действие' }).first()", "getByRole('button').nth(5)"],
+                    "durationMs": 1.7000000029802322
+                },
+                "mizchi": {
+                    "selector": "internal:role=button[name=\"Действие\"i] >> nth=0",
+                    "variants": [
+                        "getByRole('button', { name: 'Действие' }).first()",
+                        "getByLabel('Неразличимые действия').getByRole('button').first()"
+                    ],
+                    "durationMs": 1.5999999940395355
+                },
+                "finder-default": {
+                    "selector": "section > button:nth-of-type(1)",
+                    "variants": [],
+                    "durationMs": 0.30000001192092896
+                },
+                "finder-filtered": {
+                    "selector": "section > button:nth-of-type(1)",
+                    "variants": [],
+                    "durationMs": 0.20000000298023224
+                }
+            }
+        },
+        {
+            "id": "indistinguishable-b",
+            "oracleSelector": "section button:last-child",
+            "fingerprint": {
+                "role": "button",
+                "name": "Действие"
+            },
+            "generated": {
+                "dom-to-locator": {
+                    "selector": "internal:role=button[name=\"Действие\"i] >> nth=1",
+                    "variants": ["getByRole('button', { name: 'Действие' }).nth(1)"],
+                    "durationMs": 1.4000000059604645
+                },
+                "mizchi": {
+                    "selector": "internal:role=button[name=\"Действие\"i] >> nth=1",
+                    "variants": [
+                        "getByRole('button', { name: 'Действие' }).nth(1)",
+                        "getByLabel('Неразличимые действия').getByRole('button').nth(1)"
+                    ],
+                    "durationMs": 1.5
+                },
+                "finder-default": {
+                    "selector": "section > button:nth-of-type(2)",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                },
+                "finder-filtered": {
+                    "selector": "section > button:nth-of-type(2)",
+                    "variants": [],
+                    "durationMs": 0.09999999403953552
+                }
+            }
+        }
+    ],
+    "summary": {
+        "baseline": {
+            "dom-to-locator": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "layout": {
+            "dom-to-locator": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 8,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 6,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 8,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 6,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "regenerated-ids": {
+            "dom-to-locator": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "renamed": {
+            "dom-to-locator": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "duplicate": {
+            "dom-to-locator": {
+                "correct": 4,
+                "wrong": 0,
+                "ambiguous": 10,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 4,
+                "wrong": 0,
+                "ambiguous": 10,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 4,
+                "wrong": 0,
+                "ambiguous": 10,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 4,
+                "wrong": 0,
+                "ambiguous": 10,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "removed": {
+            "dom-to-locator": {
+                "correct": 13,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 1,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 13,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 1,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 12,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 1,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 12,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 1,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "swap-indistinguishable": {
+            "dom-to-locator": {
+                "correct": 12,
+                "wrong": 2,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 12,
+                "wrong": 2,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 12,
+                "wrong": 2,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 12,
+                "wrong": 2,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "css-trap": {
+            "dom-to-locator": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 14,
+                "wrong": 0,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 13,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 13,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        },
+        "semantic-trap": {
+            "dom-to-locator": {
+                "correct": 13,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "mizchi": {
+                "correct": 13,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-default": {
+                "correct": 13,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            },
+            "finder-filtered": {
+                "correct": 13,
+                "wrong": 1,
+                "ambiguous": 0,
+                "missing": 0,
+                "generation-error": 0,
+                "query-error": 0
+            }
+        }
+    }
+}

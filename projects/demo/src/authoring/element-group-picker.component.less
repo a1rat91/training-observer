@@ -1,0 +1,59 @@
+:host {
+    display: block;
+    margin-block: 1rem;
+}
+
+.layer {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    max-block-size: none;
+    background: transparent;
+    color: var(--tui-text-primary);
+    cursor: crosshair;
+    overflow: hidden;
+}
+
+.layer::backdrop {
+    background: transparent;
+    pointer-events: none;
+}
+
+.panel {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    inline-size: min(24rem, calc(100vw - 4rem));
+    max-block-size: calc(100% - 4rem);
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+    background: var(--tui-background-base);
+    box-shadow: var(--tui-shadow-medium);
+    cursor: auto;
+}
+
+.outline {
+    position: fixed;
+    pointer-events: none;
+    outline: 0.1875rem solid var(--tui-background-accent-1);
+}
+
+.panel.left {
+    left: 1rem;
+    right: auto;
+}
+
+button {
+    margin: 0.25rem;
+}
+
+li {
+    margin-block: 0.75rem;
+}

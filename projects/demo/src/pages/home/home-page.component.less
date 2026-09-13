@@ -1,0 +1,66 @@
+:host {
+    display: block;
+    max-inline-size: 70rem;
+}
+
+.intro {
+    max-inline-size: 50rem;
+    padding: 1rem 0 2rem;
+}
+
+.intro p {
+    max-inline-size: 48rem;
+}
+
+.eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: var(--tui-text-action);
+    font-weight: bold;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.note {
+    font-size: 0.85rem;
+    color: var(--tui-text-secondary);
+}
+
+.steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+article,
+.recipe {
+    padding: 1.5rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+    background: var(--tui-background-base);
+}
+
+article span {
+    color: var(--tui-text-action);
+    font-weight: bold;
+}
+
+.recipe {
+    margin-block-start: 1rem;
+}
+
+li {
+    padding: 0.4rem 0;
+    line-height: 1.6;
+}
+
+@media (max-width: 800px) {
+    .steps {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,15 +1,17 @@
 {
     "extends": "../../tsconfig.json",
     "compilerOptions": {
-        "outDir": "../../dist/out-tsc/training-observer",
+        "target": "ES2022",
+        "module": "ES2022",
+        "moduleResolution": "node",
         "declaration": true,
         "declarationMap": true,
         "inlineSources": true,
-        "types": []
+        "types": [],
+        "noEmit": false,
+        "experimentalDecorators": true
     },
+    "angularCompilerOptions": {"compilationMode": "partial"},
     "include": ["src/**/*.ts"],
-    "exclude": ["src/**/*.spec.ts"],
-    "angularCompilerOptions": {
-        "compilationMode": "partial"
-    }
+    "exclude": ["**/*.spec.ts"]
 }

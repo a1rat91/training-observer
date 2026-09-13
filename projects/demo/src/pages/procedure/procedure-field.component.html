@@ -1,0 +1,98 @@
+@let item = field();
+@switch (item.kind) {
+    @case ('checkbox') {
+        <label class="choice">
+            <input
+                tuiCheckbox
+                type="checkbox"
+                [formControl]="control()"
+            />
+            {{ item.label }}
+        </label>
+    }
+    @case ('switch') {
+        <label class="choice">
+            <input
+                tuiSwitch
+                type="checkbox"
+                [formControl]="control()"
+            />
+            {{ item.label }}
+        </label>
+    }
+    @case ('radio') {
+        <fieldset>
+            <legend>{{ item.label }}</legend>
+            @for (option of item.options; track option.value) {
+                <label class="choice">
+                    <input
+                        tuiRadio
+                        type="radio"
+                        [formControl]="control()"
+                        [value]="option.value"
+                    />
+                    {{ option.label }}
+                </label>
+            }
+        </fieldset>
+    }
+    @case ('select') {
+        <tui-textfield>
+            <label tuiLabel>{{ item.label }}</label>
+            <input
+                tuiSelect
+                [formControl]="control()"
+                [readOnly]="!!item.readonly"
+            />
+            <tui-data-list-wrapper
+                *tuiTextfieldDropdown
+                new
+                [items]="options()"
+            />
+        </tui-textfield>
+    }
+    @default {
+        <tui-textfield>
+            <label tuiLabel>{{ item.label }}</label>
+            @switch (item.kind) {
+                @case ('number') {
+                    <input
+                        tuiInputNumber
+                        [formControl]="control()"
+                        [readOnly]="!!item.readonly"
+                    />
+                }
+                @case ('date') {
+                    <input
+                        tuiInputDate
+                        [formControl]="control()"
+                        [readOnly]="!!item.readonly"
+                    />
+                }
+                @case ('textarea') {
+                    <textarea
+                        tuiTextarea
+                        [formControl]="control()"
+                        [readOnly]="!!item.readonly"
+                    ></textarea>
+                }
+                @default {
+                    <input
+                        tuiTextfield
+                        [formControl]="control()"
+                        [readOnly]="!!item.readonly"
+                        [type]="item.kind === 'email' ? 'email' : 'text'"
+                    />
+                }
+            }
+        </tui-textfield>
+    }
+}
+@if (error()) {
+    <p
+        role="alert"
+        class="error"
+    >
+        {{ error() }}
+    </p>
+}

@@ -12,11 +12,19 @@ export default defineConfig({
         viewport: {width: 1440, height: 1100},
         trace: 'retain-on-failure',
     },
-    webServer: {
-        command: 'npx nx serve demo --port=4301',
-        url: 'http://127.0.0.1:4301',
-        reuseExistingServer: !process.env['CI'],
-        timeout: 120_000,
-        env: {NX_DAEMON: 'false', NX_ISOLATE_PLUGINS: 'false'},
-    },
+    webServer: [
+        {
+            command: 'node scripts/procedure-server/server.mjs',
+            url: 'http://127.0.0.1:4311/health',
+            reuseExistingServer: false,
+            env: {PROCEDURE_API_PORT: '4311'},
+        },
+        {
+            command: 'npx nx serve demo --configuration=e2e --port=4301 --host=127.0.0.1',
+            url: 'http://127.0.0.1:4301',
+            reuseExistingServer: false,
+            timeout: 120_000,
+            env: {NX_DAEMON: 'false', NX_ISOLATE_PLUGINS: 'false'},
+        },
+    ],
 });
