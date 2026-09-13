@@ -3,6 +3,7 @@
  * start подключает recorder к уже настроенному registry и публикует readonly signals журнала/статуса.
  * Изменения observe применяются внутри recorder без его перезапуска. resolve использует сохранённый
  * в документе key цели и текущую границу области; отсутствие key/root означает отказ, не глобальный поиск.
+ * pause/resume отменяют черновики и сохраняют журнал; running означает открытый сеанс, paused — временный перерыв.
  * stop сохраняет журнал; DestroyRef освобождает ресурсы. Wire v3 сохраняет привязку target → area.
  */
 import {DestroyRef, inject, Injectable, signal} from '@angular/core';
@@ -24,9 +25,11 @@ export class RecordingSessionService {
     private root?: HTMLElement;
     private readonly report = signal<Recording | null>(null);
     private readonly active = signal(false);
+    private readonly suspended = signal(false);
 
     public readonly recording = this.report.asReadonly();
     public readonly running = this.active.asReadonly();
+    public readonly paused = this.suspended.asReadonly();
 
     constructor() {
         inject(DestroyRef).onDestroy(() => this.recorder?.stop());
@@ -41,6 +44,16 @@ export class RecordingSessionService {
             onUpdate: () => this.refresh(),
         });
         this.recorder.start();
+        this.refresh();
+    }
+
+    public pause(): void {
+        this.recorder?.pause();
+        this.refresh();
+    }
+
+    public resume(): void {
+        this.recorder?.resume();
         this.refresh();
     }
 
@@ -69,6 +82,9 @@ export class RecordingSessionService {
 
     private refresh(): void {
         this.report.set(this.recorder?.snapshot() ?? null);
-        this.active.set(this.recorder?.running ?? false);
+        this.active.set(
+            !!this.recorder && (this.recorder.running || this.recorder.paused),
+        );
+        this.suspended.set(this.recorder?.paused ?? false);
     }
 }

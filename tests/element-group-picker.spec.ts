@@ -119,7 +119,8 @@ test('keyboard stays in the picker; Escape cancels and restores focus without sa
         exact: true,
     });
 
-    await start.click();
+    await start.focus();
+    await start.press('Enter');
     await page
         .getByRole('button', {name: 'Beta choice', exact: true})
         .evaluate((element: HTMLElement) => element.focus());
@@ -147,7 +148,7 @@ test('keyboard stays in the picker; Escape cancels and restores focus without sa
     ).toBeNull();
 });
 
-test('remount invalidates selection and recording excludes the picker', async ({
+test('remount invalidates selection while the recording is paused for the picker', async ({
     page,
 }) => {
     await fixture(page);
@@ -157,8 +158,7 @@ test('remount invalidates selection and recording excludes the picker', async ({
     });
 
     await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
-    await expect(start).toBeHidden();
-    await page.getByRole('button', {name: 'Остановить запись', exact: true}).click();
+    await expect(start).toBeEnabled();
     await start.click();
     await point(page, 'Alpha choice');
     await page
@@ -174,7 +174,7 @@ test('remount invalidates selection and recording excludes the picker', async ({
     await point(page, 'Alpha choice');
     await dialog.getByRole('button', {name: 'Готово', exact: true}).click();
     await expect(page.getByRole('list', {name: 'Записанные действия'})).toContainText(
-        'Нет действий',
+        'Пока нет действий',
     );
 });
 
@@ -182,9 +182,7 @@ test('touch selection and highlighting follow resize and scroll; changed labels 
     page,
 }) => {
     await fixture(page);
-    await page
-        .getByRole('button', {name: 'Создать группу вариантов', exact: true})
-        .click();
+    await page.getByRole('button', {name: 'Создать группу вариантов', exact: true}).tap();
     await page.setViewportSize({width: 1200, height: 900});
     const target = page.getByRole('button', {name: 'Alpha choice', exact: true});
 

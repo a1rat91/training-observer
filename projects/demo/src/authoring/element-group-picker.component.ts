@@ -3,7 +3,7 @@
  * Верхний слой принимает pointer events; hit testing временно исключает только этот слой.
  * Фокус и Tab остаются в панели. Выбор хранит живые цели только до закрытия; сохранение — descriptors и area keys.
  * Изменение/удаление выбранного DOM требует повторного выбора. Группы сохраняются отдельно от учебного сценария.
- * Включается только вне записи/прохождения. Глобальные capture handlers приложения могут видеть события слоя.
+ * Перед переносом фокуса уведомляет владельца о входе, после восстановления фокуса — о выходе. Глобальные capture handlers приложения могут видеть события слоя.
  */
 import {DOCUMENT} from '@angular/common';
 import {
@@ -15,6 +15,7 @@ import {
     type ElementRef,
     inject,
     input,
+    output,
     signal,
     viewChild,
 } from '@angular/core';
@@ -60,6 +61,8 @@ export class ElementGroupPickerComponent {
     private editingId = '';
     private readonly storageBlocked: boolean = false;
 
+    public readonly selectionStarted = output();
+    public readonly selectionClosed = output();
     public readonly root = input.required<HTMLElement>();
     public readonly disabled = input(false);
     public readonly groups = signal<ElementGroup[]>([]);
@@ -111,12 +114,19 @@ export class ElementGroupPickerComponent {
                 return;
             }
 
-            this.install(layer);
+            try {
+                this.install(layer);
+            } catch {
+                this.error.set(
+                    'Не удалось открыть выбор элементов. Запись можно продолжить.',
+                );
+                this.close();
+            }
         });
     }
 
     public open(group?: ElementGroup): void {
-        if (this.disabled() || this.storageBlocked) {
+        if (this.active() || this.disabled() || this.storageBlocked) {
             return;
         }
 
@@ -161,10 +171,13 @@ export class ElementGroupPickerComponent {
                 };
             }),
         );
+        this.selectionStarted.emit();
         this.active.set(true);
     }
 
     public close(): void {
+        const wasActive = this.active();
+
         this.release();
         this.active.set(false);
         this.selected.set([]);
@@ -176,6 +189,10 @@ export class ElementGroupPickerComponent {
 
         if (previous?.isConnected) {
             previous.focus({preventScroll: true});
+        }
+
+        if (wasActive) {
+            this.selectionClosed.emit();
         }
     }
 

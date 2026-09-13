@@ -49,3 +49,28 @@ it('starting another recording resets the journal and stopping preserves the las
     expect(service.running()).toBe(false);
     expect(service.recording()!.descriptors).toHaveLength(1);
 });
+
+it('keeps the session open during selection and never resumes it after stop or destroy', () => {
+    const service = TestBed.inject(RecordingSessionService);
+
+    service.start(root, {...policy, normalizers: []});
+    const id = service.recording()!.id;
+
+    service.pause();
+    expect(service.running()).toBe(true);
+    expect(service.paused()).toBe(true);
+    service.resume();
+    expect(service.running()).toBe(true);
+    expect(service.paused()).toBe(false);
+    expect(service.recording()!.id).toBe(id);
+    service.pause();
+    service.stop();
+    service.resume();
+    expect(service.running()).toBe(false);
+    expect(service.paused()).toBe(false);
+    service.start(root, {...policy, normalizers: []});
+    service.pause();
+    TestBed.resetTestingModule();
+    expect(service.running()).toBe(false);
+    expect(service.paused()).toBe(false);
+});

@@ -63,6 +63,7 @@ export default class RecordPageComponent {
 
     public readonly canUndo = computed(() => this.edits().length > 0);
     public readonly running = this.session.running;
+    public readonly paused = this.session.paused;
     public readonly resolutions = signal<Array<{name: string; report: Resolution}>>([]);
     public readonly error = signal('');
     public captureValues = true;
@@ -106,6 +107,14 @@ export default class RecordPageComponent {
             sensitive: 'redact',
             normalizers: ['decimal-comma-v1', 'date-dmy-v1'],
         });
+    }
+
+    public pauseForSelection(): void {
+        this.session.pause();
+    }
+
+    public resumeAfterSelection(): void {
+        this.session.resume();
     }
 
     public stop(): void {

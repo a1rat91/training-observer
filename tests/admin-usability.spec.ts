@@ -37,7 +37,9 @@ test('admin shows available commands by phase and distinguishes feedback drafts 
         panel.getByRole('checkbox', {name: 'Сохранять значения полей'}),
     ).toHaveCount(0);
     await expect(
-        panel.getByText('Редактирование появится после остановки.', {exact: false}),
+        panel.getByText('Редактирование заданий появится после остановки.', {
+            exact: false,
+        }),
     ).toBeVisible();
     await page.screenshot({
         path: test.info().outputPath('admin-recording.png'),

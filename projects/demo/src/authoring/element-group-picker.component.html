@@ -10,6 +10,7 @@
         type="button"
         [disabled]="disabled()"
         (click)="open()"
+        (pointerdown)="$event.preventDefault()"
     >
         Создать группу вариантов
     </button>
@@ -22,6 +23,7 @@
             type="button"
             [disabled]="disabled()"
             (click)="open(group)"
+            (pointerdown)="$event.preventDefault()"
         >
             Изменить {{ group.title }}
         </button>

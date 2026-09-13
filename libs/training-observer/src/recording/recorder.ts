@@ -6,6 +6,7 @@
  * Мутации обновляют inventory области; sampling читает известные controls без повторного поиска.
  * После наблюдения coalesced microtask запускает проверку runtime; dropdown требует доказанного owner.
  * AreaRegistry ограничивает inventory/values и поколения pending действий; EventHub разделяет capture listeners.
+ * Pause снимает наблюдение и отменяет черновики; resume сохраняет журнал и сверяет актуальные области.
  * Stop освобождает подписку, observers и timer. Angular model, HTTP payload и setters не используются.
  */
 import {type AreaRegistry} from '../areas';
@@ -114,6 +115,7 @@ export class ElementRecorder {
     private report!: Recording;
 
     public running = false;
+    public paused = false;
 
     constructor(
         private readonly root: HTMLElement,
@@ -139,38 +141,82 @@ export class ElementRecorder {
             return;
         }
 
+        this.shutdown();
         this.reset();
         this.running = true;
         this.startedAt = performance.now();
         this.lastPath = this.document.location.pathname;
-        this.cleanup.push(
-            this.portals.acquire(),
-            DocumentEventHub.forDocument(this.document).subscribe((event) =>
-                this.observe(event),
-            ),
-        );
+        this.connect();
+    }
 
-        if (this.options.areas) {
-            this.cleanup.push(this.options.areas.subscribe(() => this.syncAreas()));
+    /** Пауза отменяет неподтверждённые действия до служебного blur и сохраняет журнал/ID целей. */
+    public pause(): void {
+        if (!this.running) {
+            return;
         }
 
-        this.syncAreas();
-        const interval = setInterval(() => {
+        this.cancelInput(
+            'Ввод отменён при переходе к выбору элементов. Завершите его заново после паузы.',
+        );
+
+        if (this.choice) {
+            this.diagnostic(
+                'unconfirmed-selection',
+                'Неподтверждённый выбор отменён при приостановке записи.',
+            );
+        }
+
+        this.shutdown(false);
+        this.paused = true;
+
+        for (const target of this.tracked.values()) {
+            target.dirty = false;
+            target.composing = false;
+        }
+
+        this.options.onUpdate?.();
+    }
+
+    /** Возобновление пересверяет текущий DOM; изменения и навигация во время паузы не становятся действиями. */
+    public resume(): void {
+        if (!this.paused) {
+            return;
+        }
+
+        if (!this.root.isConnected) {
+            this.stop();
+
+            return;
+        }
+
+        this.paused = false;
+        this.running = true;
+        this.lastPath = this.document.location.pathname;
+        this.connect();
+
+        // Сверяем изменённые подписи/маршрут до первого нового input, пока значение ещё является фоном.
+        // track может удалить и заново добавить ключ: обходим снимок, а не изменяемый iterator.
+        const elements = [...this.tracked.keys()];
+
+        for (const element of elements) {
             if (!this.running) {
-                return;
+                break;
             }
 
-            this.reconcile('property-observer');
-            this.confirmChoice();
+            this.track(element, true);
+        }
 
-            this.navigation();
-        }, this.options.pollMs ?? 100);
-
-        this.cleanup.push(() => clearInterval(interval));
-        this.notify();
+        this.options.onUpdate?.();
     }
 
     public stop(): void {
+        if (this.paused) {
+            this.shutdown();
+            this.options.onUpdate?.();
+
+            return;
+        }
+
         if (!this.running) {
             return;
         }
@@ -227,6 +273,34 @@ export class ElementRecorder {
         return this.targetAreas.get(id);
     }
 
+    private connect(): void {
+        this.cleanup.push(
+            this.portals.acquire(),
+            DocumentEventHub.forDocument(this.document).subscribe((event) =>
+                this.observe(event),
+            ),
+        );
+
+        if (this.options.areas) {
+            this.cleanup.push(this.options.areas.subscribe(() => this.syncAreas()));
+        }
+
+        this.syncAreas();
+        const interval = setInterval(() => {
+            if (!this.running) {
+                return;
+            }
+
+            this.reconcile('property-observer');
+            this.confirmChoice();
+
+            this.navigation();
+        }, this.options.pollMs ?? 100);
+
+        this.cleanup.push(() => clearInterval(interval));
+        this.notify();
+    }
+
     private reset(): void {
         this.generation++;
         this.tracked.clear();
@@ -250,8 +324,9 @@ export class ElementRecorder {
         };
     }
 
-    private shutdown(): void {
+    private shutdown(clearTracked = true): void {
         this.running = false;
+        this.paused = false;
         this.generation++;
         this.observationQueued = false;
 
@@ -265,7 +340,10 @@ export class ElementRecorder {
         this.notification = undefined;
         this.pending = undefined;
         this.choice = undefined;
-        this.tracked.clear();
+
+        if (clearTracked) {
+            this.tracked.clear();
+        }
     }
 
     private time(): number {
