@@ -1,6 +1,10 @@
 import {type Routes} from '@angular/router';
 
 export const routes: Routes = [
+    {
+        path: 'record', title: 'Training Observer · Процедура',
+        loadComponent: () => import('./pages/procedure/procedure.component').then((module) => module.ProcedureComponent),
+    },
     {path: '', pathMatch: 'full', redirectTo: 'controls'},
     {
         path: 'controls', title: 'Training Observer · Контролы',

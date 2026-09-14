@@ -19,3 +19,6 @@ export type {
     HitTestResult,
     InteractionReason,
 } from './lib/models/dom-snapshot';
+export {readScreenState} from './lib/services/screen-state-reader';
+export {ScreenVisitTracker} from './lib/services/screen-visit-tracker';
+export type {ScreenState, ScreenStateOptions, ScreenVisit} from './lib/models/screen-state';

@@ -8,6 +8,7 @@
     "scripts": {
         "start": "nx serve demo",
         "test": "playwright test",
+        "test:unit": "node --experimental-strip-types --test libs/training-observer/tests/*.test.mjs",
         "test:load": "playwright test --config=playwright.load.config.ts",
         "build": "nx run-many -t build -p training-observer demo --configuration=production",
         "graph": "nx graph"
