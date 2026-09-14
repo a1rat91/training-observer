@@ -8,6 +8,7 @@ import {ControlSnapshotBuilder} from './services/control-snapshot-builder';
 import {DomElementAnalyzer} from './services/dom-element-analyzer';
 import {DomObservationSession} from './services/dom-observation-session';
 import {snapshotFingerprint} from './services/snapshot-fingerprint';
+import {SelectionEvidence} from './services/selection-evidence';
 import {DOM_OBSERVATION_OPTIONS, type DomObservationOptions, validateObservationTiming} from './tokens/dom-observation-options';
 import {type DomSnapshotOptions} from './tokens/dom-snapshot-options';
 
@@ -31,6 +32,7 @@ export class TrainingObserver {
     private destroyed = false;
     private readonly confirmed = signal<Readonly<Record<string, ControlSnapshot>>>({});
     private readonly pendingConfirmations = new Map<string, ControlSnapshot>();
+    private readonly selectionEvidence = new SelectionEvidence();
 
     /** Last value captured on leaving a logical field. Raw snapshots remain live; absent means not confirmed. */
     readonly confirmedControls = this.confirmed.asReadonly();
@@ -80,6 +82,7 @@ export class TrainingObserver {
 
             try {
                 session.start(initial, {
+                    onEdit: (event) => this.invalidateSelection(event),
                     onFocusOut: (event) => this.confirmOnBlur(event, root, options, session),
                     captureAndPublish: () => {
                         const snapshot = this.builder.build(root, options);
@@ -105,6 +108,7 @@ export class TrainingObserver {
 
     /** Keep the last snapshot, but cancel observers, listeners and pending work. */
     stop(): void {
+        this.selectionEvidence.clear();
         this.pendingConfirmations.clear();
         this.session?.dispose();
         this.session = null;
@@ -151,7 +155,14 @@ export class TrainingObserver {
             ['textbox', 'number', 'select', 'combobox'].includes(candidate.kind) && contains(candidate, event.target));
         if (!control || contains(control, event.relatedTarget)) return;
 
-        const departure = this.controlBuilder.build(this.builder.build(root, options)).find((candidate) => candidate.id === control.id);
+        const departureSnapshot = this.builder.build(root, options);
+        if (departureSnapshot.stats.truncated) {
+            this.selectionEvidence.invalidate(control.id);
+            return;
+        }
+        const captured = this.controlBuilder.build(departureSnapshot).find((candidate) => candidate.id === control.id);
+        if (captured) this.selectionEvidence.remember(captured);
+        const departure = captured && this.selectionEvidence.confirm(captured);
         queueMicrotask(() => {
             if (this.session !== session) return;
             // Some components restore focus from their popup during the same event dispatch.
@@ -160,19 +171,33 @@ export class TrainingObserver {
         });
     }
 
+    private invalidateSelection(event: Event): void {
+        const snapshot = this.current();
+        const target = event.target;
+        if (!snapshot || !(target instanceof this.document.defaultView!.Node)) return;
+        for (const control of this.logicalControls()) {
+            const element = this.builder.resolveElement(snapshot, control.targetNodeId);
+            if (element && (element.contains(target) || (event.type === 'reset' && target.contains(element)))) {
+                this.selectionEvidence.invalidate(control.id);
+            }
+        }
+    }
+
     private publish(snapshot: DomSnapshot, onlyIfChanged: boolean): void {
         const fingerprint = snapshotFingerprint(snapshot);
 
         this.zone.run(() => {
             this.scans.update((count) => count + 1);
+            const controls = this.controlBuilder.build(snapshot);
+            if (snapshot.stats.truncated) this.selectionEvidence.clear();
+            else this.selectionEvidence.observe(controls);
 
             // The normal batched capture runs after Angular has rendered the blur/change handlers.
             // If navigation removed the field, retain only the value actually captured at focusout.
             if (this.pendingConfirmations.size) {
-                const controls = this.controlBuilder.build(snapshot);
                 const next = {...this.confirmed()};
                 for (const [id, departure] of this.pendingConfirmations) {
-                    const control = controls.find((candidate) => candidate.id === id) ?? departure;
+                    const control = this.selectionEvidence.confirm(controls.find((candidate) => candidate.id === id) ?? departure);
                     if (!snapshot.stats.truncated && !control.state.redacted) next[id] = control;
                 }
                 this.pendingConfirmations.clear();

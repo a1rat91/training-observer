@@ -5,7 +5,12 @@ export type ControlKind = 'textbox' | 'number' | 'button' | 'checkbox' | 'radio'
 export interface ChoiceSnapshot {
     /** Input text is observable; in a combobox it is not proof of a committed selection. */
     readonly displayValue: string;
-    readonly selection: {readonly status: 'observed' | 'unknown'; readonly labels: readonly string[]};
+    readonly selection: {
+        readonly status: 'observed' | 'unknown';
+        readonly labels: readonly string[];
+        /** Present only when blur confirmation retains proof captured before the popup closed. */
+        readonly evidence?: 'previous-snapshot';
+    };
     readonly popup: PopupSnapshot;
 }
 
