@@ -104,3 +104,27 @@ test('entering a screen does not alert on untouched checkboxes; changing an answ
     await page.locator('#terms').check();
     await expect(page.getByRole('status')).toHaveText('Тренировка завершена');
 });
+
+test('admin records initial choices and final radio state; learner must also preserve unchecked fields', async ({page}) => {
+    await page.goto('/record');
+    await page.getByRole('button',{name:'Начать запись',exact:true}).click();
+    await page.getByRole('button',{name:'Далее',exact:true}).click();
+    const journal=page.getByRole('region',{name:'Журнал записи'});
+    await expect(journal).toContainText('Нужна практика');
+    await page.getByRole('radio',{name:'Электронный',exact:true}).check();
+    await page.getByRole('button',{name:'Завершить запись',exact:true}).click();
+    await page.getByText('Настроить тренировку',{exact:true}).click();
+    await page.getByRole('button',{name:'Создать ожидания из записи',exact:true}).click();
+    await page.getByRole('textbox',{name:'Ошибка: Нужна практика',exact:true}).fill('Практику включать не нужно');
+    await page.getByRole('button',{name:'Сохранить сценарий для ученика',exact:true}).click();
+    await page.getByRole('link',{name:'Перейти к тренировке',exact:true}).click();
+    await expect(page.getByText('Экран 1 из 2. Выполнено полей: 0 из 0.',{exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Далее',exact:true}).click();
+    await expect(page.getByText('Экран 2 из 2. Выполнено полей: 2 из 3.',{exact:true})).toBeVisible();
+    await expect(page.locator('tui-notification-alert')).toHaveCount(0);
+    await page.getByRole('checkbox',{name:'Нужна практика',exact:true}).check();
+    await expect(page.locator('tui-notification-alert')).toContainText('Практику включать не нужно');
+    await page.getByRole('checkbox',{name:'Нужна практика',exact:true}).uncheck();
+    await page.getByRole('radio',{name:'Электронный',exact:true}).check();
+    await expect(page.getByRole('status')).toHaveText('Тренировка завершена');
+});

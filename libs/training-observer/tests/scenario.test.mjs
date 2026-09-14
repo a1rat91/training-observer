@@ -12,6 +12,7 @@ const hook = registerHooks({resolve(specifier, context, next) {
 const {matchControl} = await import('../src/lib/scenario/control-matcher.ts');
 const {compileScenario} = await import('../src/lib/scenario/scenario.ts');
 const {parseScenario} = await import('../src/lib/scenario/scenario-codec.ts');
+const {StateRecorder} = await import('../src/lib/recording/state-recorder.ts');
 const {ScenarioRuntime} = await import('../src/lib/scenario/scenario-runtime.ts');
 hook.deregister();
 const descriptor = (label, id) => ({kind:'textbox', label, id, role:'textbox', tagName:'input', context:[]});
@@ -156,4 +157,18 @@ test('a prefilled amount on a later screen is evaluated immediately; edits wait 
         const committed=r.update(screen('B',[amount('3000')]),{amount:amount('3000')});
         assert.equal(committed.completedFields,0);assert.deepEqual(committed.feedback,['Ошибка Сумма']);
     }
+});
+
+test('recorded checkbox/radio picture compiles last states and false remains a required answer', () => {
+    const choice=(id,kind,checked)=>control(id,id,'',{kind,state:{checked},locatorHints:{...descriptor(id),kind}});
+    const start=[choice('check','checkbox',false),choice('one','radio',false),choice('two','radio',false)];
+    const final=[start[0],choice('one','radio',true),start[2]];
+    const recorder=new StateRecorder();recorder.start(screen('A',start),{});
+    recorder.observe(screen('A',final),{});
+    const model=compileScenario(recorder.stop());
+    assert.deepEqual(model.steps[0].fields.map(f=>f.expected),[false,true,false]);
+    const r=new ScenarioRuntime(model);
+    assert.equal(r.update(screen('A',final),{}).status,'complete');
+    const wrong=r.update(screen('A',[choice('check','checkbox',true),...final.slice(1)]),{});
+    assert.equal(wrong.completedFields,2);assert.equal(wrong.feedback.length,1);
 });

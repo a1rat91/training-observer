@@ -1,5 +1,6 @@
 /** Headless recorder: remembers field ownership, accepts blur confirmations before screen transitions,
  * and stores serializable values and locator hints. It never infers a click or a missing value.
+ * Checkbox/radio initial states are recorded per visit; later changes replace expectations during compilation.
  * One instance owns one recording; start resets it, stop returns an immutable document.
  */
 import type {ControlSnapshot, ControlLocatorHints} from '../models/control-snapshot';
@@ -72,6 +73,7 @@ export class StateRecorder {
         if (this.key !== screen.key) {
             this.key = screen.key;
             this.visit++;
+            this.immediateValues.clear();
             this.append({kind: 'screen', screenKey: this.key, visit: this.visit});
         }
         for (const control of screen.controls) {
@@ -85,7 +87,8 @@ export class StateRecorder {
             const value = JSON.stringify([control.state.checked, control.state.indeterminate, control.state.value]);
             const previous = this.immediateValues.get(control.id);
             this.immediateValues.set(control.id, value);
-            if (previous !== undefined && previous !== value) this.recordValue(control, {key: this.key, visit: this.visit});
+            const captureInitial = control.kind === 'checkbox' || control.kind === 'radio';
+            if (previous !== value && (previous !== undefined || captureInitial)) this.recordValue(control, {key: this.key, visit: this.visit});
         }
     }
 

@@ -69,12 +69,23 @@ test('new dynamic field can arrive together with its first blur confirmation', (
     r.observe(screen('A', [a]), {[a.id]: a});
     assert.equal(r.stop().events[1].value, 'value');
 });
-test('checkbox records false on change, not on disabled or initial rendering', () => {
+test('checkbox records initial state and changes, but not disabled-only updates', () => {
     const r = new StateRecorder();
     const a = field('check', undefined, {kind: 'checkbox', state: {checked: true}, locatorHints: {kind: 'checkbox', label: 'Check', tagName: 'input', role: 'checkbox', context: []}});
     r.start(screen('A', [a]), {});
     r.observe(screen('A', [{...a, state: {checked: true, disabled: true}}]), {});
-    assert.equal(r.snapshot().events.length, 1);
+    assert.equal(r.snapshot().events.length, 2);
+    assert.equal(r.snapshot().events[1].value, true);
     r.observe(screen('A', [{...a, state: {checked: false}}]), {});
-    assert.equal(r.stop().events[1].value, false);
+    assert.equal(r.stop().events[2].value, false);
+});
+
+test('initial false radio and checkbox values are recorded per visit, including late fields', () => {
+    const controls=['checkbox','radio'].map(kind=>field(kind,undefined,{kind,state:{checked:false},
+        locatorHints:{kind,label:kind,tagName:'input',role:kind,context:[]}}));
+    const r=new StateRecorder();r.start(screen('A'),{});
+    r.observe(screen('A',controls),{});r.observe(screen('A',controls),{});
+    assert.deepEqual(r.snapshot().events.filter(e=>e.kind==='value').map(e=>e.value),[false,false]);
+    r.observe(screen('B'),{});r.observe(screen('A',controls),{});
+    assert.deepEqual(r.stop().events.filter(e=>e.kind==='value').map(e=>[e.visit,e.value]),[[1,false],[1,false],[3,false],[3,false]]);
 });
