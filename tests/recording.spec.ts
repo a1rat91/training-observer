@@ -21,9 +21,9 @@ test('admin records blur and transitions, Stop includes the last edit and reload
     await expect(journal).not.toContainText('Сотрудник — Анна Смирнова');
     await page.getByRole('button', {name: 'Далее', exact: true}).click();
     await expect(journal).toContainText('application-details');
-    // A closed Taiga ComboBox exposes display text, but does not prove selection in this snapshot model.
-    await expect(journal).toContainText('Сотрудник — не удалось прочитать');
-    await expect(journal).toContainText('В записи есть пропуски наблюдения');
+    // Training records displayed ComboBox text after blur, without requiring selection evidence.
+    await expect(journal).toContainText('Сотрудник — Анна Смирнова');
+    await expect(journal).not.toContainText('В записи есть пропуски наблюдения');
     await page.locator('#goal').fill('Последний ответ');
     await page.getByRole('button', {name: 'Завершить запись', exact: true}).click();
     await expect(page.getByText('Запись завершена', {exact: true})).toBeVisible();

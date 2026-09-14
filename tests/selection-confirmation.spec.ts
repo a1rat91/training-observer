@@ -19,7 +19,7 @@ test('selection observed in a reopened popup survives closing and blur into the 
     await expect(journal).not.toContainText('В записи есть пропуски');
 });
 
-test('retyping the same query invalidates retained selection and does not turn text into a choice', async ({page}) => {
+test('retyping invalidates selection evidence but displayed text is still recorded after blur', async ({page}) => {
     await page.goto('/record');
     await page.getByRole('button',{name:'Начать запись',exact:true}).click();
     await page.locator('#employee').fill('Анна');
@@ -31,5 +31,5 @@ test('retyping the same query invalidates retained selection and does not turn t
     // Exercise the library's edit boundary without asking the widget to commit a new option.
     await page.locator('#employee').evaluate(input => input.dispatchEvent(new Event('input',{bubbles:true})));
     await page.getByRole('button',{name:'Завершить запись',exact:true}).click();
-    await expect(page.getByRole('region',{name:'Журнал записи'})).toContainText('Сотрудник — не удалось прочитать');
+    await expect(page.getByRole('region',{name:'Журнал записи'})).toContainText('Сотрудник — Анна Смирнова');
 });

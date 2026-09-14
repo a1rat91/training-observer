@@ -71,3 +71,18 @@ test('correct value changed to wrong is revoked; optional expectations do not bl
     assert.equal(r.update(screen('A',[a]),{a:control('a','Имя','Анна')}).status,'complete');
     assert.equal(r.update(screen('A',[a]),{a:control('a','Имя','Борис')}).status,'active');
 });
+
+test('ComboBox compares displayed text only after confirmation, including clearing and correction', () => {
+    const combo = text => control('c','Сотрудник',text,{kind:'combobox',
+        locatorHints:{...descriptor('Сотрудник'),kind:'combobox'},
+        choice:{displayValue:text,selection:{status:'unknown',labels:[]}}});
+    const c=combo('Анна');
+    const r=new ScenarioRuntime({...scenario,steps:[{...scenario.steps[0],fields:[{
+        ...field('Сотрудник',['Анна']),descriptor:c.locatorHints}]}]});
+    assert.equal(r.update(screen('A',[c]),{}).status,'active');
+    assert.equal(r.update(screen('A',[c]),{c:combo('Анна')}).status,'complete');
+    const wrong=r.update(screen('A',[c]),{c:combo('')});
+    assert.equal(wrong.status,'active');assert.deepEqual(wrong.feedback,['Ошибка Сотрудник']);
+    assert.equal(r.update(screen('A',[c]),{c:combo('Анна')}).status,'complete');
+    assert.equal(r.update(screen('A',[c]),{c:{...combo('Анна'),state:{redacted:true}}}).status,'blocked');
+});

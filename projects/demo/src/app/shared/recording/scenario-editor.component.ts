@@ -105,10 +105,10 @@ export class ScenarioEditorComponent {
         this.published.set(false);
     }
     protected isBoolean(f: FieldExpectation): boolean { return typeof f.expected === 'boolean'; }
-    protected isArray(f: FieldExpectation): boolean { return Array.isArray(f.expected); }
+    protected isArray(f: FieldExpectation): boolean { return f.descriptor.kind !== 'combobox' && Array.isArray(f.expected); }
     protected textValue(f: FieldExpectation): string { return Array.isArray(f.expected) ? f.expected.join('; ') : String(f.expected); }
     protected setValue(si: number, fi: number, field: FieldExpectation, value: string): void {
-        this.edit(si, fi, {expected: Array.isArray(field.expected) ? value ? value.split(';').map(v => v.trim()) : [] : value});
+        this.edit(si, fi, {expected: field.descriptor.kind === 'combobox' ? value ? [value] : [] : Array.isArray(field.expected) ? value ? value.split(';').map(v => v.trim()) : [] : value});
     }
     protected publish(): void {
         const draft = this.draft();

@@ -29,15 +29,27 @@ test('record, edit feedback, publish and learn with blur errors and a verified t
     await expect(page.getByText('Тренировка завершена',{exact:true})).toHaveCount(0);
 });
 
-test('incomplete recording cannot silently become a learner scenario', async ({page}) => {
+test('typed ComboBox text records after blur and can be published', async ({page}) => {
     await page.goto('/record');
     await page.getByRole('button',{name:'Начать запись',exact:true}).click();
-    await page.locator('#employee').fill('Неизвестный сотрудник');
+    await page.locator('#employee').fill('Анна Смирнова');
     await page.getByRole('button',{name:'Завершить запись',exact:true}).click();
     await page.getByText('Настроить тренировку',{exact:true}).click();
     await page.getByRole('button',{name:'Создать ожидания из записи',exact:true}).click();
-    await expect(page.getByRole('alert')).toContainText('неподтверждённые значения');
-    await expect(page.getByRole('button',{name:'Сохранить сценарий для ученика',exact:true})).toHaveCount(0);
+    await expect(page.getByRole('textbox',{name:'Ожидание: Сотрудник',exact:true})).toHaveValue('Анна Смирнова');
+    await expect(page.getByRole('button',{name:'Сохранить сценарий для ученика',exact:true})).toBeEnabled();
+    await page.getByRole('textbox',{name:'Ошибка: Сотрудник',exact:true}).fill('Проверьте сотрудника');
+    await page.getByRole('button',{name:'Сохранить сценарий для ученика',exact:true}).click();
+    await page.getByRole('link',{name:'Перейти к тренировке',exact:true}).click();
+    await page.locator('#employee').fill('Мария Петрова');
+    await expect(page.locator('tui-notification-alert')).toHaveCount(0);
+    await page.locator('#surname').click();
+    await expect(page.locator('tui-notification-alert')).toContainText('Проверьте сотрудника');
+    await page.locator('#employee').fill('Анна Смирнова');
+    await expect(page.getByText('Тренировка завершена',{exact:true})).toHaveCount(0);
+    await page.locator('#surname').click();
+    await expect(page.getByRole('status')).toHaveText('Тренировка завершена');
+
 });
 
 test('wrong branch alerts once and returning to the expected screen allows completion', async ({page}) => {

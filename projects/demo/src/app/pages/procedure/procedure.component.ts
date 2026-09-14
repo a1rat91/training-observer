@@ -19,7 +19,7 @@ import {ProcedureFormComponent} from './procedure-form.component';
         <main>
             <header data-training-observer-ignore>
                 <h1>Запись тренировки</h1>
-                <p>Начните запись, заполните поля и перейдите по нужным экранам. Input, Select и ComboBox записываются после выхода из поля.</p>
+                <p>Начните запись, заполните поля и перейдите по нужным экранам. Input, Select и ComboBox записываются после выхода из поля. Для ComboBox сравнивается видимый текст, включая введённый вручную.</p>
                 <p>Завершите запись, чтобы сохранить её в браузере. Затем создайте ожидания из записи и сохраните сценарий для ученика.</p>
                 <button tuiButton size="s" type="button" [disabled]="recording() || screen().status !== 'ready'" (click)="startRecording()">Начать запись</button>
                 <button tuiButton size="s" type="button" [disabled]="!recording() || stopping()" (click)="stopRecording()">Завершить запись</button>
@@ -195,6 +195,7 @@ export class ProcedureComponent {
     protected value(control: ControlSnapshot): string {
         if (control.state.redacted) return 'Значение скрыто';
         if (control.kind === 'button') return '—';
+        if (control.kind === 'combobox' && control.choice) return control.choice.displayValue || 'Пусто';
         if (control.choice) {
             return control.choice.selection.status === 'observed' ? control.choice.selection.labels.join(', ') || 'Не выбран'
                 : `Выбор не подтверждён${control.choice.displayValue ? ': ' + control.choice.displayValue : ''}`;

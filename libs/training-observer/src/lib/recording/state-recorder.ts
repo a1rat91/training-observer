@@ -100,7 +100,10 @@ export class StateRecorder {
 
     private recordValue(control: ControlSnapshot, owner: {key: string; visit: number}): void {
         if (control.state.redacted) return;
-        const value = control.choice
+        // ComboBox training compares displayed text after blur, not proof of option selection.
+        const value = control.kind === 'combobox' && control.choice
+            ? control.choice.displayValue ? [control.choice.displayValue] : []
+            : control.choice
             ? control.choice.selection.status === 'observed' ? control.choice.selection.labels : undefined
             : control.state.indeterminate ? undefined : control.state.checked ?? control.state.value;
         if (value === undefined) {

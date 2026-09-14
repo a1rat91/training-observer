@@ -71,7 +71,11 @@ export class ScenarioRuntime {
             const blur = ['textbox', 'number', 'select', 'combobox'].includes(raw.kind);
             const control = blur ? confirmed[raw.id] : raw;
             if (!control || (blur && control === this.baseline[raw.id])) return;
-            const value = control.state.redacted || control.state.indeterminate ? undefined : control.choice
+            // Keep the same text-based ComboBox semantics as recording, including an empty value.
+            const value = control.state.redacted || control.state.indeterminate ? undefined
+                : control.kind === 'combobox' && control.choice
+                    ? control.choice.displayValue ? [control.choice.displayValue] : []
+                : control.choice
                 ? control.choice.selection.status === 'observed' ? control.choice.selection.labels : undefined
                 : control.state.checked ?? control.state.value;
             if (value === undefined) { blocked = true; return; }
