@@ -86,3 +86,31 @@ test('ComboBox compares displayed text only after confirmation, including cleari
     assert.equal(r.update(screen('A',[c]),{c:combo('Анна')}).status,'complete');
     assert.equal(r.update(screen('A',[c]),{c:{...combo('Анна'),state:{redacted:true}}}).status,'blocked');
 });
+
+test('new screen checkbox defaults stay quiet; changes report errors and unmet fields still block transition', () => {
+    const box = (id, checked) => control(id,'Согласие','',{kind:'checkbox',
+        locatorHints:{...descriptor('Согласие'),kind:'checkbox'},state:{checked}});
+    const c=box('c',false);
+    const s={...scenario,steps:[{...scenario.steps[0],fields:[]},
+        {key:'B',task:'',transitionMessage:'Заполните поля',fields:[{...field('Согласие',true),descriptor:c.locatorHints}]},
+        {key:'C',task:'',transitionMessage:'',fields:[]}]};
+    const r=new ScenarioRuntime(s);
+    r.update(screen('A'),{});
+    const entered=r.update(screen('B',[c]),{});
+    assert.deepEqual(entered.feedback,[]);assert.equal(entered.completedFields,0);
+    assert.deepEqual(r.update(screen('B',[box('c',false)]),{}).feedback,[]);
+    assert.equal(r.update(screen('C'),{}).step,2);
+    r.update(screen('B',[box('c',true)]),{});
+    assert.deepEqual(r.update(screen('B',[box('c',false)]),{}).feedback,['Ошибка Согласие']);
+    assert.deepEqual(r.update(screen('B',[box('c',false)]),{}).feedback,[]);
+    assert.deepEqual(r.update(screen('B',[box('remounted',false)]),{}).feedback,[]);
+    r.update(screen('B',[box('remounted',true)]),{});
+    assert.equal(r.update(screen('C'),{}).status,'complete');
+});
+test('late appearing immediate controls get a quiet baseline without accepting wrong defaults', () => {
+    const c=control('c','Согласие','',{kind:'checkbox',locatorHints:{...descriptor('Согласие'),kind:'checkbox'},state:{checked:false}});
+    const r=new ScenarioRuntime({...scenario,steps:[{...scenario.steps[0],fields:[{...field('Согласие',true),descriptor:c.locatorHints}]}]});
+    assert.equal(r.update(screen('A'),{}).status,'blocked');
+    const first=r.update(screen('A',[c]),{});
+    assert.equal(first.status,'active');assert.equal(first.completedFields,0);assert.deepEqual(first.feedback,[]);
+});

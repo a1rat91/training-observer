@@ -41,6 +41,7 @@ test('typed ComboBox text records after blur and can be published', async ({page
     await page.getByRole('textbox',{name:'Ошибка: Сотрудник',exact:true}).fill('Проверьте сотрудника');
     await page.getByRole('button',{name:'Сохранить сценарий для ученика',exact:true}).click();
     await page.getByRole('link',{name:'Перейти к тренировке',exact:true}).click();
+    await expect(page.getByText('Экран 1 из 1. Выполнено полей: 0 из 1.',{exact:true})).toBeVisible();
     await page.locator('#employee').fill('Мария Петрова');
     await expect(page.locator('tui-notification-alert')).toHaveCount(0);
     await page.locator('#surname').click();
@@ -69,5 +70,33 @@ test('wrong branch alerts once and returning to the expected screen allows compl
     await page.getByRole('button',{name:'Назад',exact:true}).click();
     await page.locator('#surname').fill('Смирнова');
     await page.getByRole('button',{name:'Далее',exact:true}).click();
+    await expect(page.getByRole('status')).toHaveText('Тренировка завершена');
+});
+
+test('entering a screen does not alert on untouched checkboxes; changing an answer still alerts', async ({page}) => {
+    const fields = [{id:'reviewed',label:'Данные проверены'}, {id:'terms',label:'Условия согласованы'}].map(({id,label}) => ({
+        descriptor:{kind:'checkbox',label,id,tagName:'input',role:'checkbox',context:[]},
+        expected:true,message:`Проверьте ${label}`,optional:false,
+    }));
+    const scenario={kind:'training-state-scenario',version:1,steps:[
+        {key:'application-profile',task:'',transitionMessage:'Неверный переход',fields:[]},
+        {key:'application-details',task:'',transitionMessage:'Неверный переход',fields:[]},
+        {key:'application-review',task:'Поставьте отметки',transitionMessage:'Заполните поля',fields},
+    ]};
+    await page.addInitScript(value=>localStorage.setItem('training-observer.scenario.v1',JSON.stringify(value)),scenario);
+    await page.goto('/learn');
+    await page.getByRole('button',{name:'Далее',exact:true}).click();
+    await expect(page.locator('#goal')).toBeVisible();
+    await page.getByRole('button',{name:'Далее',exact:true}).click();
+    await expect(page.locator('#reviewed')).toBeVisible();
+    await page.waitForTimeout(650);
+    await expect(page.locator('tui-notification-alert')).toHaveCount(0);
+    await expect(page.getByText('Тренировка завершена',{exact:true})).toHaveCount(0);
+    await page.locator('#reviewed').check();
+    await expect(page.getByText('Экран 3 из 3. Выполнено полей: 1 из 2.',{exact:true})).toBeVisible();
+    await page.locator('#reviewed').uncheck();
+    await expect(page.locator('tui-notification-alert')).toContainText('Проверьте Данные проверены');
+    await page.locator('#reviewed').check();
+    await page.locator('#terms').check();
     await expect(page.getByRole('status')).toHaveText('Тренировка завершена');
 });

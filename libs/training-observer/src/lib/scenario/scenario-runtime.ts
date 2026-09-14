@@ -20,6 +20,8 @@ export class ScenarioRuntime {
     private previous: ScreenState | null = null;
     private readonly errors = new Map<string, string>();
     private baseline: Readonly<Record<string, ControlSnapshot>> = {};
+    // First observation of an immediate-value control is a baseline, not an attempted answer.
+    private readonly immediateValues = new Map<number, {id: string; value: string}>();
     private entered = false;
     private readonly scenario: TrainingScenario;
     constructor(scenario: TrainingScenario) { this.scenario = structuredClone(scenario); }
@@ -38,6 +40,7 @@ export class ScenarioRuntime {
                 this.index++;
                 this.entered = false;
                 this.errors.clear();
+                this.immediateValues.clear();
             } else {
                 const message = prior?.blocked ? 'Не удалось проверить поля предыдущего экрана. Вернитесь к нему.' : step.transitionMessage;
                 if (!prior?.blocked) this.report('transition', String(screen.key), message, feedback);
@@ -50,14 +53,14 @@ export class ScenarioRuntime {
         }
         this.errors.delete('transition');
         this.previous = screen;
-        const evaluation = this.evaluate(this.scenario.steps[this.index], screen, confirmed);
+        const evaluation = this.evaluate(this.scenario.steps[this.index], screen, confirmed, true);
         for (const [key, value] of evaluation.wrong) this.report(key, value.value, value.message, feedback);
         for (const key of [...this.errors.keys()]) if (!evaluation.wrong.has(key)) this.errors.delete(key);
         if (evaluation.blocked) return result('blocked', evaluation.count, 'Не удалось однозначно прочитать все поля.');
         return result(evaluation.all && this.index === this.scenario.steps.length - 1 ? 'complete' : 'active', evaluation.count);
     }
 
-    private evaluate(step: ScenarioStep, screen: ScreenState, confirmed: Readonly<Record<string, ControlSnapshot>>) {
+    private evaluate(step: ScenarioStep, screen: ScreenState, confirmed: Readonly<Record<string, ControlSnapshot>>, observeChanges = false) {
         let count = 0;
         let blocked = false;
         const wrong = new Map<string, {value: string; message: string}>();
@@ -79,8 +82,15 @@ export class ScenarioRuntime {
                 ? control.choice.selection.status === 'observed' ? control.choice.selection.labels : undefined
                 : control.state.checked ?? control.state.value;
             if (value === undefined) { blocked = true; return; }
-            if (JSON.stringify(value) === JSON.stringify(field.expected)) count++;
-            else wrong.set(String(index), {value: JSON.stringify(value), message: field.message});
+            const serialized = JSON.stringify(value);
+            let notify = blur;
+            if (!blur && observeChanges) {
+                const previous = this.immediateValues.get(index);
+                notify = previous?.id === raw.id && previous.value !== serialized;
+                this.immediateValues.set(index, {id: raw.id, value: serialized});
+            }
+            if (serialized === JSON.stringify(field.expected)) count++;
+            else if (notify) wrong.set(String(index), {value: serialized, message: field.message});
         });
         return {count, blocked, wrong, all: !blocked && count === step.fields.filter(f => !f.optional).length};
     }
