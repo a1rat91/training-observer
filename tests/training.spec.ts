@@ -62,15 +62,19 @@ test('wrong branch alerts once and returning to the expected screen allows compl
     ]};
     await page.addInitScript(value => localStorage.setItem('training-observer.scenario.v1', JSON.stringify(value)), scenario);
     await page.goto('/learn');
+    await page.locator('#surname').fill('Смирнова');
     await page.getByRole('button',{name:'Неправильный переход',exact:true}).click();
     const alerts = page.locator('tui-notification-alert');
     await expect(alerts).toContainText('Вернитесь в правильную ветку');
     await page.waitForTimeout(650);
     await expect(alerts).toHaveCount(1);
     await page.getByRole('button',{name:'Назад',exact:true}).click();
-    await page.locator('#surname').fill('Смирнова');
+    await expect(page.locator('#surname')).toHaveValue('Смирнова');
+    await expect(page.getByText('Экран 1 из 2. Выполнено полей: 1 из 1.',{exact:true})).toBeVisible();
+    await alerts.getByRole('button').click();
     await page.getByRole('button',{name:'Далее',exact:true}).click();
     await expect(page.getByRole('status')).toHaveText('Тренировка завершена');
+    await expect(alerts).toHaveCount(0);
 });
 
 test('entering a screen does not alert on untouched checkboxes; changing an answer still alerts', async ({page}) => {

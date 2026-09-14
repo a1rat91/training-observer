@@ -22,6 +22,8 @@ export class ScenarioRuntime {
     private baseline: Readonly<Record<string, ControlSnapshot>> = {};
     // First observation of an immediate-value control is a baseline, not an attempted answer.
     private readonly immediateValues = new Map<number, {id: string; value: string}>();
+    // Initial values of each field instance satisfy state-based expectations without a blur.
+    private readonly initialControls = new Map<number, ControlSnapshot>();
     private entered = false;
     private readonly scenario: TrainingScenario;
     constructor(scenario: TrainingScenario) { this.scenario = structuredClone(scenario); }
@@ -41,6 +43,7 @@ export class ScenarioRuntime {
                 this.entered = false;
                 this.errors.clear();
                 this.immediateValues.clear();
+                this.initialControls.clear();
             } else {
                 const message = prior?.blocked ? 'Не удалось проверить поля предыдущего экрана. Вернитесь к нему.' : step.transitionMessage;
                 if (!prior?.blocked) this.report('transition', String(screen.key), message, feedback);
@@ -72,18 +75,16 @@ export class ScenarioRuntime {
             if (match.status !== 'matched' || assigned.filter(id => id === match.control.id).length !== 1) { blocked = true; return; }
             const raw = match.control;
             const blur = ['textbox', 'number', 'select', 'combobox'].includes(raw.kind);
-            const control = blur ? confirmed[raw.id] : raw;
-            if (!control || (blur && control === this.baseline[raw.id])) return;
-            // Keep the same text-based ComboBox semantics as recording, including an empty value.
-            const value = control.state.redacted || control.state.indeterminate ? undefined
-                : control.kind === 'combobox' && control.choice
-                    ? control.choice.displayValue ? [control.choice.displayValue] : []
-                : control.choice
-                ? control.choice.selection.status === 'observed' ? control.choice.selection.labels : undefined
-                : control.state.checked ?? control.state.value;
+            if (observeChanges && this.initialControls.get(index)?.id !== raw.id) this.initialControls.set(index, raw);
+            const confirmation = confirmed[raw.id];
+            const fresh = blur && confirmation && confirmation !== this.baseline[raw.id];
+            const initial = this.initialControls.get(index);
+            const control = blur ? fresh ? confirmation : initial?.id === raw.id ? initial : undefined : raw;
+            if (!control) return;
+            const value = this.value(control);
             if (value === undefined) { blocked = true; return; }
             const serialized = JSON.stringify(value);
-            let notify = blur;
+            let notify = !!fresh;
             if (!blur && observeChanges) {
                 const previous = this.immediateValues.get(index);
                 notify = previous?.id === raw.id && previous.value !== serialized;
@@ -93,6 +94,12 @@ export class ScenarioRuntime {
             else if (notify) wrong.set(String(index), {value: serialized, message: field.message});
         });
         return {count, blocked, wrong, all: !blocked && count === step.fields.filter(f => !f.optional).length};
+    }
+    private value(control: ControlSnapshot) {
+        if (control.state.redacted || control.state.indeterminate) return undefined;
+        if (control.kind === 'combobox' && control.choice) return control.choice.displayValue ? [control.choice.displayValue] : [];
+        if (control.choice) return control.choice.selection.status === 'observed' ? control.choice.selection.labels : undefined;
+        return control.state.checked ?? control.state.value;
     }
     private report(key: string, value: string, message: string, feedback: string[]): void {
         if (this.errors.get(key) !== value) feedback.push(message);

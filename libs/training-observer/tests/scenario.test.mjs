@@ -79,7 +79,7 @@ test('ComboBox compares displayed text only after confirmation, including cleari
     const c=combo('Анна');
     const r=new ScenarioRuntime({...scenario,steps:[{...scenario.steps[0],fields:[{
         ...field('Сотрудник',['Анна']),descriptor:c.locatorHints}]}]});
-    assert.equal(r.update(screen('A',[c]),{}).status,'active');
+    assert.equal(r.update(screen('A',[combo('')]),{}).status,'active');
     assert.equal(r.update(screen('A',[c]),{c:combo('Анна')}).status,'complete');
     const wrong=r.update(screen('A',[c]),{c:combo('')});
     assert.equal(wrong.status,'active');assert.deepEqual(wrong.feedback,['Ошибка Сотрудник']);
@@ -113,4 +113,47 @@ test('late appearing immediate controls get a quiet baseline without accepting w
     assert.equal(r.update(screen('A'),{}).status,'blocked');
     const first=r.update(screen('A',[c]),{});
     assert.equal(first.status,'active');assert.equal(first.completedFields,0);assert.deepEqual(first.feedback,[]);
+});
+
+test('prefilled answers are accepted on entry and after returning from a wrong screen', () => {
+    const r=new ScenarioRuntime(scenario), a=control('a','Имя','Анна'),b=control('b','Город','Казань');
+    const first=r.update(screen('A',[a,b]),{});
+    assert.equal(first.completedFields,2);assert.deepEqual(first.feedback,[]);
+    assert.deepEqual(r.update(screen('WRONG'),{}).feedback,['Неверный переход']);
+    const returned=r.update(screen('A',[control('new-a','Имя','Анна'),control('new-b','Город','Казань')]),{});
+    assert.equal(returned.completedFields,2);assert.deepEqual(returned.feedback,[]);
+    const next=r.update(screen('B'),{});
+    assert.equal(next.status,'complete');assert.deepEqual(next.feedback,[]);
+});
+test('wrong prefilled text stays quiet and cannot advance; later edits require blur', () => {
+    const r=new ScenarioRuntime({...scenario,steps:[{...scenario.steps[0],fields:[field('Имя','Анна')]},scenario.steps[1]]});
+    const a=control('a','Имя','Борис');
+    const first=r.update(screen('A',[a]),{});
+    assert.equal(first.completedFields,0);assert.deepEqual(first.feedback,[]);
+    assert.equal(r.update(screen('B'),{}).step,1);
+    const correct=control('new','Имя','Анна');
+    assert.equal(r.update(screen('A',[correct]),{}).completedFields,1);
+    const edited=control('new','Имя','Борис');
+    assert.equal(r.update(screen('A',[edited]),{}).completedFields,1);
+    const blurred=r.update(screen('A',[edited]),{new:edited});
+    assert.equal(blurred.completedFields,0);assert.deepEqual(blurred.feedback,['Ошибка Имя']);
+    assert.equal(r.update(screen('B'),{new:edited}).step,1);
+});
+
+test('a prefilled amount on a later screen is evaluated immediately; edits wait for blur', () => {
+    const amount = value => control('amount','Сумма',value,{kind:'number',
+        locatorHints:{...descriptor('Сумма'),kind:'number'}});
+    const s={...scenario,steps:[{...scenario.steps[0],fields:[]},{key:'B',task:'',transitionMessage:'',
+        fields:[{...field('Сумма','1500'),descriptor:amount('').locatorHints}]}]};
+    for (const value of ['1500','2000']) {
+        const r=new ScenarioRuntime(s);
+        r.update(screen('A'),{});
+        const first=r.update(screen('B',[amount(value)]),{});
+        assert.equal(first.status,value === '1500' ? 'complete' : 'active');
+        assert.deepEqual(first.feedback,[]);
+        // Merely changing the DOM property does not commit the edited amount.
+        assert.equal(r.update(screen('B',[amount('3000')]),{}).completedFields,value === '1500' ? 1 : 0);
+        const committed=r.update(screen('B',[amount('3000')]),{amount:amount('3000')});
+        assert.equal(committed.completedFields,0);assert.deepEqual(committed.feedback,['Ошибка Сумма']);
+    }
 });
