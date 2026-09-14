@@ -1,0 +1,73 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {registerHooks} from 'node:module';
+// Node's strip-types does not resolve TypeScript's extensionless internal imports.
+const hook = registerHooks({resolve(specifier, context, next) {
+    try { return next(specifier, context); }
+    catch (error) {
+        if (specifier.startsWith('.') && context.parentURL?.includes('/src/lib/')) return next(specifier + '.ts', context);
+        throw error;
+    }
+}});
+const {matchControl} = await import('../src/lib/scenario/control-matcher.ts');
+const {compileScenario} = await import('../src/lib/scenario/scenario.ts');
+const {parseScenario} = await import('../src/lib/scenario/scenario-codec.ts');
+const {ScenarioRuntime} = await import('../src/lib/scenario/scenario-runtime.ts');
+hook.deregister();
+const descriptor = (label, id) => ({kind:'textbox', label, id, role:'textbox', tagName:'input', context:[]});
+const control = (id,label,value,extra={}) => ({id, visible:true, kind:'textbox', locatorHints:descriptor(label), state:{value}, ...extra});
+const field = (label, expected) => ({descriptor:descriptor(label), expected, message:`Ошибка ${label}`, optional:false});
+const screen = (key,controls=[]) => ({status:'ready',key,controls});
+const scenario = {kind:'training-state-scenario',version:1,steps:[{key:'A',task:'Task',transitionMessage:'Неверный переход',fields:[field('Имя','Анна'),field('Город','Казань')]},{key:'B',task:'Done',transitionMessage:'Неверный переход',fields:[]}]};
+
+test('matcher ignores DOM/session identity and layout; refuses near duplicates and incompatible kinds', () => {
+    const a=control('new-node','Имя','value');
+    assert.equal(matchControl(descriptor('Имя'), [a]).status,'matched');
+    assert.equal(matchControl(descriptor('Имя'), [a,{...a,id:'duplicate'}]).status,'ambiguous');
+    assert.equal(matchControl(descriptor('Имя'), [{...a,kind:'select'}]).status,'missing');
+    assert.equal(matchControl(descriptor('Old label','stable-field'), [{...a,locatorHints:descriptor('New label','stable-field')}]).status,'matched');
+    assert.equal(matchControl(descriptor('Old label','tui-123'), [{...a,locatorHints:descriptor('New label','tui-123')}]).status,'missing');
+});
+test('compile keeps last value per field; malformed/incomplete documents are rejected', () => {
+    const recording={kind:'training-state-recording',version:1,complete:true,events:[{kind:'screen',visit:1,screenKey:'A'},
+        {kind:'value',visit:1,screenKey:'A',field:descriptor('Имя'),value:'Old'},
+        {kind:'value',visit:1,screenKey:'A',field:descriptor('Имя'),value:'Анна'}]};
+    assert.equal(compileScenario(recording).steps[0].fields[0].expected,'Анна');
+    assert.throws(()=>compileScenario({...recording,complete:false}));
+    assert.deepEqual(parseScenario(JSON.stringify(scenario)),JSON.parse(JSON.stringify(scenario)));
+    assert.throws(()=>parseScenario(JSON.stringify({...scenario,version:2})));
+    assert.throws(()=>parseScenario(JSON.stringify({...scenario,steps:[]})));
+});
+test('learner accepts reverse field order, requires blur, deduplicates feedback and completes at the next screen', () => {
+    const r=new ScenarioRuntime(scenario), a=control('a','Имя',''), b=control('b','Город','');
+    r.update(screen('A',[a,b]),{});
+    assert.equal(r.update(screen('A',[{...a,state:{value:'Анна'}},b]),{}).completedFields,0);
+    const wrong={b:control('b','Город','Москва')};
+    assert.deepEqual(r.update(screen('A',[a,b]),wrong).feedback,['Ошибка Город']);
+    assert.deepEqual(r.update(screen('A',[a,b]),wrong).feedback,[]);
+    const correct={b:control('b','Город','Казань'),a:control('a','Имя','Анна')};
+    assert.equal(r.update(screen('A',[a,b]),correct).completedFields,2);
+    assert.equal(r.update(screen('B'),correct).status,'complete');
+});
+test('wrong transition cannot bypass missing fields; return, correction and last blur at navigation work', () => {
+    const r=new ScenarioRuntime(scenario), a=control('a','Имя',''), b=control('b','Город','');
+    r.update(screen('A',[a,b]),{});
+    assert.deepEqual(r.update(screen('B'),{}).feedback,['Неверный переход']);
+    assert.equal(r.update(screen('B'),{}).step,1);
+    r.update(screen('A',[a,b]),{});
+    assert.equal(r.update(screen('B'),{a:control('a','Имя','Анна'),b:control('b','Город','Казань')}).status,'complete');
+});
+test('ambiguous, missing and unknown choice block assessment without blaming the learner', () => {
+    const r=new ScenarioRuntime(scenario), a=control('a','Имя',''), b=control('b','Город','');
+    const ambiguous=r.update(screen('A',[a,b,{...a,id:'dup'}]),{});
+    assert.equal(ambiguous.status,'blocked');assert.deepEqual(ambiguous.feedback,[]);
+    assert.equal(r.update({...screen('A'),status:'loading'},{}).status,'waiting');
+    assert.equal(r.update(screen('A',[a,b]),{a:{...a,choice:{selection:{status:'unknown'}}}}).status,'blocked');
+});
+test('correct value changed to wrong is revoked; optional expectations do not block', () => {
+    const s={...scenario,steps:[{...scenario.steps[0],fields:[field('Имя','Анна'),{...field('Нет поля',''),optional:true}]}]};
+    const r=new ScenarioRuntime(s), a=control('a','Имя','');
+    r.update(screen('A',[a]),{});
+    assert.equal(r.update(screen('A',[a]),{a:control('a','Имя','Анна')}).status,'complete');
+    assert.equal(r.update(screen('A',[a]),{a:control('a','Имя','Борис')}).status,'active');
+});

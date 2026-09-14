@@ -8,7 +8,7 @@ test('demo has three pages, a recording entry point and browser history', async 
     await menu.getByRole('link', {name: 'Контролы', exact: true}).click();
     await expect(page.locator('#full-name')).toBeVisible();
     await menu.getByRole('link', {name: 'Тренировка', exact: true}).click();
-    await expect(page.getByText('Сначала создайте и завершите запись в админке.')).toBeVisible();
+    await expect(page.getByText('Сначала создайте и сохраните сценарий в админке.')).toBeVisible();
     await page.goBack();
     await expect(page.locator('#full-name')).toBeVisible();
     await expect(menu.getByRole('link', {name: 'Контролы', exact: true})).toHaveAttribute('aria-current', 'page');

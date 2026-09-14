@@ -25,3 +25,9 @@ export type {ScreenState, ScreenStateOptions, ScreenVisit} from './lib/models/sc
 export {StateRecorder} from './lib/recording/state-recorder';
 export type {StateRecording, RecordedEvent, RecordedValue} from './lib/recording/state-recorder';
 export {parseStateRecording} from './lib/recording/recording-codec';
+export {matchControl} from './lib/scenario/control-matcher';
+export {compileScenario} from './lib/scenario/scenario';
+export type {TrainingScenario, ScenarioStep, FieldExpectation} from './lib/scenario/scenario';
+export {parseScenario} from './lib/scenario/scenario-codec';
+export {ScenarioRuntime} from './lib/scenario/scenario-runtime';
+export type {TrainingProgress} from './lib/scenario/scenario-runtime';

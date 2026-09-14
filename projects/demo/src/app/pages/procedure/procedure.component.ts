@@ -6,20 +6,21 @@ import {DOCUMENT, JsonPipe} from '@angular/common';
 import {afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, Injector, signal, untracked} from '@angular/core';
 import {TuiButton} from '@taiga-ui/core';
 import {type ControlSnapshot, DomHighlighter, readScreenState, ScreenVisitTracker, TrainingObserver, StateRecorder, type StateRecording, type RecordedEvent} from '@training-observer/core';
+import {ScenarioEditorComponent} from '../../shared/recording/scenario-editor.component';
 import {RecordingStore} from '../../shared/recording/recording-store';
 
 import {ProcedureFormComponent} from './procedure-form.component';
 
 @Component({
     selector: 'app-procedure',
-    imports: [ProcedureFormComponent, JsonPipe, TuiButton],
+    imports: [ProcedureFormComponent, JsonPipe, TuiButton, ScenarioEditorComponent],
     providers: [TrainingObserver, DomHighlighter],
     template: `
         <main>
             <header data-training-observer-ignore>
                 <h1>Запись тренировки</h1>
                 <p>Начните запись, заполните поля и перейдите по нужным экранам. Input, Select и ComboBox записываются после выхода из поля.</p>
-                <p>Завершите запись, чтобы сохранить её в браузере. Редактор ожиданий и прохождение ученика пока не подключены.</p>
+                <p>Завершите запись, чтобы сохранить её в браузере. Затем создайте ожидания из записи и сохраните сценарий для ученика.</p>
                 <button tuiButton size="s" type="button" [disabled]="recording() || screen().status !== 'ready'" (click)="startRecording()">Начать запись</button>
                 <button tuiButton size="s" type="button" [disabled]="!recording() || stopping()" (click)="stopRecording()">Завершить запись</button>
                 <p aria-live="polite">{{ stopping() ? 'Завершаем запись…' : recording() ? 'Идёт запись' : draft() ? 'Запись завершена' : 'Запись не начата' }}</p>
@@ -33,6 +34,7 @@ import {ProcedureFormComponent} from './procedure-form.component';
                         }</ol>
                         <details><summary>JSON записи</summary><textarea aria-label="JSON записи" readonly [value]="draft() | json" rows="10"></textarea></details>
                     </section>
+                    @if (!recording()) { <details><summary>Настроить тренировку</summary><app-scenario-editor [recording]="saved" /></details> }
                 }
             </header>
             <div class="workspace">

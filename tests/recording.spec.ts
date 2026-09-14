@@ -36,8 +36,7 @@ test('admin records blur and transitions, Stop includes the last edit and reload
     await journal.getByText('JSON записи', {exact: true}).click();
     await expect(page.getByRole('textbox', {name: 'JSON записи'})).toHaveValue(saved);
     await page.getByRole('link', {name: 'Тренировка', exact: true}).click();
-    await expect(page.getByText(/Запись администратора сохранена/)).toBeVisible();
-    await expect(page.getByText(/Прохождение по записи ещё не подключено/)).toBeVisible();
+    await expect(page.getByText('Сначала создайте и сохраните сценарий в админке.')).toBeVisible();
 });
 
 test('damaged storage is reported without crashing and a new recording replaces it', async ({page}) => {
