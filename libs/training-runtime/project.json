@@ -1,0 +1,32 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "training-runtime",
+    "projectType": "library",
+    "sourceRoot": "libs/training-runtime/src",
+    "prefix": "observer",
+    "tags": ["type:library", "layer:runtime"],
+    "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-runtime"],
+            "options": {
+                "project": "libs/training-runtime/ng-package.json"
+            },
+            "configurations": {
+                "production": {
+                    "tsConfig": "libs/training-runtime/tsconfig.lib.prod.json"
+                },
+                "development": {
+                    "tsConfig": "libs/training-runtime/tsconfig.lib.json"
+                }
+            },
+            "defaultConfiguration": "production"
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "options": {
+                "lintFilePatterns": ["libs/training-runtime/**/*.ts"]
+            }
+        }
+    }
+}

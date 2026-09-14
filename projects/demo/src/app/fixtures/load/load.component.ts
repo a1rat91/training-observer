@@ -1,9 +1,9 @@
-import {DecimalPipe} from '@angular/common';
-import {afterNextRender, ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {ActivatedRoute} from '@angular/router';
-import {TuiButton, TuiCheckbox, TuiInput} from '@taiga-ui/core';
-import {MicrofrontendObserver} from '@training-observer/core';
+import { DecimalPipe } from '@angular/common';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { TuiButton, TuiCheckbox, TuiInput } from '@taiga-ui/core';
+import { MicrofrontendObserver } from '@training-observer/core';
 
 interface AreaFixture {
     readonly id: number;
@@ -13,10 +13,19 @@ interface AreaFixture {
 
 const MIXED_SIZES = [5, 10, 20, 50, 100, 200, 5, 10, 20, 50];
 const MIXED_KINDS: readonly AreaFixture['kind'][] = [
-    'form', 'checkbox', 'select', 'table', 'form', 'form', 'checkbox', 'select', 'table', 'form',
+    'form',
+    'checkbox',
+    'select',
+    'table',
+    'form',
+    'form',
+    'checkbox',
+    'select',
+    'table',
+    'form',
 ];
 
-/** Repeatable load fixture. Only compact counters are rendered; DOM snapshots stay in memory. */
+/** Воспроизводимая нагрузочная форма. Отображает только краткие счётчики; DOM-снимки остаются в памяти. */
 @Component({
     selector: 'app-load',
     imports: [DecimalPipe, FormsModule, TuiButton, TuiInput, TuiCheckbox],
@@ -30,15 +39,22 @@ export class LoadComponent {
     private readonly params = inject(ActivatedRoute).snapshot.queryParamMap;
     private nextId = 0;
     private mixed = this.params.get('mixed') === '1' || !this.params.has('count');
-    protected readonly items = signal(this.createItems(this.mixed ? 10 : Number(this.params.get('count')) || 10));
+    protected readonly items = signal(
+        this.createItems(this.mixed ? 10 : Number(this.params.get('count')) || 10),
+    );
     protected readonly startMs = signal(0);
     protected polling = this.params.get('polling') === '0' ? 0 : 500;
-    protected readonly totals = computed(() => this.observer.areas().reduce((total, area) => ({
-        scans: total.scans + area.scanCount,
-        controls: total.controls + area.logicalControls.length,
-        nodes: total.nodes + (area.snapshot?.stats.nodeCount ?? 0),
-        errors: total.errors + Number(Boolean(area.error)),
-    }), {scans: 0, controls: 0, nodes: 0, errors: 0}));
+    protected readonly totals = computed(() =>
+        this.observer.areas().reduce(
+            (total, area) => ({
+                scans: total.scans + area.scanCount,
+                controls: total.controls + area.logicalControls.length,
+                nodes: total.nodes + (area.snapshot?.stats.nodeCount ?? 0),
+                errors: total.errors + Number(Boolean(area.error)),
+            }),
+            { scans: 0, controls: 0, nodes: 0, errors: 0 },
+        ),
+    );
 
     constructor() {
         afterNextRender(() => this.start());
@@ -61,15 +77,18 @@ export class LoadComponent {
 
     protected start(): void {
         const started = performance.now();
-        this.observer.start(undefined, {propertyCheckIntervalMs: this.polling});
+        this.observer.start(undefined, { propertyCheckIntervalMs: this.polling });
         this.startMs.set(performance.now() - started);
     }
 
     private createItems(count: number): AreaFixture[] {
-        return Array.from({length: Math.max(1, Math.min(500, Math.floor(count)))}, (_, index) => ({
+        return Array.from({ length: Math.max(1, Math.min(500, Math.floor(count))) }, (_, index) => ({
             id: ++this.nextId,
             kind: this.mixed ? MIXED_KINDS[index % MIXED_KINDS.length] : 'form',
-            fields: Array.from({length: (this.mixed ? MIXED_SIZES[index % MIXED_SIZES.length] : 5) - 1}, (_, field) => field + 1),
+            fields: Array.from(
+                { length: (this.mixed ? MIXED_SIZES[index % MIXED_SIZES.length] : 5) - 1 },
+                (_, field) => field + 1,
+            ),
         }));
     }
 }

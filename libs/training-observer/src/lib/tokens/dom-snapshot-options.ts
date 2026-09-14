@@ -1,4 +1,5 @@
-import {InjectionToken} from '@angular/core';
+/** DI-настройки обхода, лимитов и скрытия значений. Применяются до формирования сохраняемого снимка. */
+import { InjectionToken } from '@angular/core';
 
 export interface DomSnapshotOptions {
     readonly maxDepth: number;
@@ -6,7 +7,7 @@ export interface DomSnapshotOptions {
     readonly includeText: boolean;
     readonly cursorHeuristics: boolean;
     readonly ignoreSelector: string;
-    /** Omit nested roots matching this selector; the capture root itself is retained. */
+    /** Не обходить вложенные корни, совпавшие с селектором; сам корень capture сохраняется. */
     readonly boundarySelector?: string;
 }
 

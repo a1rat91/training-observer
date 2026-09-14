@@ -1,13 +1,36 @@
-import {ChangeDetectionStrategy, Component, DestroyRef, inject, signal} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {TuiButton, TuiCheckbox, TuiDropdownA11y, TuiDropdownManual, TuiInput, TuiNumberFormat, TuiRadio} from '@taiga-ui/core';
-import {TuiComboBox, TuiDataListWrapper, TuiInputNumber, TuiSelect, TuiSwitch} from '@taiga-ui/kit';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+    TuiButton,
+    TuiCheckbox,
+    TuiDropdownA11y,
+    TuiDropdownManual,
+    TuiInput,
+    TuiNumberFormat,
+    TuiRadio,
+} from '@taiga-ui/core';
+import { TuiComboBox, TuiDataListWrapper, TuiInputNumber, TuiSelect, TuiSwitch } from '@taiga-ui/kit';
 
-import {ObserverPanelComponent} from '../../shared/observer-panel/observer-panel.component';
+import { ObserverPanelComponent } from '../../shared/observer-panel/observer-panel.component';
 
 @Component({
     selector: 'app-controls',
-    imports: [ObserverPanelComponent, FormsModule, TuiButton, TuiCheckbox, TuiInput, TuiInputNumber, TuiNumberFormat, TuiRadio, TuiSwitch, TuiSelect, TuiComboBox, TuiDataListWrapper, TuiDropdownA11y, TuiDropdownManual],
+    imports: [
+        ObserverPanelComponent,
+        FormsModule,
+        TuiButton,
+        TuiCheckbox,
+        TuiInput,
+        TuiInputNumber,
+        TuiNumberFormat,
+        TuiRadio,
+        TuiSwitch,
+        TuiSelect,
+        TuiComboBox,
+        TuiDataListWrapper,
+        TuiDropdownA11y,
+        TuiDropdownManual,
+    ],
     templateUrl: './controls.component.html',
     styleUrl: './controls.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,9 +65,11 @@ export class ControlsComponent {
         clearTimeout(this.searchTimer);
         this.searching.set(true);
         this.searchResults.set([]);
-        // Demo of a delayed response. The observer has no access to these signals or this timer.
+        // Пример отложенного ответа. Наблюдатель не имеет доступа к этим signals или таймеру.
         this.searchTimer = setTimeout(() => {
-            this.searchResults.set(this.employees.filter((item) => item.toLowerCase().includes(value.toLowerCase())));
+            this.searchResults.set(
+                this.employees.filter((item) => item.toLowerCase().includes(value.toLowerCase())),
+            );
             this.searching.set(false);
         }, 400);
     }

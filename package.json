@@ -8,10 +8,14 @@
     "scripts": {
         "start": "nx serve demo",
         "test": "playwright test",
-        "test:unit": "node --experimental-strip-types --test libs/training-observer/tests/*.test.mjs",
+        "test:unit": "node --experimental-transform-types --import ./tests/unit/register-typescript.mjs --test tests/unit/*.test.mjs",
         "test:load": "playwright test --config=playwright.load.config.ts",
-        "build": "nx run-many -t build -p training-observer demo --configuration=production",
-        "graph": "nx graph"
+        "build": "nx run-many -t build -p training-observer training-contracts training-recording training-runtime demo --configuration=production",
+        "graph": "nx graph",
+        "format": "prettier --write \"libs/**/*.{ts,json}\" \"projects/demo/src/**/*.{ts,html,less}\" \"tests/**/*.{ts,mjs}\" \"eslint.config.mjs\"",
+        "format:check": "prettier --check \"libs/**/*.{ts,json}\" \"projects/demo/src/**/*.{ts,html,less}\" \"tests/**/*.{ts,mjs}\" \"eslint.config.mjs\"",
+        "check": "npm run lint && npm run format:check && npm run test:unit && npm run build",
+        "lint": "nx run-many -t lint"
     },
     "dependencies": {
         "@angular/animations": "19.2.25",
@@ -37,11 +41,16 @@
         "@angular/cli": "19.2.27",
         "@angular/compiler-cli": "19.2.25",
         "@nx/angular": "20.8.4",
+        "@nx/eslint": "20.8.4",
+        "@nx/eslint-plugin": "20.8.4",
         "@nx/workspace": "20.8.4",
         "@playwright/test": "1.63.0",
         "@schematics/angular": "19.2.27",
+        "@typescript-eslint/parser": "8.57.0",
+        "eslint": "9.39.5",
         "ng-packagr": "19.2.2",
         "nx": "20.8.4",
+        "prettier": "3.6.2",
         "typescript": "5.8.3"
     }
 }

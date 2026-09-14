@@ -5,7 +5,10 @@
         "target": "ES2022",
         "module": "ES2022",
         "moduleResolution": "bundler",
-        "lib": ["ES2022", "DOM"],
+        "lib": [
+            "ES2022",
+            "DOM"
+        ],
         "strict": true,
         "noImplicitOverride": true,
         "noPropertyAccessFromIndexSignature": true,
@@ -17,7 +20,21 @@
         "isolatedModules": true,
         "useDefineForClassFields": false,
         "paths": {
-            "@training-observer/core": ["libs/training-observer/src/index.ts"]
+            "@training-observer/core": [
+                "libs/training-observer/src/index.ts"
+            ],
+            "@training-observer/core/models": [
+                "libs/training-observer/models/src/index.ts"
+            ],
+            "@training-observer/contracts": [
+                "libs/training-contracts/src/index.ts"
+            ],
+            "@training-observer/recording": [
+                "libs/training-recording/src/index.ts"
+            ],
+            "@training-observer/runtime": [
+                "libs/training-runtime/src/index.ts"
+            ]
         }
     },
     "angularCompilerOptions": {

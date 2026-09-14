@@ -1,13 +1,20 @@
-export {DomHighlighter} from './lib/services/dom-highlighter';
-export {TrainingObserver} from './lib/training-observer';
-export {MicrofrontendObserver} from './lib/microfrontend-observer';
-export type {MicrofrontendSnapshot} from './lib/models/microfrontend-snapshot';
-export {DomSnapshotBuilder} from './lib/services/dom-snapshot-builder';
-export {ControlSnapshotBuilder} from './lib/services/control-snapshot-builder';
-export type {ControlSnapshot, ControlKind, ControlLocatorHints, ChoiceSnapshot, PopupSnapshot} from './lib/models/control-snapshot';
-export {DomElementAnalyzer} from './lib/services/dom-element-analyzer';
-export {DOM_SNAPSHOT_OPTIONS, type DomSnapshotOptions} from './lib/tokens/dom-snapshot-options';
-export {DOM_OBSERVATION_OPTIONS, type DomObservationOptions} from './lib/tokens/dom-observation-options';
+/** Публичный Angular API наблюдения DOM. Запись и проверка ученика находятся в отдельных пакетах. */
+export { DomHighlighter } from './lib/highlight/dom-highlighter';
+export { TrainingObserver } from './lib/training-observer';
+export { MicrofrontendObserver } from './lib/microfrontend-observer';
+export type { MicrofrontendSnapshot } from '@training-observer/core/models';
+export { DomSnapshotBuilder } from './lib/capture/dom-snapshot-builder';
+export { ControlSnapshotBuilder } from './lib/controls/control-snapshot-builder';
+export type {
+    ControlSnapshot,
+    ControlKind,
+    ControlLocatorHints,
+    ChoiceSnapshot,
+    PopupSnapshot,
+} from '@training-observer/core/models';
+export { DomElementAnalyzer } from './lib/capture/dom-element-analyzer';
+export { DOM_SNAPSHOT_OPTIONS, type DomSnapshotOptions } from './lib/tokens/dom-snapshot-options';
+export { DOM_OBSERVATION_OPTIONS, type DomObservationOptions } from './lib/tokens/dom-observation-options';
 export type {
     DomControlState,
     DomElementSnapshot,
@@ -18,17 +25,8 @@ export type {
     DomTextSnapshot,
     HitTestResult,
     InteractionReason,
-} from './lib/models/dom-snapshot';
-export {readScreenState} from './lib/services/screen-state-reader';
-export {ScreenVisitTracker} from './lib/services/screen-visit-tracker';
-export type {ScreenState, ScreenStateOptions, ScreenVisit} from './lib/models/screen-state';
-export {StateRecorder} from './lib/recording/state-recorder';
-export type {StateRecording, RecordedEvent, RecordedValue} from './lib/recording/state-recorder';
-export {parseStateRecording} from './lib/recording/recording-codec';
-export {matchControl} from './lib/scenario/control-matcher';
-export {compileScenario} from './lib/scenario/scenario';
-export type {TrainingScenario, ScenarioStep, FieldExpectation} from './lib/scenario/scenario';
-export {parseScenario} from './lib/scenario/scenario-codec';
-export {ScenarioRuntime} from './lib/scenario/scenario-runtime';
-export type {TrainingProgress} from './lib/scenario/scenario-runtime';
-export {removeRecordedEvent, recordingProblem} from './lib/recording/recording-edit';
+} from '@training-observer/core/models';
+export { readScreenState } from './lib/screen/screen-state-reader';
+export { ScreenVisitTracker } from './lib/screen/screen-visit-tracker';
+export type { ScreenState, ScreenStateOptions, ScreenVisit } from '@training-observer/core/models';
+export { ControlType, ScreenStatus } from '@training-observer/core/models';

@@ -1,0 +1,104 @@
+<section aria-label="Редактор сценария">
+    <h2>Ожидания и обратная связь</h2>
+    <p>
+        Создайте ожидания из записи. Для каждого поля используется последнее подтверждённое значение на этом
+        экране.
+    </p>
+    <button tuiButton size="s" type="button" (click)="compile()">Создать ожидания из записи</button>
+    @if (sourceChanged()) {
+        <p>
+            Запись изменена или не связана с загруженным сценарием. Пересоздайте ожидания из записи перед
+            сохранением сценария. Настройки текущего черновика сохранятся для оставшихся полей; ранее
+            загруженный сценарий будет заменён.
+        </p>
+    }
+    @if (error()) {
+        <p role="alert">{{ error() }}</p>
+    }
+    @if (fromSaved()) {
+        <p>
+            Загружен ранее сохранённый сценарий. Кнопка «Создать ожидания из записи» заменит его в редакторе
+            новой записью.
+        </p>
+    }
+    @if (draft(); as scenario) {
+        @for (step of scenario.steps; track $index; let si = $index) {
+            <fieldset [disabled]="sourceChanged() || !!error()">
+                <legend>Экран {{ si + 1 }} · {{ step.key }}</legend>
+                <tui-textfield
+                    ><label tuiLabel>Задание экрана {{ si + 1 }}</label>
+                    <input
+                        tuiInput
+                        [attr.aria-label]="'Задание экрана ' + (si + 1)"
+                        [ngModel]="step.task"
+                        (ngModelChange)="editStep(si, 'task', $event)"
+                /></tui-textfield>
+                <tui-textfield
+                    ><label tuiLabel>Ошибка перехода {{ si + 1 }}</label>
+                    <input
+                        tuiInput
+                        [attr.aria-label]="'Ошибка перехода ' + (si + 1)"
+                        [ngModel]="step.transitionMessage"
+                        (ngModelChange)="editStep(si, 'transitionMessage', $event)"
+                /></tui-textfield>
+                @for (field of step.fields; track $index; let fi = $index) {
+                    <div class="expectation">
+                        <h3>{{ field.descriptor.label }}</h3>
+                        @if (isBoolean(field)) {
+                            <label
+                                ><input
+                                    tuiCheckbox
+                                    type="checkbox"
+                                    [ngModel]="field.expected"
+                                    (ngModelChange)="edit(si, fi, { expected: $event })" />
+                                Ожидаемая отметка</label
+                            >
+                        } @else {
+                            <tui-textfield
+                                ><label tuiLabel>Ожидание: {{ field.descriptor.label }}</label>
+                                <input
+                                    tuiInput
+                                    [attr.aria-label]="'Ожидание: ' + field.descriptor.label"
+                                    [ngModel]="textValue(field)"
+                                    (ngModelChange)="setValue(si, fi, field, $event)"
+                            /></tui-textfield>
+                            @if (isArray(field)) {
+                                <small>Названия выбранных вариантов разделяются точкой с запятой.</small>
+                            }
+                        }
+                        <tui-textfield
+                            ><label tuiLabel>Ошибка: {{ field.descriptor.label }}</label>
+                            <input
+                                tuiInput
+                                [attr.aria-label]="'Ошибка: ' + field.descriptor.label"
+                                [ngModel]="field.message"
+                                (ngModelChange)="edit(si, fi, { message: $event })"
+                        /></tui-textfield>
+                        <label
+                            ><input
+                                tuiCheckbox
+                                type="checkbox"
+                                [ngModel]="field.optional"
+                                (ngModelChange)="edit(si, fi, { optional: $event })" />
+                            Не проверять это поле</label
+                        >
+                    </div>
+                }
+            </fieldset>
+        }
+        <button
+            tuiButton
+            size="s"
+            type="button"
+            [disabled]="sourceChanged() || !!error()"
+            (click)="publish()">
+            Сохранить сценарий для ученика
+        </button>
+        @if (published() && !sourceChanged() && !error()) {
+            <p>Сценарий сохранён. <a routerLink="/learn">Перейти к тренировке</a></p>
+        }
+    }
+    @if (store.error()) {
+        <p role="alert">{{ store.error() }}</p>
+    }
+</section>

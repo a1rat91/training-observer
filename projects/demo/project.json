@@ -5,7 +5,8 @@
     "sourceRoot": "projects/demo/src",
     "prefix": "app",
     "tags": [
-        "type:application"
+        "type:application",
+        "layer:app"
     ],
     "targets": {
         "build": {
@@ -79,6 +80,14 @@
                 }
             },
             "defaultConfiguration": "development"
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "options": {
+                "lintFilePatterns": [
+                    "projects/demo/**/*.ts"
+                ]
+            }
         }
     }
 }

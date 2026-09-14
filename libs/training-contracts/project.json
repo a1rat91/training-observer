@@ -1,0 +1,32 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "training-contracts",
+    "projectType": "library",
+    "sourceRoot": "libs/training-contracts/src",
+    "prefix": "observer",
+    "tags": ["type:library", "layer:contracts"],
+    "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-contracts"],
+            "options": {
+                "project": "libs/training-contracts/ng-package.json"
+            },
+            "configurations": {
+                "production": {
+                    "tsConfig": "libs/training-contracts/tsconfig.lib.prod.json"
+                },
+                "development": {
+                    "tsConfig": "libs/training-contracts/tsconfig.lib.json"
+                }
+            },
+            "defaultConfiguration": "production"
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "options": {
+                "lintFilePatterns": ["libs/training-contracts/**/*.ts"]
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+node_modules
+.nx
+dist
+test-results
+playwright-report
+package-lock.json
