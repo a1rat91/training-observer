@@ -33,7 +33,8 @@ import {ProcedureFormComponent} from './procedure-form.component';
                         <article [attr.aria-label]="typeNames[control.kind] + ' · ' + control.label">
                             <h3>{{ typeNames[control.kind] }} · {{ control.label || 'Без подписи' }}</h3>
                             @if (groupName(control)) { <p class="muted">Группа: {{ groupName(control) }}</p> }
-                            <p>Сейчас в форме: <strong>{{ value(control) }}</strong></p>
+                            <p>{{ needsBlur(control) ? 'Подтверждено после blur' : 'Сейчас в форме' }}:
+                                <strong>{{ confirmedValue(control) }}</strong></p>
                             <p class="muted">{{ control.visible ? 'Виден' : 'Скрыт' }} · {{ control.state.disabled ? 'Заблокирован' : 'Доступен' }}
                                 @if (control.state.readOnly) { · Только чтение }
                             </p>
@@ -83,6 +84,16 @@ export class ProcedureComponent {
 
     protected groupName(control: ControlSnapshot): string {
         return control.locatorHints.context.map((context) => context.label).filter(Boolean).join(' / ');
+    }
+
+    protected needsBlur(control: ControlSnapshot): boolean {
+        return ['textbox', 'number', 'select', 'combobox'].includes(control.kind);
+    }
+
+    protected confirmedValue(control: ControlSnapshot): string {
+        if (!this.needsBlur(control)) return this.value(control);
+        const confirmed = this.observer.confirmedControls()[control.id];
+        return confirmed ? this.value(confirmed) : 'Ожидает выхода из поля';
     }
 
     protected value(control: ControlSnapshot): string {

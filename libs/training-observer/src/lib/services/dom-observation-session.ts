@@ -28,6 +28,7 @@ type SessionSources =
     | {readonly mode: 'shared'; readonly scope: DomObservationScope};
 
 interface SessionCallbacks {
+    readonly onFocusOut?: (event: FocusEvent) => void;
     readonly captureAndPublish: () => DomSnapshot;
     readonly onError: (error: unknown) => void;
 }
@@ -81,6 +82,14 @@ export class DomObservationSession {
         if (target && this.scope && !this.scope.acceptsEvent(target, event.type)) return;
         if (target && (isObserverUi(target) || isScrollDecoration(target) || this.excludedAncestor(target))) return;
 
+        if (event.type === 'focusout') {
+            try {
+                this.callbacks?.onFocusOut?.(event as FocusEvent);
+            } catch (error: unknown) {
+                this.callbacks?.onError(error);
+                return;
+            }
+        }
         this.schedule();
     }
 

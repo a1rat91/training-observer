@@ -2,6 +2,7 @@ import {DOCUMENT} from '@angular/common';
 import {computed, DestroyRef, inject, Injectable, NgZone, signal} from '@angular/core';
 
 import {type DomElementSnapshot, type DomSnapshot} from './models/dom-snapshot';
+import {type ControlSnapshot} from './models/control-snapshot';
 import {DomSnapshotBuilder} from './services/dom-snapshot-builder';
 import {ControlSnapshotBuilder} from './services/control-snapshot-builder';
 import {DomElementAnalyzer} from './services/dom-element-analyzer';
@@ -28,6 +29,11 @@ export class TrainingObserver {
     private session: DomObservationSession | null = null;
     private fingerprint: string | null = null;
     private destroyed = false;
+    private readonly confirmed = signal<Readonly<Record<string, ControlSnapshot>>>({});
+    private readonly pendingConfirmations = new Map<string, ControlSnapshot>();
+
+    /** Last value captured on leaving a logical field. Raw snapshots remain live; absent means not confirmed. */
+    readonly confirmedControls = this.confirmed.asReadonly();
 
     readonly snapshot = this.current.asReadonly();
     readonly isObserving = this.observing.asReadonly();
@@ -65,6 +71,7 @@ export class TrainingObserver {
         const initial = this.zone.runOutsideAngular(() => this.builder.build(root, options));
 
         this.stop();
+        this.confirmed.set({});
         this.failure.set(null);
 
         this.zone.runOutsideAngular(() => {
@@ -73,6 +80,7 @@ export class TrainingObserver {
 
             try {
                 session.start(initial, {
+                    onFocusOut: (event) => this.confirmOnBlur(event, root, options, session),
                     captureAndPublish: () => {
                         const snapshot = this.builder.build(root, options);
                         this.publish(snapshot, true);
@@ -97,6 +105,7 @@ export class TrainingObserver {
 
     /** Keep the last snapshot, but cancel observers, listeners and pending work. */
     stop(): void {
+        this.pendingConfirmations.clear();
         this.session?.dispose();
         this.session = null;
         this.observing.set(false);
@@ -117,6 +126,32 @@ export class TrainingObserver {
         this.fingerprint = null;
         this.failure.set(null);
         this.current.set(null);
+        this.confirmed.set({});
+    }
+
+    /** Capture before a navigation can remove the field, then read settled selection after event handlers.
+     * Focus inside the host or an explicitly linked popup stays within the same logical field.
+     * Never infer confirmation from input/change, polling, disappearance or a remount alone.
+     */
+    private confirmOnBlur(event: FocusEvent, root: Element, options: DomObservationOptions, session: DomObservationSession): void {
+        const snapshot = this.current();
+        if (!snapshot || !event.target) return;
+        const contains = (control: ControlSnapshot, node: EventTarget | null): boolean => {
+            if (!(node instanceof this.document.defaultView!.Node)) return false;
+            return [control.targetNodeId, control.hostNodeId, ...(control.choice?.popup.rootNodeIds ?? control.popup?.rootNodeIds ?? [])]
+                .some((id) => this.builder.resolveElement(snapshot, id)?.contains(node));
+        };
+        const control = this.logicalControls().find((candidate) =>
+            ['textbox', 'number', 'select', 'combobox'].includes(candidate.kind) && contains(candidate, event.target));
+        if (!control || contains(control, event.relatedTarget)) return;
+
+        const departure = this.controlBuilder.build(this.builder.build(root, options)).find((candidate) => candidate.id === control.id);
+        queueMicrotask(() => {
+            if (this.session !== session) return;
+            // Some components restore focus from their popup during the same event dispatch.
+            if (contains(control, this.document.activeElement)) return;
+            if (departure) this.pendingConfirmations.set(control.id, departure);
+        });
     }
 
     private publish(snapshot: DomSnapshot, onlyIfChanged: boolean): void {
@@ -124,6 +159,19 @@ export class TrainingObserver {
 
         this.zone.run(() => {
             this.scans.update((count) => count + 1);
+
+            // The normal batched capture runs after Angular has rendered the blur/change handlers.
+            // If navigation removed the field, retain only the value actually captured at focusout.
+            if (this.pendingConfirmations.size) {
+                const controls = this.controlBuilder.build(snapshot);
+                const next = {...this.confirmed()};
+                for (const [id, departure] of this.pendingConfirmations) {
+                    const control = controls.find((candidate) => candidate.id === id) ?? departure;
+                    if (!snapshot.stats.truncated && !control.state.redacted) next[id] = control;
+                }
+                this.pendingConfirmations.clear();
+                this.confirmed.set(next);
+            }
 
             if (!onlyIfChanged || this.fingerprint !== fingerprint) {
                 this.fingerprint = fingerprint;
