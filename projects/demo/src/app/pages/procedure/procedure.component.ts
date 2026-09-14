@@ -5,7 +5,7 @@
 import {DOCUMENT, JsonPipe} from '@angular/common';
 import {afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, Injector, signal, untracked} from '@angular/core';
 import {TuiButton} from '@taiga-ui/core';
-import {type ControlSnapshot, DomHighlighter, readScreenState, ScreenVisitTracker, TrainingObserver, StateRecorder, type StateRecording, type RecordedEvent} from '@training-observer/core';
+import {type ControlSnapshot, DomHighlighter, readScreenState, ScreenVisitTracker, TrainingObserver, StateRecorder, type StateRecording, type RecordedEvent, removeRecordedEvent, recordingProblem} from '@training-observer/core';
 import {ScenarioEditorComponent} from '../../shared/recording/scenario-editor.component';
 import {RecordingStore} from '../../shared/recording/recording-store';
 
@@ -29,8 +29,19 @@ import {ProcedureFormComponent} from './procedure-form.component';
                     <section aria-label="Журнал записи">
                         <h2>Записано: {{ saved.events.length }}</h2>
                         @if (!saved.complete) { <p>В записи есть пропуски наблюдения. Её потребуется уточнить перед тренировкой.</p> }
+                        @if (!recording()) {
+                            <p>Удаление исключает строку из будущего сценария. Сохранённый сценарий ученика обновляется только после явного сохранения в редакторе.</p>
+                            <button tuiButton size="s" type="button" [disabled]="!undoHistory().length" (click)="undoDeletion()">Отменить удаление</button>
+                            @if (editProblem()) { <p>{{ editProblem() }}</p> }
+                        }
                         <ol>@for (event of saved.events; track event.sequence) {
-                            <li>{{ eventText(event) }}</li>
+                            <li>{{ eventText(event) }}
+                                @if (!recording()) {
+                                    <button tuiButton size="s" appearance="flat" type="button" [attr.aria-label]="'Удалить строку ' + event.sequence" [disabled]="event.kind === 'unavailable' && !event.field"
+                                        (click)="deleteEvent(event.sequence)">Удалить</button>
+                                    @if (event.kind === 'unavailable' && !event.field) { <small>Общий пропуск наблюдения нельзя удалить: эту часть нужно записать заново.</small> }
+                                }
+                            </li>
                         }</ol>
                         <details><summary>JSON записи</summary><textarea aria-label="JSON записи" readonly [value]="draft() | json" rows="10"></textarea></details>
                     </section>
@@ -78,6 +89,8 @@ export class ProcedureComponent {
     protected readonly recording = signal(false);
     protected readonly stopping = signal(false);
     protected readonly draft = signal<StateRecording | null>(null);
+    protected readonly undoHistory = signal<readonly StateRecording[]>([]);
+    protected readonly editProblem = computed(() => this.draft() ? recordingProblem(this.draft()!) : '');
     protected readonly observer = inject(TrainingObserver);
     private readonly document = inject(DOCUMENT);
     private readonly highlighter = inject(DomHighlighter);
@@ -118,10 +131,29 @@ export class ProcedureComponent {
     }
 
     protected startRecording(): void {
+        this.undoHistory.set([]);
         this.observer.flush();
         this.recorder.start(this.screen(), this.observer.confirmedControls());
         this.draft.set(this.recorder.snapshot());
         this.recording.set(true);
+    }
+
+    protected deleteEvent(sequence: number): void {
+        const recording = this.draft();
+        if (!recording || this.recording()) return;
+        const edited = removeRecordedEvent(recording, sequence);
+        this.undoHistory.update(history => [...history, recording]);
+        this.draft.set(edited);
+        this.store.save(edited);
+    }
+
+    protected undoDeletion(): void {
+        if (this.recording()) return;
+        const previous = this.undoHistory().at(-1);
+        if (!previous) return;
+        this.undoHistory.update(history => history.slice(0, -1));
+        this.draft.set(previous);
+        this.store.save(previous);
     }
 
     protected stopRecording(): void {

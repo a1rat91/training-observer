@@ -31,3 +31,4 @@ export type {TrainingScenario, ScenarioStep, FieldExpectation} from './lib/scena
 export {parseScenario} from './lib/scenario/scenario-codec';
 export {ScenarioRuntime} from './lib/scenario/scenario-runtime';
 export type {TrainingProgress} from './lib/scenario/scenario-runtime';
+export {removeRecordedEvent, recordingProblem} from './lib/recording/recording-edit';
