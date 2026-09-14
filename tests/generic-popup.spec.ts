@@ -9,7 +9,7 @@ async function control(page: Page, id: string): Promise<ControlSnapshot | undefi
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await page.getByText('Обычные поля с dropdown', {exact: true}).click();
 });
 

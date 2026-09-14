@@ -5,18 +5,14 @@ export const routes: Routes = [
         path: 'record', title: 'Training Observer · Процедура',
         loadComponent: () => import('./pages/procedure/procedure.component').then((module) => module.ProcedureComponent),
     },
-    {path: '', pathMatch: 'full', redirectTo: 'controls'},
+    {path: '', pathMatch: 'full', redirectTo: 'record'},
     {
         path: 'controls', title: 'Training Observer · Контролы',
-        loadComponent: () => import('./pages/controls/controls.component').then((module) => module.ControlsComponent),
+        loadComponent: () => import('./pages/controls/controls-page.component').then((module) => module.ControlsPageComponent),
     },
     {
-        path: 'microfrontends', title: 'Training Observer · Микрофронты',
-        loadComponent: () => import('./pages/microfrontends/microfrontends.component').then((module) => module.MicrofrontendsComponent),
+        path: 'learn', title: 'Training Observer · Тренировка',
+        loadComponent: () => import('./pages/learn/learn.component').then((module) => module.LearnComponent),
     },
-    {
-        path: 'load', title: 'Training Observer · Нагрузка',
-        loadComponent: () => import('./pages/load/load.component').then((module) => module.LoadComponent),
-    },
-    {path: '**', redirectTo: 'controls'},
+    {path: '**', redirectTo: 'record'},
 ];

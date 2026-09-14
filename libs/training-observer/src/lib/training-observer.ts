@@ -121,6 +121,12 @@ export class TrainingObserver {
         return snapshot;
     }
 
+    /** Flush the current session after UI handlers have settled, preserving capture/redaction options. */
+    flush(): void {
+        this.assertAlive();
+        this.zone.runOutsideAngular(() => this.session?.flush());
+    }
+
     clear(): void {
         this.stop();
         this.fingerprint = null;

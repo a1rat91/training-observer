@@ -1,11 +1,12 @@
 /**
- * Будущая админка: запускает наблюдение document.body и показывает экран/карточки только из публичных снимков.
+ * Админка записи состояний: запускает наблюдение document.body и показывает экран/карточки только из публичных снимков.
  * Не читает состояние demo-формы через Angular. UI инспектора исключён; посещения и подсветка живут до DestroyRef.
  */
 import {DOCUMENT, JsonPipe} from '@angular/common';
-import {afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, signal} from '@angular/core';
+import {afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, Injector, signal, untracked} from '@angular/core';
 import {TuiButton} from '@taiga-ui/core';
-import {type ControlSnapshot, DomHighlighter, readScreenState, ScreenVisitTracker, TrainingObserver} from '@training-observer/core';
+import {type ControlSnapshot, DomHighlighter, readScreenState, ScreenVisitTracker, TrainingObserver, StateRecorder, type StateRecording, type RecordedEvent} from '@training-observer/core';
+import {RecordingStore} from '../../shared/recording/recording-store';
 
 import {ProcedureFormComponent} from './procedure-form.component';
 
@@ -16,9 +17,23 @@ import {ProcedureFormComponent} from './procedure-form.component';
     template: `
         <main>
             <header data-training-observer-ignore>
-                <h1>Процедура и распознанные элементы</h1>
-                <p>Заполните форму, переключайте экраны и сравнивайте значения в карточках справа.</p>
-                <p>Сейчас работает наблюдение состояний. Запись сценария, ожидаемые значения и учебная обратная связь — следующие этапы.</p>
+                <h1>Запись тренировки</h1>
+                <p>Начните запись, заполните поля и перейдите по нужным экранам. Input, Select и ComboBox записываются после выхода из поля.</p>
+                <p>Завершите запись, чтобы сохранить её в браузере. Редактор ожиданий и прохождение ученика пока не подключены.</p>
+                <button tuiButton size="s" type="button" [disabled]="recording() || screen().status !== 'ready'" (click)="startRecording()">Начать запись</button>
+                <button tuiButton size="s" type="button" [disabled]="!recording() || stopping()" (click)="stopRecording()">Завершить запись</button>
+                <p aria-live="polite">{{ stopping() ? 'Завершаем запись…' : recording() ? 'Идёт запись' : draft() ? 'Запись завершена' : 'Запись не начата' }}</p>
+                @if (store.error()) { <p role="alert">{{ store.error() }}</p> }
+                @if (draft(); as saved) {
+                    <section aria-label="Журнал записи">
+                        <h2>Записано: {{ saved.events.length }}</h2>
+                        @if (!saved.complete) { <p>В записи есть пропуски наблюдения. Её потребуется уточнить перед тренировкой.</p> }
+                        <ol>@for (event of saved.events; track event.sequence) {
+                            <li>{{ eventText(event) }}</li>
+                        }</ol>
+                        <details><summary>JSON записи</summary><textarea aria-label="JSON записи" readonly [value]="draft() | json" rows="10"></textarea></details>
+                    </section>
+                }
             </header>
             <div class="workspace">
                 <app-procedure-form />
@@ -51,10 +66,16 @@ import {ProcedureFormComponent} from './procedure-form.component';
             </div>
         </main>
     `,
-    styles: 'main {max-width:1500px; margin:auto; padding:1.5rem;} .workspace {display:grid; grid-template-columns:minmax(0,1.3fr) minmax(20rem,1fr); gap:2rem; align-items:start;} aside {border:1px solid var(--tui-border-normal); padding:1rem; border-radius:1rem;} article {border-top:1px solid var(--tui-border-normal); padding-block:.75rem;} h3 {font-size:1rem;} p {line-height:1.5;} pre {white-space:pre-wrap; overflow-wrap:anywhere; max-height:30rem; overflow:auto;} .muted {color:var(--tui-text-secondary);} @media(max-width:950px) {.workspace {grid-template-columns:1fr;}}',
+    styles: 'main {max-width:1500px; margin:auto; padding:1.5rem;} .workspace {display:grid; grid-template-columns:minmax(0,1.3fr) minmax(20rem,1fr); gap:2rem; align-items:start;} aside {border:1px solid var(--tui-border-normal); padding:1rem; border-radius:1rem;} article {border-top:1px solid var(--tui-border-normal); padding-block:.75rem;} h3 {font-size:1rem;} p {line-height:1.5;} textarea {box-sizing:border-box; width:100%;} section[aria-label="Журнал записи"] {margin-block:1rem;} section[aria-label="Журнал записи"] ol {max-height:14rem; overflow:auto;} header button {margin-right:.75rem;} pre {white-space:pre-wrap; overflow-wrap:anywhere; max-height:30rem; overflow:auto;} .muted {color:var(--tui-text-secondary);} @media(max-width:950px) {.workspace {grid-template-columns:1fr;}}',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProcedureComponent {
+    protected readonly store = inject(RecordingStore);
+    private readonly recorder = new StateRecorder();
+    private readonly injector = inject(Injector);
+    protected readonly recording = signal(false);
+    protected readonly stopping = signal(false);
+    protected readonly draft = signal<StateRecording | null>(null);
     protected readonly observer = inject(TrainingObserver);
     private readonly document = inject(DOCUMENT);
     private readonly highlighter = inject(DomHighlighter);
@@ -69,7 +90,19 @@ export class ProcedureComponent {
     protected readonly typeNames = {textbox: 'Input', number: 'Number', button: 'Кнопка', select: 'Select', combobox: 'ComboBox', radio: 'Radio', checkbox: 'Checkbox', switch: 'Switch'};
 
     constructor() {
-        afterNextRender(() => this.observer.start(this.document.body));
+        afterNextRender(() => {
+            this.store.load();
+            this.draft.set(this.store.saved());
+            this.observer.start(this.document.body);
+        });
+        effect(() => {
+            const screen = this.screen();
+            const confirmed = this.observer.confirmedControls();
+            if (this.recording()) untracked(() => {
+                this.recorder.observe(screen, confirmed);
+                this.draft.set(this.recorder.snapshot());
+            });
+        });
         effect(() => this.visit.set(this.visits.update(this.screen())));
         effect(() => {
             const snapshot = this.observer.snapshot();
@@ -80,6 +113,35 @@ export class ProcedureComponent {
                 this.highlighter.clear();
             }
         });
+    }
+
+    protected startRecording(): void {
+        this.observer.flush();
+        this.recorder.start(this.screen(), this.observer.confirmedControls());
+        this.draft.set(this.recorder.snapshot());
+        this.recording.set(true);
+    }
+
+    protected stopRecording(): void {
+        this.stopping.set(true);
+        afterNextRender(() => {
+            this.observer.flush();
+            this.recorder.observe(this.screen(), this.observer.confirmedControls());
+            const recording = this.recorder.stop();
+            this.recording.set(false);
+            this.stopping.set(false);
+            this.draft.set(recording);
+            this.store.save(recording);
+        }, {injector: this.injector});
+    }
+
+    protected eventText(event: RecordedEvent): string {
+        const prefix = `Экран ${event.screenKey}, посещение ${event.visit}: `;
+        if (event.kind === 'screen') return prefix + 'экран открыт';
+        if (event.kind === 'unavailable') return prefix + (event.field ? event.field.label + ' — ' : '') + 'не удалось прочитать: ' + event.reason;
+        const value = Array.isArray(event.value) ? event.value.join(', ') : typeof event.value === 'boolean'
+            ? event.value ? 'Включён' : 'Выключен' : event.value || 'Пусто';
+        return prefix + event.field?.label + ' — ' + value;
     }
 
     protected groupName(control: ControlSnapshot): string {

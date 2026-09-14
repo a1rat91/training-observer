@@ -21,7 +21,7 @@ async function settle(page: Page): Promise<void> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/microfrontends');
+    await page.goto('/controls?fixture=microfrontends');
     await expect(page.getByTestId('mf-count')).toHaveText('3');
     await settle(page);
 });

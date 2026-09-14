@@ -20,10 +20,10 @@ Playwright запускает отдельный demo на порту 4302 с pr
 Профиль можно импортировать в Performance в Chrome DevTools. HTML-отчёт с вложениями:
 `playwright-report/load/index.html`. Эти каталоги исключены из Git.
 
-Ручной стенд: `npm start`, затем `/load`. По умолчанию открываются
+Ручной стенд: `npm start`, затем `/controls?fixture=load`. По умолчанию открываются
 10 разных областей. Кнопки позволяют переключиться на одинаковые области,
 заменить первые корни, остановить наблюдение и настроить сверку свойств.
-Подготовленные URL: `/load?count=10&mixed=1`, `/load?count=100`, `/load?count=300`.
+Подготовленные URL: `/controls?fixture=load&count=10&mixed=1`, `/controls?fixture=load&count=100`, `/controls?fixture=load&count=300`.
 
 ## Что моделируется
 

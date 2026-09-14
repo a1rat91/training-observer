@@ -14,7 +14,7 @@ async function snapshot(page: Page): Promise<DomSnapshot> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await expect.poll(async () => (await control(page, 'department'))?.kind).toBe('select');
 });
 

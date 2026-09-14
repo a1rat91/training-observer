@@ -55,7 +55,7 @@ function reads(page: Page): Promise<number> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await expect(page.getByTestId('observation-status')).toHaveText('Наблюдение включено');
     await expect(page.getByTestId('snapshot-json')).toBeVisible();
 });

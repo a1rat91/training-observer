@@ -97,6 +97,12 @@ export class DomObservationSession {
         this.schedule();
     }
 
+    /** Explicit boundary used after rendering a Stop action; preserves the session's root and options. */
+    flush(): void {
+        if (this.batchTimer !== null) this.view.clearTimeout(this.batchTimer);
+        this.capturePendingChanges();
+    }
+
     checkProperties(): void {
         if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
         try {

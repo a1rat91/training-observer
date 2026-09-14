@@ -37,7 +37,7 @@ for (const {count, mixed} of [{count: 10, mixed: true}, {count: 100, mixed: fals
     test(`${count} dynamic areas retain isolated updates and release replaced roots`, async ({page}, testInfo) => {
         const client = await page.context().newCDPSession(page);
         await client.send('Performance.enable');
-        await page.goto(`/load?count=${count}&polling=0&mixed=${Number(mixed)}`);
+        await page.goto(`/controls?fixture=load&count=${count}&polling=0&mixed=${Number(mixed)}`);
         await expect(page.getByTestId('load-count')).toHaveText(String(count));
         const controls = mixed ? 470 : count * 5;
         await expect(page.getByTestId('load-controls')).toHaveText(String(controls));
@@ -152,7 +152,7 @@ for (const {count, mixed} of [{count: 10, mixed: true}, {count: 100, mixed: fals
 }
 
 test('CPU profile of simultaneous updates in 300 areas', async ({page}, testInfo) => {
-    await page.goto('/load?count=300&polling=0');
+    await page.goto('/controls?fixture=load&count=300&polling=0');
     await expect(page.getByTestId('load-controls')).toHaveText('1500');
     await page.waitForTimeout(1000);
     const client = await page.context().newCDPSession(page);

@@ -22,3 +22,6 @@ export type {
 export {readScreenState} from './lib/services/screen-state-reader';
 export {ScreenVisitTracker} from './lib/services/screen-visit-tracker';
 export type {ScreenState, ScreenStateOptions, ScreenVisit} from './lib/models/screen-state';
+export {StateRecorder} from './lib/recording/state-recorder';
+export type {StateRecording, RecordedEvent, RecordedValue} from './lib/recording/state-recorder';
+export {parseStateRecording} from './lib/recording/recording-codec';
