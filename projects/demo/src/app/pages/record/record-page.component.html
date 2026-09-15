@@ -100,12 +100,12 @@
                     ></textarea>
                 </details>
             </section>
-            @if (!recording()) {
-                <details>
-                    <summary>Настроить тренировку</summary>
-                    <app-scenario-editor [recording]="saved" />
-                </details>
-            }
+        }
+        @if (!recording()) {
+            <details>
+                <summary>Настроить тренировку</summary>
+                <app-scenario-editor [recording]="draft()" />
+            </details>
         }
     </header>
     <div class="workspace">

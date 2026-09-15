@@ -35,7 +35,7 @@ export class ScenarioStore {
                     this.savedSourceState.set(source.recording);
                 }
             } catch {
-                /** У старых публикаций нет проверенной связи с записью. Перед редактированием требуется пересборка. */
+                /** Без метаданных публикация редактируется независимо от местного журнала. */
             }
         } catch {
             this.savedState.set(null);
