@@ -115,7 +115,7 @@ export class DomElementAnalyzer {
         const actionText = element.matches(
             'button,a,summary,[role="button"],[role="option"]',
         )
-            ? element.textContent
+            ? this.actionText(element)
             : '';
 
         const text =
@@ -209,6 +209,38 @@ export class DomElementAnalyzer {
             (element as HTMLElement).isContentEditable &&
             !element.parentElement?.isContentEditable
         );
+    }
+
+    /** Декоративные aria-hidden-потомки не меняют подпись действия.
+     * TreeWalker отсекает всё скрытое поддерево без рекурсии; явные aria-label/labelledby имеют приоритет выше.
+     */
+    private actionText(element: Element): string {
+        const walker = element.ownerDocument.createTreeWalker(
+            element,
+            NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+            {
+                acceptNode(node) {
+                    if (
+                        node.nodeType === 1 &&
+                        (node as Element).getAttribute('aria-hidden') === 'true'
+                    ) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+
+                    return node.nodeType === 3
+                        ? NodeFilter.FILTER_ACCEPT
+                        : NodeFilter.FILTER_SKIP;
+                },
+            },
+        );
+
+        let text = '';
+
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            text += node.textContent ?? '';
+        }
+
+        return text;
     }
 
     private normalize(value: string): string {

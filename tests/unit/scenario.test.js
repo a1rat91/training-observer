@@ -54,7 +54,7 @@ test('matcher ignores DOM/session identity and layout; refuses near duplicates a
         matchControl(descriptor('Old label', 'stable-field'), [
             {...a, locatorHints: descriptor('New label', 'stable-field')},
         ]).status,
-    ).toBe('matched');
+    ).toBe('missing');
     expect(
         matchControl(descriptor('Old label', 'tui-123'), [
             {...a, locatorHints: descriptor('New label', 'tui-123')},
@@ -459,4 +459,20 @@ test('checkbox success occurs on change, not entry, repetition or remount', () =
     ]);
     expect(runtime.update(screen('A', [box('c', true)]), {}).feedback).toEqual([]);
     expect(runtime.update(screen('A', [box('new', true)]), {}).feedback).toEqual([]);
+});
+
+test('matcher refuses reused ID with a conflicting label and can find the original by its new ID', () => {
+    const hint = descriptor('Имя', 'stable-field');
+    const replacement = control('replacement', 'Другой смысл', '', {
+        locatorHints: descriptor('Другой смысл', 'stable-field'),
+    });
+    expect(matchControl(hint, [replacement]).status).toBe('missing');
+    const original = control('original', 'Имя', '', {
+        locatorHints: descriptor('Имя', 'new-id'),
+    });
+    expect(matchControl(hint, [replacement, original])).toEqual({
+        status: 'matched',
+        control: original,
+    });
+    expect(matchControl({...hint, label: ''}, [replacement]).status).toBe('matched');
 });

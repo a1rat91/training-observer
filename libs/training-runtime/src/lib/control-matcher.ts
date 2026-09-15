@@ -39,13 +39,22 @@ function scoreDescriptor(
     expected: ControlLocatorHints,
     candidate: ControlLocatorHints,
 ): number {
-    return (
-        (same(stableId(expected.id), stableId(candidate.id)) ? WEIGHT.id : 0) +
-        (same(expected.label, candidate.label) ? WEIGHT.label : 0) +
-        (same(expected.name, candidate.name) ? WEIGHT.name : 0) +
-        (same(expected.placeholder, candidate.placeholder) ? WEIGHT.placeholder : 0) +
-        (same(context(expected), context(candidate)) ? WEIGHT.context : 0)
-    );
+    const sameId = same(stableId(expected.id), stableId(candidate.id));
+
+    // Старый ID мог достаться другому полю. Противоречащая подпись не подтверждает идентичность.
+    // Переименование настоящего поля неотличимо от такой подмены: безопаснее отказать.
+    return sameId &&
+        expected.label.trim() &&
+        candidate.label.trim() &&
+        !same(expected.label, candidate.label)
+        ? 0
+        : (sameId ? WEIGHT.id : 0) +
+              (same(expected.label, candidate.label) ? WEIGHT.label : 0) +
+              (same(expected.name, candidate.name) ? WEIGHT.name : 0) +
+              (same(expected.placeholder, candidate.placeholder)
+                  ? WEIGHT.placeholder
+                  : 0) +
+              (same(context(expected), context(candidate)) ? WEIGHT.context : 0);
 }
 
 function same(left?: string, right?: string): boolean {

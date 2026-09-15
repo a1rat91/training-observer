@@ -30,6 +30,7 @@
         "stylelint:fix": "stylelint '**/*.{less,css}' --config package.json --fix",
         "test": "nx run-many -t test",
         "test:load": "npm run test:pw:load",
+        "test:matching": "playwright test tests/matching-resilience.spec.ts",
         "test:pw": "playwright test",
         "test:pw:load": "playwright test --config=playwright.load.config.ts",
         "test:unit": "nx test training-tests"

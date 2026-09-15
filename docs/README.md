@@ -26,6 +26,7 @@
 - [Автоматическое наблюдение](reference/automatic-observation.md),
   [микрофронты](reference/microfrontend-observation.md), [диагностическая подсветка](reference/node-highlighting.md).
 - [Измерение нагрузки](reference/load-testing.md).
+- [Устойчивость сопоставления: измерение и ограничения](reference/matching-resilience.md).
 
 Эти документы описывают DOM-наблюдение. Правила записи и оценки учебного ответа находятся в документации
 recording/runtime; например, диагностический unknown выбора ComboBox не мешает сравнению его видимого текста.

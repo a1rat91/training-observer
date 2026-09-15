@@ -71,3 +71,7 @@ Taiga-адаптеры используют DOM-признаки версии 4.
 `npx nx build training-observer` собирает primary и models entry points. `npm run lint` запрещает зависимости core от
 учебных пакетов. Browser tests в `tests/` проверяют capture, popup, focus, remount, lifecycle и multi-MF. Меняйте
 адаптер при новой разметке; не добавляйте правила правильных ответов в core.
+
+При чтении текстовой подписи действия capture исключает aria-hidden-потомков (например, декоративные иконки). Явные
+aria-labelledby и aria-label по-прежнему имеют приоритет. Это не полное вычисление Accessible Name. Измерение на
+реальных Taiga/HTML-контролах: [отчёт устойчивости](../../docs/reference/matching-resilience.md).
