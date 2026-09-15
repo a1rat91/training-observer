@@ -1,0 +1,32 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "training-recording",
+    "projectType": "library",
+    "sourceRoot": "libs/training-recording/src",
+    "prefix": "observer",
+    "tags": ["type:library", "layer:recording"],
+    "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-recording"],
+            "options": {
+                "project": "libs/training-recording/ng-package.json"
+            },
+            "configurations": {
+                "production": {
+                    "tsConfig": "libs/training-recording/tsconfig.lib.prod.json"
+                },
+                "development": {
+                    "tsConfig": "libs/training-recording/tsconfig.lib.json"
+                }
+            },
+            "defaultConfiguration": "production"
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "options": {
+                "lintFilePatterns": ["libs/training-recording/**/*.ts"]
+            }
+        }
+    }
+}

@@ -12,7 +12,7 @@ async function snapshot(page: Page): Promise<DomSnapshot> {
 async function element(page: Page, id: string): Promise<DomElementSnapshot | undefined> {
     return Object.values((await snapshot(page)).nodes).find(
         (node): node is DomElementSnapshot =>
-            node.kind === 'element' && node.attributes.id === id,
+            node.kind === 'element' && node.attributes['id'] === id,
     );
 }
 
@@ -73,7 +73,7 @@ async function reads(page: Page): Promise<number> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await expect(page.getByTestId('observation-status')).toHaveText(
         'Наблюдение включено',
     );
@@ -210,7 +210,10 @@ test('does not starve updates during a continuous stream of changes', async ({pa
                     Number(
                         (await element(page, 'full-name'))?.attributes['data-tick'] ?? 0,
                     ),
-                {intervals: [30], timeout: 2000},
+                {
+                    intervals: [30],
+                    timeout: 2000,
+                },
             )
             .toBeGreaterThan(0);
     } finally {
@@ -224,7 +227,7 @@ test('refreshes geometry for window resize and external overlays', async ({page}
         root.insertAdjacentHTML(
             'beforeend',
             `
-            <button id="fixed-button" style="position:fixed;left:10px;top:10px;width:100px;height:40px;z-index:100">Hit</button>
+            <button id="fixed-button" style="position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:100">Hit</button>
             <button id="resize-button" style="position:fixed;left:70vw;top:100px;width:60px;height:30px">Resize</button>
         `,
         );
@@ -243,7 +246,7 @@ test('refreshes geometry for window resize and external overlays', async ({page}
 
         cover.id = 'outside-cover';
         cover.style.cssText =
-            'position:fixed;left:10px;top:10px;width:100px;height:40px;z-index:101;background:red';
+            'position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:101;background:red';
         document.body.append(cover);
     });
     await expect
@@ -660,7 +663,7 @@ for (const wholeDocument of [false, true]) {
         await page.evaluate(() => {
             document.body.insertAdjacentHTML(
                 'beforeend',
-                '<div data-training-observer-ignore style="width:2000px;height:700px"></div>',
+                '<div data-training-observer-ignore style="width:2400px;height:2400px"></div>',
             );
         });
         await settings(page, 100);
@@ -678,7 +681,9 @@ for (const wholeDocument of [false, true]) {
                 .toBe('body');
         }
 
-        await page.mouse.move(20, 200);
+        // Уходим за пределы боковой навигации TuiDocMain: wheel должен прокручивать страницу.
+        await page.mouse.move(1100, 400);
+        await page.evaluate(() => window.scrollTo(0, 0));
         await page.waitForTimeout(700);
         const before = await count(page);
         const revision = await count(page, 'revision');

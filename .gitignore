@@ -52,3 +52,6 @@ Thumbs.db
 .nessy
 .npmrc
 package-lock.json
+
+/test-results/
+/playwright-report/

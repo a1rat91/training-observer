@@ -1,0 +1,161 @@
+<main>
+    <header data-training-observer-ignore>
+        <h1>Нагрузочный стенд</h1>
+        <p>
+            Основной сценарий: 10 областей с разным содержимым. Стресс-сценарии: 100 и 300 одинаковых областей по 5
+            полей. Снимки хранятся в памяти; здесь выводятся только счётчики.
+        </p>
+        <div class="actions">
+            <button
+                size="s"
+                tuiButton
+                (click)="mountMixed()"
+            >
+                10 разных областей
+            </button>
+            @for (count of [10, 100, 300]; track count) {
+                <button
+                    size="s"
+                    tuiButton
+                    (click)="mount(count)"
+                >
+                    {{ count }} областей
+                </button>
+            }
+            <button
+                size="s"
+                tuiButton
+                (click)="replace()"
+            >
+                Заменить первые 30
+            </button>
+            <label>
+                Сверка свойств, мс
+                <input
+                    min="0"
+                    type="number"
+                    [(ngModel)]="polling"
+                />
+            </label>
+            <button
+                size="s"
+                tuiButton
+                (click)="start()"
+            >
+                Перезапустить
+            </button>
+            <button
+                size="s"
+                tuiButton
+                (click)="observer.stop()"
+            >
+                Остановить
+            </button>
+        </div>
+        <p aria-live="polite">
+            Областей:
+            <b data-testid="load-count">{{ observer.areas().length }}</b>
+            · контролов:
+            <b data-testid="load-controls">{{ totals().controls }}</b>
+            · узлов:
+            <b data-testid="load-nodes">{{ totals().nodes }}</b>
+            · пересчётов:
+            <b data-testid="load-scans">{{ totals().scans }}</b>
+            · ошибок:
+            <b data-testid="load-errors">{{ totals().errors }}</b>
+        </p>
+        <p>
+            Синхронный start():
+            <b data-testid="load-start-ms">{{ startMs() | number: '1.1-1' }}</b>
+            мс. Рендер Angular и последующие пересчёты сюда не входят.
+        </p>
+        <p data-testid="load-status">
+            {{ observer.isObserving() ? 'Наблюдение включено' : 'Наблюдение остановлено' }}
+        </p>
+        <details>
+            <summary>Счётчики областей</summary>
+            <ul>
+                @for (area of observer.areas(); track area.id) {
+                    <li
+                        class="area-status"
+                        [attr.data-name]="area.name"
+                        [attr.data-scans]="area.scanCount"
+                        [attr.data-value]="area.logicalControls.at(0)?.state?.value"
+                    >
+                        {{ area.name }}: {{ area.scanCount }} пересчётов
+                        @if (area.error) {
+                            <span role="alert">{{ area.error }}</span>
+                        }
+                    </li>
+                }
+            </ul>
+        </details>
+    </header>
+    <div class="areas">
+        @for (item of items(); track item.id) {
+            <section [attr.data-mf]="'load-' + item.id">
+                <h2>Область {{ item.id }} · {{ item.fields.length + 1 }} контролов</h2>
+                <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label
+                        tuiLabel
+                        [for]="'load-' + item.id + '-0'"
+                    >
+                        Имя
+                    </label>
+                    <input
+                        tuiTextfield
+                        value="Анна"
+                        [id]="'load-' + item.id + '-0'"
+                    />
+                </tui-textfield>
+                @if (item.kind === 'table') {
+                    <table>
+                        <caption>Редактируемые строки</caption>
+                        <tbody>
+                            @for (field of item.fields; track field) {
+                                <tr>
+                                    <th scope="row">{{ field }}</th>
+                                    <td>
+                                        <input
+                                            value="Исходное"
+                                            [attr.aria-label]="'Строка ' + field"
+                                            [id]="'load-' + item.id + '-' + field"
+                                        />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                } @else {
+                    @for (field of item.fields; track field) {
+                        <label class="native">
+                            Поле {{ field }}
+                            @switch (item.kind) {
+                                @case ('checkbox') {
+                                    <input
+                                        tuiCheckbox
+                                        type="checkbox"
+                                        [id]="'load-' + item.id + '-' + field"
+                                    />
+                                }
+                                @case ('select') {
+                                    <select [id]="'load-' + item.id + '-' + field">
+                                        <option>Новый</option>
+                                        <option>В работе</option>
+                                        <option>Готово</option>
+                                    </select>
+                                }
+                                @default {
+                                    <input
+                                        value="Исходное"
+                                        [id]="'load-' + item.id + '-' + field"
+                                    />
+                                }
+                            }
+                        </label>
+                    }
+                }
+            </section>
+        }
+    </div>
+</main>

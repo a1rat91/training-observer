@@ -19,7 +19,7 @@ async function snapshot(page: Page): Promise<DomSnapshot> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await expect(page.getByTestId('observation-status')).toHaveText(
         'Наблюдение включено',
     );
@@ -47,7 +47,10 @@ test('normalizes real Taiga UI textfield, cleaner, button and checkbox', async (
     expect(dom.nodes[field.targetNodeId]).toMatchObject({tagName: 'input'});
     expect(dom.nodes[field.hostNodeId]).toMatchObject({tagName: 'tui-textfield'});
     const cleaner = Object.values(dom.nodes).find(
-        (node) => node.kind === 'element' && 'tuibuttonx' in node.attributes,
+        (node) =>
+            node.kind === 'element' &&
+            'tuiiconbutton' in node.attributes &&
+            (node.attributes['class'] ?? '').split(/\s+/).includes('t-clear'),
     );
 
     expect(cleaner).toBeDefined();
@@ -76,7 +79,7 @@ test('normalizes real Taiga UI textfield, cleaner, button and checkbox', async (
     await page
         .locator('tui-textfield')
         .filter({has: page.locator('#full-name')})
-        .locator('[tuiButtonX]')
+        .getByRole('button', {name: 'Clear', exact: true})
         .click();
     await expect
         .poll(async () => (await control(page, 'full-name'))?.state.value)
@@ -143,7 +146,7 @@ test('projects native controls with labels and search context but leaves unsuppo
     });
     expect(
         Object.values((await snapshot(page)).nodes).some(
-            (node) => node.kind === 'element' && node.attributes.id === 'department',
+            (node) => node.kind === 'element' && node.attributes['id'] === 'department',
         ),
     ).toBe(true);
 });
@@ -245,7 +248,7 @@ test('does not merge independent buttons or fields just because their host or la
     expect(await control(page, 'field-filler')).toBeUndefined();
     expect(await control(page, 'multi-editor')).toBeUndefined();
     const filler = Object.values((await snapshot(page)).nodes).find(
-        (node) => node.kind === 'element' && node.attributes.id === 'field-filler',
+        (node) => node.kind === 'element' && node.attributes['id'] === 'field-filler',
     );
 
     expect((await control(page, 'floating-field'))?.memberNodeIds).toContain(filler!.id);

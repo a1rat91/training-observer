@@ -64,12 +64,6 @@
                         "input": "projects/demo/src/assets/",
                         "output": "./assets/"
                     },
-                    "projects/demo/src/favicon.ico",
-                    {
-                        "glob": "**/*",
-                        "input": "node_modules/@taiga-ui/icons/src",
-                        "output": "assets/taiga-ui/icons"
-                    },
                     {
                         "glob": "**/*",
                         "input": "node_modules/@taiga-ui/icons/src",
@@ -97,7 +91,8 @@
                 ],
                 "tsConfig": "projects/demo/tsconfig.app.json",
                 "vendorChunk": true
-            }
+            },
+            "outputs": ["{workspaceRoot}/dist/demo/browser"]
         },
         "prerender": {
             "configurations": {
@@ -127,7 +122,8 @@
             "options": {
                 "buildTarget": "demo:build",
                 "sslCert": ".ssl/localhost.pem",
-                "sslKey": ".ssl/localhost-key.pem"
+                "sslKey": ".ssl/localhost-key.pem",
+                "host": "127.0.0.1"
             }
         },
         "serve-ip": {
@@ -199,6 +195,13 @@
                 "jestConfig": "projects/demo/jest.config.ts"
             },
             "outputs": ["{workspaceRoot}/coverage/projects/demo"]
+        },
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "options": {
+                "lintFilePatterns": ["projects/demo/**/*.ts"]
+            }
         }
-    }
+    },
+    "tags": ["type:application", "layer:app"]
 }

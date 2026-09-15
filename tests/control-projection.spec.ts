@@ -1,11 +1,11 @@
 import {expect, test} from '@playwright/test';
-
 import {
     type DomElementSnapshot,
     type DomNodeSnapshot,
     type DomSnapshot,
-} from '../libs/training-observer/src/lib/models/dom-snapshot';
-import {ControlSnapshotBuilder} from '../libs/training-observer/src/lib/services/control-snapshot-builder';
+} from '@training-observer/core/models';
+
+import {ControlSnapshotBuilder} from '../libs/training-observer/src/lib/controls/control-snapshot-builder';
 
 function element(
     id: string,
@@ -177,7 +177,7 @@ test('ambiguous floating labels stay empty; an explicit captured label takes pre
     expect(builder.build(saved)[0].label).toBe('');
     const labelled = {
         ...saved,
-        nodes: {...saved.nodes, input: {...saved.nodes.input, label: 'Явная подпись'}},
+        nodes: {...saved.nodes, input: {...saved.nodes['input'], label: 'Явная подпись'}},
     };
 
     expect(builder.build(labelled)[0].label).toBe('Явная подпись');

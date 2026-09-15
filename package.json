@@ -1,6 +1,7 @@
 {
     "name": "training-observer",
     "version": "0.0.0",
+    "private": true,
     "description": "POC для отслеживаний событий в тренажере",
     "homepage": "https://github.com/a1rat91/training-observer",
     "bugs": "https://github.com/a1rat91/training-observer/issues",
@@ -16,6 +17,9 @@
     },
     "scripts": {
         "build": "npx nx run-many --target=build --all --configuration=production",
+        "check": "npm run lint && npm run format:check && npm run test:unit && npm run build",
+        "format": "npm run prettier",
+        "format:check": "prettier --check . --ignore-path .prettierignore",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "prepare": "husky",
@@ -24,9 +28,12 @@
         "start": "nx serve demo",
         "stylelint": "stylelint '**/*.{less,css}' --config package.json",
         "stylelint:fix": "stylelint '**/*.{less,css}' --config package.json --fix",
-        "test": "nx run-many --target=test --projects=training-observer",
+        "test": "nx run-many -t test",
+        "test:load": "npm run test:pw:load",
+        "test:matching": "playwright test tests/matching-resilience.spec.ts",
         "test:pw": "playwright test",
-        "test:pw:load": "playwright test --config=playwright.load.config.ts"
+        "test:pw:load": "playwright test --config=playwright.load.config.ts",
+        "test:unit": "nx test training-tests"
     },
     "commitlint": {
         "extends": [
@@ -81,6 +88,8 @@
         "@ng-web-apis/screen-orientation": "4.14.1",
         "@ng-web-apis/universal": "^4.14.1",
         "@nx/angular": "20.8.4",
+        "@nx/eslint": "20.8.4",
+        "@nx/eslint-plugin": "20.8.4",
         "@nx/jest": "20.8.4",
         "@nx/js": "20.8.4",
         "@nx/node": "20.8.4",
@@ -114,6 +123,7 @@
         "browser-sync": "3.0.4",
         "core-js": "3.49.0",
         "d3-hierarchy": "3.1.2",
+        "eslint": "9.39.5",
         "express": "4.22.2",
         "http-server": "14.1.1",
         "husky": "9.1.7",
@@ -136,10 +146,14 @@
         "webpack-merge": "6.0.1",
         "zone.js": "0.15.1"
     },
+    "engines": {
+        "node": ">=22.0.0 <23"
+    },
     "syncer": {
         "includePaths": [
             "./projects",
-            "./package-lock.json"
+            "./package-lock.json",
+            "./libs"
         ],
         "matchPackageNames": [
             "@training-observer/*",

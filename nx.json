@@ -1,6 +1,6 @@
 {
     "workspaceLayout": {
-        "libsDir": "projects",
+        "libsDir": "libs",
         "appsDir": "projects"
     },
     "defaultProject": "demo",
@@ -40,7 +40,10 @@
             "{workspaceRoot}/nx.json",
             "{workspaceRoot}/karma.*.js",
             "{workspaceRoot}/tsconfig.*.json",
-            "{workspaceRoot}/tsconfig.json"
+            "{workspaceRoot}/tsconfig.json",
+            "{workspaceRoot}/package.json",
+            "{workspaceRoot}/package-lock.json",
+            "{workspaceRoot}/eslint.config.ts"
         ],
         "production": [
             "default",
@@ -53,7 +56,8 @@
     "targetDefaults": {
         "build": {
             "inputs": ["production", "^production"],
-            "cache": true
+            "cache": true,
+            "dependsOn": ["^build"]
         },
         "lint": {
             "cache": true

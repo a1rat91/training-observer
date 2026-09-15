@@ -1,0 +1,76 @@
+<section
+    aria-label="Экран процедуры"
+    [attr.aria-busy]="loading()"
+    [attr.id]="screen()?.id ?? null"
+>
+    <h2>{{ screen()?.title ?? 'Открываем заявку' }}</h2>
+    @if (loading()) {
+        <p role="status">Загрузка экрана…</p>
+    }
+    @if (error()) {
+        <p role="alert">{{ error() }}</p>
+        <button
+            size="s"
+            tuiButton
+            type="button"
+            (click)="retry()"
+        >
+            Повторить загрузку
+        </button>
+    }
+    @if (screen(); as current) {
+        @if (current.id === 'application-other') {
+            <p>Открыта другая ветка. Вернитесь назад, чтобы продолжить заполнение.</p>
+        }
+        @if (current.id === 'application-done') {
+            <p>Все экраны пройдены. Можно вернуться к ответам.</p>
+        }
+        @for (generation of [current.id]; track generation) {
+            @for (section of current.sections; track section.title) {
+                <fieldset [disabled]="loading()">
+                    <legend>{{ section.title }}</legend>
+                    <div class="fields">
+                        @for (field of section.fields; track field.id) {
+                            <app-procedure-field
+                                [field]="field"
+                                [value]="values()[field.id] ?? null"
+                                (changed)="setValue(field.id, $event)"
+                            />
+                        }
+                    </div>
+                </fieldset>
+            }
+        }
+    }
+    <footer>
+        <button
+            size="s"
+            tuiButton
+            type="button"
+            [disabled]="loading() || !screen() || !!error() || index() >= 3"
+            (click)="load(index() + 1)"
+        >
+            Далее
+        </button>
+        <button
+            appearance="secondary"
+            size="s"
+            tuiButton
+            type="button"
+            [disabled]="loading() || index() === 0"
+            (click)="load(index() === 4 ? returnIndex : index() - 1)"
+        >
+            Назад
+        </button>
+        <button
+            appearance="secondary"
+            size="s"
+            tuiButton
+            type="button"
+            [disabled]="loading() || !screen() || !!error() || index() === 4"
+            (click)="wrong()"
+        >
+            Неправильный переход
+        </button>
+    </footer>
+</section>

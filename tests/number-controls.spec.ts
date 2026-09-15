@@ -24,7 +24,7 @@ test.beforeEach(async ({page}) => {
     await expectObservedValue(page, 'amount');
 });
 
-test('real Taiga numbers preserve labels, exact formatting and big integers', async ({
+test('Taiga numbers preserve formatting and native large integers retain exact digits', async ({
     page,
 }) => {
     expect(await control(page, 'amount')).toMatchObject({
@@ -46,8 +46,7 @@ test('real Taiga numbers preserve labels, exact formatting and big integers', as
     );
     await expectObservedValue(page, 'large-number');
     expect(
-        // eslint-disable-next-line unicorn/prefer-string-replace-all -- Chrome 73 lacks String#replaceAll
-        String((await control(page, 'large-number'))?.state.value).replace(/\D/g, ''),
+        String((await control(page, 'large-number'))?.state.value).replaceAll(/\D/g, ''),
     ).toBe('900719925474099312345');
     expect(await control(page, 'native-quantity')).toMatchObject({
         kind: 'number',
@@ -79,7 +78,7 @@ test('typing, step buttons, keyboard and cleaner update the same numeric control
     await expect(input).not.toHaveValue(stepped);
     await expectObservedValue(page, 'amount');
     expect(await input.inputValue()).toBe(typed);
-    await host.locator('[tuiButtonX]').click();
+    await host.getByRole('button', {name: 'Clear', exact: true}).click();
     await expect(input).toHaveValue('');
     await expectObservedValue(page, 'amount');
     expect((await control(page, 'amount'))?.id).toBe(original.id);
@@ -91,7 +90,12 @@ test('typing, step buttons, keyboard and cleaner update the same numeric control
     const amount = (await control(page, 'amount'))!;
     const cleaner = amount.memberNodeIds
         .map((id) => dom.nodes[id])
-        .find((node) => node?.kind === 'element' && 'tuibuttonx' in node.attributes);
+        .find(
+            (node) =>
+                node?.kind === 'element' &&
+                'tuiiconbutton' in node.attributes &&
+                (node.attributes['class'] ?? '').split(/\s+/).includes('t-clear'),
+        );
 
     expect(cleaner).toBeDefined();
     expect((await controls(page)).some((item) => item.targetNodeId === cleaner!.id)).toBe(

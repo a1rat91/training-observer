@@ -1,0 +1,29 @@
+<main>
+    <header data-training-observer-ignore>
+        <h1>Тренировка</h1>
+        @if (store.error()) {
+            <p role="alert">{{ store.error() }}</p>
+        }
+        @if (store.saved(); as scenario) {
+            @if (progress(); as state) {
+                <p>{{ scenario.steps[state.step - 1]?.task }}</p>
+                <p aria-live="polite">
+                    Экран {{ state.step }} из {{ state.total }}. Выполнено полей: {{ state.completedFields }} из
+                    {{ state.requiredFields }}.
+                </p>
+                @if (state.status === 'complete') {
+                    <p role="status">Тренировка завершена</p>
+                }
+                @if (state.issue) {
+                    <p>{{ state.issue }}</p>
+                }
+            }
+        } @else {
+            <p>Сначала создайте и сохраните сценарий в админке.</p>
+            <a routerLink="/record">Открыть запись</a>
+        }
+    </header>
+    @if (store.saved()) {
+        <app-procedure-form />
+    }
+</main>

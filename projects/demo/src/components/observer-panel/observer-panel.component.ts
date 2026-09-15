@@ -11,7 +11,12 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
-import {DomHighlighter, type DomNodeId, MicrofrontendObserver} from '@training-observer/core';
+import {
+    DomHighlighter,
+    type DomNodeId,
+    MicrofrontendObserver,
+    provideDomObservation,
+} from '@training-observer/core';
 
 @Component({
     selector: 'app-observer-panel',
@@ -19,7 +24,7 @@ import {DomHighlighter, type DomNodeId, MicrofrontendObserver} from '@training-o
     templateUrl: './observer-panel.component.html',
     styleUrl: './observer-panel.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [MicrofrontendObserver, DomHighlighter],
+    providers: [provideDomObservation(), DomHighlighter],
     host: {'data-training-observer-ignore': '', 'data-training-observer-ui': ''},
 })
 export class ObserverPanelComponent {
@@ -35,10 +40,17 @@ export class ObserverPanelComponent {
 
     public readonly error = signal('');
     public readonly selectedId = signal('');
-    public readonly selected = computed(() => this.observer.areas().find((area) => area.id === this.selectedId())
-        ?? this.observer.areas()[0]);
+    public readonly selected = computed(
+        () =>
+            this.observer.areas().find((area) => area.id === this.selectedId()) ??
+            this.observer.areas()[0],
+    );
+
     public readonly snapshot = computed(() => this.selected()?.snapshot ?? null);
-    public readonly logicalControls = computed(() => this.selected()?.logicalControls ?? []);
+    public readonly logicalControls = computed(
+        () => this.selected()?.logicalControls ?? [],
+    );
+
     public maxNodes = 10_000;
     public maxDepth = 100;
     public batchDelayMs = 50;
@@ -64,8 +76,7 @@ export class ObserverPanelComponent {
             const ids =
                 selection.mode === 'dom'
                     ? snapshot.interactiveIds
-                    : this.logicalControls()
-                          .map((control) => control.targetNodeId);
+                    : this.logicalControls().map((control) => control.targetNodeId);
 
             this.highlighter.show(
                 snapshot,

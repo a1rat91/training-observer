@@ -1,0 +1,320 @@
+<main>
+    <div
+        data-training-observer-ignore
+        class="toolbar"
+    >
+        <button
+            appearance="flat"
+            data-training-observer-ignore
+            size="s"
+            tuiButton
+            type="button"
+            (click)="showInspector.set(!showInspector())"
+        >
+            {{ showInspector() ? 'Закрыть инспектор' : 'Открыть инспектор' }}
+        </button>
+    </div>
+    <h1>Исследуем страницу</h1>
+    <p class="intro">Изменяйте форму: инспектор обновляется автоматически. Наблюдение можно остановить и продолжить.</p>
+
+    <div class="workspace">
+        <section
+            #page
+            aria-labelledby="page-title"
+            data-testid="observed-page"
+            class="page"
+        >
+            <h2 id="page-title">Тестовая страница</h2>
+            <p class="muted">Контролы Taiga UI и обычный HTML</p>
+            <tui-textfield [tuiTextfieldCleaner]="true">
+                <label
+                    for="full-name"
+                    tuiLabel
+                >
+                    Имя
+                </label>
+                <input
+                    id="full-name"
+                    name="fullName"
+                    tuiTextfield
+                    [(ngModel)]="fullName"
+                />
+            </tui-textfield>
+            <tui-textfield
+                class="choice-field"
+                [disabledItemHandler]="departmentDisabled"
+                [tuiTextfieldCleaner]="false"
+            >
+                <label
+                    for="department"
+                    tuiLabel
+                >
+                    Отдел
+                </label>
+                <input
+                    id="department"
+                    tuiSelect
+                    [(ngModel)]="department"
+                />
+                <tui-data-list-wrapper
+                    *tuiTextfieldDropdown
+                    new
+                    [items]="departments"
+                />
+            </tui-textfield>
+            <tui-textfield class="choice-field">
+                <label
+                    for="employee"
+                    tuiLabel
+                >
+                    Сотрудник
+                </label>
+                <input
+                    #employeeInput
+                    id="employee"
+                    tuiComboBox
+                    [(ngModel)]="employee"
+                    (input)="search(employeeInput.value)"
+                />
+                <tui-data-list-wrapper
+                    *tuiTextfieldDropdown
+                    new
+                    [attr.aria-busy]="searching()"
+                    [emptyContent]="searching() ? 'Поиск…' : 'Ничего не найдено'"
+                    [items]="searchResults()"
+                />
+            </tui-textfield>
+            <p class="muted">Выберите отдел. Введите «Ан» в поле сотрудника: результаты появятся с задержкой 400 мс.</p>
+            <label class="check">
+                <input
+                    id="notifications"
+                    tuiCheckbox
+                    type="checkbox"
+                    [(ngModel)]="notifications"
+                />
+                Получать уведомления
+            </label>
+            <label
+                for="secret"
+                class="field"
+            >
+                Пароль (значение не входит в снимок)
+                <input
+                    id="secret"
+                    autocomplete="new-password"
+                    type="password"
+                />
+            </label>
+            <div class="actions">
+                <button
+                    disabled
+                    size="m"
+                    style="cursor: pointer"
+                    tuiButton
+                    type="button"
+                >
+                    Сохранить
+                </button>
+                <button
+                    appearance="secondary"
+                    size="m"
+                    tuiButton
+                    type="button"
+                    (click)="additionalField.set(!additionalField())"
+                >
+                    {{ additionalField() ? 'Убрать поле' : 'Добавить поле' }}
+                </button>
+            </div>
+            @if (additionalField()) {
+                <label
+                    for="comment"
+                    class="field"
+                >
+                    Комментарий
+                    <textarea
+                        id="comment"
+                        rows="2"
+                    ></textarea>
+                </label>
+            }
+            <div hidden>
+                <input
+                    aria-label="Скрытое поле"
+                    value="Скрытое значение"
+                />
+            </div>
+            <details>
+                <summary>Обычные поля с dropdown</summary>
+                <p>Обычное поле Taiga с подсказкой: можно вводить произвольный текст без выбора варианта.</p>
+                <tui-textfield [tuiDropdownManual]="hintOpen()">
+                    <label
+                        for="generic-hint"
+                        tuiLabel
+                    >
+                        Запрос с подсказкой
+                    </label>
+                    <input
+                        id="generic-hint"
+                        tuiTextfield
+                        (blur)="hintOpen.set(false)"
+                        (focus)="hintOpen.set(true)"
+                    />
+                    <p *tuiTextfieldDropdown>Введите несколько слов для поиска.</p>
+                </tui-textfield>
+                <p>Второе поле использует стандартную директиву Taiga для связи с popup типа dialog.</p>
+                <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label
+                        for="generic-dialog"
+                        tuiLabel
+                    >
+                        Запрос с настройками
+                    </label>
+                    <input
+                        id="generic-dialog"
+                        tuiDropdownRole="dialog"
+                        [tuiDropdown]="dialogTemplate"
+                        [tuiDropdownManual]="dialogOpen()"
+                        (focus)="dialogOpen.set(true)"
+                    />
+                    <ng-template #dialogTemplate>
+                        <label>
+                            Дополнение
+                            <input
+                                id="popup-detail"
+                                value="Начальное"
+                            />
+                        </label>
+                        <button
+                            tuiButton
+                            type="button"
+                            (click)="dialogOpen.set(false)"
+                        >
+                            Готово
+                        </button>
+                    </ng-template>
+                </tui-textfield>
+            </details>
+            <details>
+                <summary>Radio и Switch</summary>
+                <fieldset id="delivery-group">
+                    <legend>Способ доставки</legend>
+                    <label class="check">
+                        <input
+                            id="delivery-email"
+                            name="delivery"
+                            required
+                            tuiRadio
+                            type="radio"
+                            value="email"
+                            [(ngModel)]="delivery"
+                        />
+                        Электронная почта
+                    </label>
+                    <label class="check">
+                        <input
+                            id="delivery-sms"
+                            name="delivery"
+                            required
+                            tuiRadio
+                            type="radio"
+                            value="sms"
+                            [(ngModel)]="delivery"
+                        />
+                        SMS
+                    </label>
+                    <label class="check">
+                        <input
+                            id="delivery-paper"
+                            name="delivery"
+                            tuiRadio
+                            type="radio"
+                            value="paper"
+                            [disabled]="true"
+                            [(ngModel)]="delivery"
+                        />
+                        Бумажное письмо
+                    </label>
+                </fieldset>
+                <label class="check">
+                    <input
+                        id="auto-save"
+                        tuiSwitch
+                        type="checkbox"
+                        [(ngModel)]="autoSave"
+                    />
+                    Автосохранение
+                </label>
+            </details>
+            <details>
+                <summary>InputNumber</summary>
+                <tui-textfield [tuiTextfieldCleaner]="true">
+                    <label
+                        for="amount"
+                        tuiLabel
+                    >
+                        Сумма
+                    </label>
+                    <input
+                        id="amount"
+                        postfix=" ₽"
+                        required
+                        tuiInputNumber
+                        [max]="2000"
+                        [min]="0"
+                        [step]="0.5"
+                        [(ngModel)]="amount"
+                    />
+                </tui-textfield>
+                <tui-textfield [tuiNumberFormat]="{decimalSeparator: '.', thousandSeparator: ','}">
+                    <label
+                        for="international-amount"
+                        tuiLabel
+                    >
+                        Сумма в другом формате
+                    </label>
+                    <input
+                        id="international-amount"
+                        prefix="$"
+                        tuiInputNumber
+                        [(ngModel)]="internationalAmount"
+                    />
+                </tui-textfield>
+                <tui-textfield>
+                    <label
+                        for="large-number"
+                        tuiLabel
+                    >
+                        Большое целое (HTML)
+                    </label>
+                    <input
+                        id="large-number"
+                        type="number"
+                        [value]="largeNumber"
+                    />
+                </tui-textfield>
+                <label
+                    for="native-quantity"
+                    class="field"
+                >
+                    Количество (HTML)
+                    <input
+                        id="native-quantity"
+                        max="10"
+                        min="0"
+                        required
+                        step="2"
+                        type="number"
+                        value="2"
+                    />
+                </label>
+                <p class="muted">
+                    Инспектор сохраняет строку поля с её форматированием. Попробуйте ввод, очистку и кнопки +/−.
+                </p>
+            </details>
+        </section>
+
+        @if (showInspector()) {
+            <app-observer-panel [root]="page" />
+        }
+    </div>
+</main>

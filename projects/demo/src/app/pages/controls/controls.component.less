@@ -1,0 +1,94 @@
+:host {
+    display: block;
+    min-inline-size: 0;
+}
+
+main {
+    max-inline-size: 88rem;
+    margin: auto;
+    padding: 2rem;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: flex-end;
+}
+
+h1 {
+    font-size: 2rem;
+    margin: 2rem 0 0.75rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.intro,
+.muted {
+    color: var(--tui-text-secondary);
+    line-height: 1.6;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(20rem, 0.8fr) minmax(0, 1.4fr);
+    gap: 1.5rem;
+    align-items: start;
+    margin-block-start: 2rem;
+}
+
+.page {
+    padding: 1.5rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 1rem;
+    min-inline-size: 0;
+}
+
+.field {
+    display: grid;
+    gap: 0.5rem;
+    margin-block-start: 1.25rem;
+    font-size: 0.875rem;
+}
+
+.field input,
+.field select,
+.field textarea {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: 0.5rem;
+    font: inherit;
+    background: var(--tui-background-base);
+    color: inherit;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-start: 1.25rem;
+}
+
+.choice-field {
+    margin-block-start: 1.25rem;
+}
+
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-block-start: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    main {
+        padding: 1rem;
+    }
+}

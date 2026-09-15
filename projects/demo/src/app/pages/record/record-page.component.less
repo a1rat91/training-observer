@@ -1,0 +1,66 @@
+main {
+    max-inline-size: 93.75rem;
+    margin: auto;
+    padding: 1.5rem;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(20rem, 1fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+aside {
+    border: 1px solid var(--tui-border-normal);
+    padding: 1rem;
+    border-radius: 1rem;
+}
+
+article {
+    border-top: 1px solid var(--tui-border-normal);
+    padding-block: 0.75rem;
+}
+
+h3 {
+    font-size: 1rem;
+}
+
+p {
+    line-height: 1.5;
+}
+
+textarea {
+    box-sizing: border-box;
+    inline-size: 100%;
+}
+
+section[aria-label='Журнал записи'] {
+    margin-block: 1rem;
+}
+
+section[aria-label='Журнал записи'] ol {
+    max-block-size: 14rem;
+    overflow: auto;
+}
+
+header button {
+    margin-inline-end: 0.75rem;
+}
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-block-size: 30rem;
+    overflow: auto;
+}
+
+.muted {
+    color: var(--tui-text-secondary);
+}
+
+@media (max-width: 950px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+}

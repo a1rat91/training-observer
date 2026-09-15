@@ -1,0 +1,82 @@
+<article [attr.aria-label]="'Ожидание для поля ' + label()">
+    <header>
+        <span class="type">{{ typeName() }}</span>
+        <h3>{{ label() }}</h3>
+        <p>{{ field().optional ? 'Поле исключено из проверки' : 'Значение должно совпасть с ожиданием' }}</p>
+    </header>
+    @if (context()) {
+        <p class="context">Контекст: {{ context() }}</p>
+    }
+    @if (isBoolean()) {
+        <label class="toggle">
+            <input
+                tuiCheckbox
+                type="checkbox"
+                [attr.aria-label]="'Ожидание: ' + label()"
+                [ngModel]="field().expected"
+                (ngModelChange)="changed.emit({expected: $event})"
+            />
+            {{ field().expected ? 'Отметка должна быть установлена' : 'Отметка должна быть снята' }}
+        </label>
+    } @else {
+        <tui-textfield>
+            <label tuiLabel>Ожидание: {{ label() }}</label>
+            <input
+                tuiTextfield
+                [attr.aria-label]="'Ожидание: ' + label()"
+                [ngModel]="textValue()"
+                (ngModelChange)="setValue($event)"
+            />
+        </tui-textfield>
+        @if (isArray()) {
+            <small>Названия выбранных вариантов разделяются точкой с запятой.</small>
+        }
+    }
+    <div class="messages">
+        <tui-textfield>
+            <label tuiLabel>Ошибка: {{ label() }}</label>
+            <input
+                tuiTextfield
+                [attr.aria-label]="'Ошибка: ' + label()"
+                [ngModel]="field().message"
+                (ngModelChange)="changed.emit({message: $event})"
+            />
+        </tui-textfield>
+        <tui-textfield>
+            <label tuiLabel>Успех: {{ label() }}</label>
+            <input
+                tuiTextfield
+                [attr.aria-label]="'Успех: ' + label()"
+                [ngModel]="field().successMessage ?? ''"
+                (ngModelChange)="changed.emit({successMessage: $event})"
+            />
+        </tui-textfield>
+    </div>
+    <small>Пустое сообщение — не показывать уведомление. Проверка значения продолжит работать.</small>
+    <details>
+        <summary>Предпросмотр сообщений</summary>
+        @if (field().optional) {
+            <p>Поле не проверяется, уведомления для него отключены.</p>
+        } @else {
+            <p class="preview error">
+                <strong>Проверьте действие</strong>
+                <br />
+                {{ field().message.trim() || 'Уведомление об ошибке отключено' }}
+            </p>
+            <p class="preview success">
+                <strong>Верно</strong>
+                <br />
+                {{ field().successMessage?.trim() || 'Уведомление об успехе отключено' }}
+            </p>
+        }
+    </details>
+    <label class="toggle">
+        <input
+            tuiCheckbox
+            type="checkbox"
+            [ngModel]="field().optional"
+            (ngModelChange)="changed.emit({optional: $event})"
+        />
+        Не проверять это поле
+    </label>
+</article>

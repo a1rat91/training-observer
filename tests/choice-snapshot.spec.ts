@@ -17,7 +17,7 @@ async function snapshot(page: Page): Promise<DomSnapshot> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await expect
         .poll(async () => (await control(page, 'department'))?.kind)
         .toBe('select');
@@ -162,7 +162,8 @@ test('an unrelated listbox is not attributed to the active field, even with whol
         .toBe(3);
     expect(
         Object.values((await snapshot(page)).nodes).some(
-            (node) => node.kind === 'element' && node.attributes.id === 'unrelated-list',
+            (node) =>
+                node.kind === 'element' && node.attributes['id'] === 'unrelated-list',
         ),
     ).toBe(false);
     await page.locator('#department').press('Escape');
@@ -225,7 +226,10 @@ test('native select also exposes selected labels, values and disabled options', 
         .toBe('Второй');
     expect((await control(page, 'native-choice')).state.value).toBe('b');
     expect((await control(page, 'native-choice')).choice?.popup.options[2]).toMatchObject(
-        {disabled: true, value: 'c'},
+        {
+            disabled: true,
+            value: 'c',
+        },
     );
 });
 

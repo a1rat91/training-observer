@@ -41,7 +41,7 @@ export const APP_PROVIDERS: Provider[] = [
             return {
                 coreLibraryLoader: async () => import('highlight.js/lib/core'),
                 lineNumbersLoader: async () =>
-                    // SSR ReferenceError: window is not defined
+                    // На сервере нет window: модуль строк загружается только в браузере.
                     isBrowser
                         ? import('ngx-highlightjs/line-numbers')
                         : Promise.resolve(),

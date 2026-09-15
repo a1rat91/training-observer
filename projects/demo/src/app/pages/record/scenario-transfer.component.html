@@ -1,0 +1,60 @@
+<section aria-label="Перенос сценария">
+    <h2>Импорт и экспорт</h2>
+    <p>Скачивается сохранённый сценарий ученика. Изменения редактора сначала нужно сохранить.</p>
+    <button
+        size="s"
+        tuiButton
+        type="button"
+        [disabled]="!store.saved()"
+        (click)="download()"
+    >
+        Скачать сценарий
+    </button>
+    <p>
+        Загрузите сценарий из другого браузера. Журнал записи для этого не нужен. Выбирайте файл, полученный кнопкой
+        «Скачать сценарий», а не JSON журнала записи.
+    </p>
+    <label tuiInputFiles>
+        <input
+            accept=".json,application/json"
+            aria-label="Файл сценария"
+            tuiInputFiles
+            [maxFileSize]="4000000"
+            [ngModel]="null"
+            (ngModelChange)="read($event)"
+            (reject)="reject()"
+        />
+    </label>
+    @if (reading()) {
+        <p aria-live="polite">Читаем файл…</p>
+    }
+    @if (error()) {
+        <p role="alert">{{ error() }}</p>
+    }
+    @if (candidate(); as scenario) {
+        <p>Файл: {{ fileName() }}. Экранов: {{ scenario.steps.length }}.</p>
+        <ul>
+            @for (step of scenario.steps; track $index) {
+                <li>{{ step.key }} — ожиданий: {{ step.fields.length }}</li>
+            }
+        </ul>
+        <p>
+            Импорт заменит сохранённый сценарий ученика и текущий черновик редактора. Журнал записи останется прежним.
+        </p>
+        <button
+            size="s"
+            tuiButton
+            type="button"
+            (click)="accept()"
+        >
+            Импортировать и заменить сценарий
+        </button>
+    }
+    @if (done()) {
+        <p aria-live="polite">
+            Сценарий импортирован. Его можно редактировать ниже или
+            <a routerLink="/learn">открыть тренировку</a>
+            .
+        </p>
+    }
+</section>

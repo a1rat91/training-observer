@@ -4,3 +4,11 @@ package-lock.json
 .husky
 
 /.nx/cache
+node_modules/
+.nx/
+test-results/
+playwright-report/
+
+.angular/
+.idea/
+.vscode/

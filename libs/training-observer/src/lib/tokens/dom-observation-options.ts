@@ -1,11 +1,12 @@
+/** DI-настройки частоты наблюдения. Валидируются перед стартом сеанса; наследуют правила capture без привязки к приложению. */
 import {inject, InjectionToken} from '@angular/core';
 
 import {DOM_SNAPSHOT_OPTIONS, type DomSnapshotOptions} from './dom-snapshot-options';
 
 export interface DomObservationOptions extends DomSnapshotOptions {
-    /** Fixed batching window, not a trailing debounce. Continuous input cannot postpone a scan forever. */
+    /** Фиксированное окно объединения, не trailing debounce. Непрерывный ввод не откладывает capture бесконечно. */
     readonly batchDelayMs: number;
-    /** Native property reconciliation. Set to 0 to disable polling. */
+    /** Сверка native-свойств. Значение 0 отключает polling. */
     readonly propertyCheckIntervalMs: number;
 }
 

@@ -1,0 +1,17 @@
+{
+    "name": "training-tests",
+    "projectType": "application",
+    "sourceRoot": "tests/unit",
+    "tags": ["layer:app"],
+    "targets": {
+        "test": {
+            "executor": "@nx/jest:jest",
+            "outputs": ["{workspaceRoot}/coverage/tests/unit"],
+            "options": {
+                "jestConfig": "tests/unit/jest.config.ts",
+                "runInBand": true,
+                "passWithNoTests": false
+            }
+        }
+    }
+}

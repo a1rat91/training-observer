@@ -1,11 +1,29 @@
+/** Публичный Angular API наблюдения DOM. Запись и проверка ученика находятся в отдельных пакетах. */
+export {DomElementAnalyzer} from './lib/capture/dom-element-analyzer';
+export {DomSnapshotBuilder} from './lib/capture/dom-snapshot-builder';
+export {ControlSnapshotBuilder} from './lib/controls/control-snapshot-builder';
+export {DomHighlighter} from './lib/highlight/dom-highlighter';
 export {MicrofrontendObserver} from './lib/microfrontend-observer';
+export {provideDomObservation} from './lib/provide-dom-observation';
+export {readScreenState} from './lib/screen/screen-state-reader';
+export {ScreenVisitTracker} from './lib/screen/screen-visit-tracker';
+export {
+    DOM_OBSERVATION_OPTIONS,
+    type DomObservationOptions,
+} from './lib/tokens/dom-observation-options';
+export {
+    DOM_SNAPSHOT_OPTIONS,
+    type DomSnapshotOptions,
+} from './lib/tokens/dom-snapshot-options';
+export {TrainingObserver} from './lib/training-observer';
+export type {MicrofrontendSnapshot} from '@training-observer/core/models';
 export type {
     ChoiceSnapshot,
     ControlKind,
     ControlLocatorHints,
     ControlSnapshot,
     PopupSnapshot,
-} from './lib/models/control-snapshot';
+} from '@training-observer/core/models';
 export type {
     DomControlState,
     DomElementSnapshot,
@@ -16,18 +34,16 @@ export type {
     DomTextSnapshot,
     HitTestResult,
     InteractionReason,
-} from './lib/models/dom-snapshot';
-export type {MicrofrontendSnapshot} from './lib/models/microfrontend-snapshot';
-export {ControlSnapshotBuilder} from './lib/services/control-snapshot-builder';
-export {DomElementAnalyzer} from './lib/services/dom-element-analyzer';
-export {DomHighlighter} from './lib/services/dom-highlighter';
-export {DomSnapshotBuilder} from './lib/services/dom-snapshot-builder';
+} from '@training-observer/core/models';
+export type {
+    ScreenElementSelector,
+    ScreenIdentitySource,
+    ScreenState,
+    ScreenStateOptions,
+    ScreenVisit,
+} from '@training-observer/core/models';
 export {
-    DOM_OBSERVATION_OPTIONS,
-    type DomObservationOptions,
-} from './lib/tokens/dom-observation-options';
-export {
-    DOM_SNAPSHOT_OPTIONS,
-    type DomSnapshotOptions,
-} from './lib/tokens/dom-snapshot-options';
-export {TrainingObserver} from './lib/training-observer';
+    ControlType,
+    ScreenIdentityKind,
+    ScreenStatus,
+} from '@training-observer/core/models';

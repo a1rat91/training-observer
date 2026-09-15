@@ -32,25 +32,23 @@ async function metrics(client: CDPSession): Promise<Record<string, number>> {
     return Object.fromEntries(result.metrics.map((item) => [item.name, item.value]));
 }
 
-interface MeasureResult {
+async function measure(
+    client: CDPSession,
+    action: () => Promise<void>,
+): Promise<{
     elapsedMs: number;
     taskMs: number;
     scriptMs: number;
     layoutMs: number;
     styleMs: number;
-}
-
-async function measure(
-    client: CDPSession,
-    action: () => Promise<void>,
-): Promise<MeasureResult> {
+}> {
     const before = await metrics(client);
     const start = performance.now();
 
     await action();
     const after = await metrics(client);
     const milliseconds = (key: string): number =>
-        Math.round((after[key]! - before[key]!) * 1000);
+        Math.round((after[key] - before[key]) * 1000);
 
     return {
         elapsedMs: Math.round(performance.now() - start),
@@ -73,7 +71,9 @@ for (const {count, mixed} of [
         const client = await page.context().newCDPSession(page);
 
         await client.send('Performance.enable');
-        await page.goto(`/load?count=${count}&polling=0&mixed=${Number(mixed)}`);
+        await page.goto(
+            `/controls?fixture=load&count=${count}&polling=0&mixed=${Number(mixed)}`,
+        );
         await expect(page.getByTestId('load-count')).toHaveText(String(count));
         const controls = mixed ? 470 : count * 5;
 
@@ -128,10 +128,7 @@ for (const {count, mixed} of [
             ).toHaveAttribute('data-value', 'Пакет');
         });
         await page.waitForTimeout(800);
-        expect(await counters(page)).toEqual({
-            ...before,
-            'load-1': before['load-1']! + 1,
-        });
+        expect(await counters(page)).toEqual({...before, 'load-1': before['load-1'] + 1});
 
         if (mixed) {
             before = await counters(page);
@@ -147,7 +144,7 @@ for (const {count, mixed} of [
             await page.waitForTimeout(800);
             expect(await counters(page)).toEqual({
                 ...before,
-                'load-6': before['load-6']! + 1,
+                'load-6': before['load-6'] + 1,
             });
         }
 
@@ -173,7 +170,7 @@ for (const {count, mixed} of [
         });
         await page.waitForTimeout(800);
         const continuous = await counters(page);
-        const continuousScans = continuous['load-1']! - before['load-1']!;
+        const continuousScans = continuous['load-1'] - before['load-1'];
 
         expect(continuousScans).toBeGreaterThan(1);
         expect(continuousScans).toBeLessThan(20);
@@ -245,7 +242,7 @@ for (const {count, mixed} of [
 }
 
 test('CPU profile of simultaneous updates in 300 areas', async ({page}, testInfo) => {
-    await page.goto('/load?count=300&polling=0');
+    await page.goto('/controls?fixture=load&count=300&polling=0');
     await expect(page.getByTestId('load-controls')).toHaveText('1500');
     await page.waitForTimeout(1000);
     const client = await page.context().newCDPSession(page);

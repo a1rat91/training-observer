@@ -4,10 +4,7 @@ import {
     importProvidersFrom,
     SecurityContext,
 } from '@angular/core';
-import {
-    BrowserAnimationsModule,
-    provideAnimations,
-} from '@angular/platform-browser/animations';
+import {provideAnimations} from '@angular/platform-browser/animations';
 import {
     provideRouter,
     withEnabledBlockingInitialNavigation,
@@ -17,28 +14,24 @@ import {provideEventPlugins} from '@taiga-ui/event-plugins';
 import {MarkdownModule} from 'ngx-markdown';
 
 import {APP_PROVIDERS} from './app.providers';
-import {appRoutes} from './app.routes';
+import {routes} from './app.routes';
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideAnimations(),
         provideRouter(
-            appRoutes,
+            routes,
             withEnabledBlockingInitialNavigation(),
             withInMemoryScrolling({scrollPositionRestoration: 'enabled'}),
         ),
         provideHttpClient(withFetch()),
         importProvidersFrom(
-            BrowserAnimationsModule,
             MarkdownModule.forRoot({
                 loader: HttpClient,
                 sanitize: SecurityContext.NONE,
             }),
         ),
         ...APP_PROVIDERS,
-        provideEventPlugins(),
-        provideEventPlugins(),
-        provideAnimations(),
         provideEventPlugins(),
     ],
 };

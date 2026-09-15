@@ -1,114 +1,76 @@
 # Training Observer
 
-Nx workspace на Angular 19: приложения в `projects/`, библиотеки в `libs/`.
+Обучение по наблюдаемому состоянию интерфейса. Администратор записывает пример, редактирует ожидания, ученик
+воспроизводит итоговые значения и переходы. DOM основного приложения не размечается учебными локаторами; LLM и платные
+DAP не используются.
 
-## Проекты
+## С чего начать
 
-| Проект                   | Назначение                                                                                                        |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `libs/training-observer` | Angular-библиотека `@training-observer/core`: снимок DOM, native-состояния контролов и автоматическое наблюдение. |
-| `projects/demo`          | Все примеры и стенды: контролы, живой инспектор, микрофронты и нагрузочные сценарии.                              |
+1. [Архитектура и алгоритмы](ARCHITECTURE.md) — границы пакетов, поток данных, правила значений и переходов.
+2. [Руководство разработчика](docs/developer-guide.md) — запуск, подключение, расширение, проверка и диагностика.
+3. [Пользование demo](docs/demo-guide.md) — запись, редактирование, публикация, прохождение.
+4. [Оставшийся MVP](docs/roadmap.md) — незавершённые возможности. [Указатель документации](docs/README.md) отделяет
+   справочник и архив.
 
-Angular 19.2.25, CLI 19.2.27, Nx 20.8.4, Taiga UI 5.15.0, TypeScript 5.8.3. Приложение использует standalone-компоненты,
-Angular Router и Less.
+## Пакеты
+
+| Пакет                            | Ответственность                                                  | Входная точка                                                     |
+| -------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `@training-observer/core`        | DOM capture, распознавание, наблюдение, blur, optional highlight | [src/index.ts](libs/training-observer/src/index.ts)               |
+| `@training-observer/core/models` | Только сериализуемые модели DOM и enum, без Angular              | [models/src/index.ts](libs/training-observer/models/src/index.ts) |
+| `@training-observer/contracts`   | JSON-форматы, валидация и общие правила учебного значения        | [src/index.ts](libs/training-contracts/src/index.ts)              |
+| `@training-observer/recording`   | Запись администратора, удаление строк, компиляция сценария       | [src/index.ts](libs/training-recording/src/index.ts)              |
+| `@training-observer/runtime`     | Сопоставление ожиданий, переходы, прогресс и сообщения           | [src/index.ts](libs/training-runtime/src/index.ts)                |
+
+Core не импортирует и не экспортирует запись, сценарии или проверку ответов. Recording и runtime не зависят друг от
+друга. Taiga UI, localStorage и тестовый HTTP backend принадлежат demo.
 
 ## Запуск
 
-Требуется Node.js 22 (версия в `.nvmrc`).
+Требуется Node **22.19+ в ветке 22**, npm и Google Chrome для browser tests. Версии проекта: Angular **19.2**, Taiga UI
+**4.98**. Конфигурации инструментов и версия Taiga UI перенесены из `main`.
 
 ```sh
-nvm use
 npm ci
 npm start
 ```
 
-Demo: [http://127.0.0.1:4200](http://127.0.0.1:4200). Инспектор запускается автоматически. Измените форму или добавьте
-поле — снимок обновится сам. Доступны остановка, повторный запуск и ручной снимок. В настройках можно выбрать всю
-страницу, задержку объединения событий и интервал сверки свойств. Кнопки закрытия/открытия инспектора проверяют
-жизненный цикл его Angular-компонента.
-
-Разделы переключаются через общее меню в шапке:
-
-| Маршрут           | Содержимое                                                           |
-| ----------------- | -------------------------------------------------------------------- |
-| `/controls`       | Контролы Taiga UI и HTML, динамические dropdown, инспектор состояния |
-| `/microfrontends` | Независимые и вложенные области `[data-mf]`                          |
-| `/load`           | 10 разных областей и стресс-сценарии на 100/300                      |
-
-Корневой адрес перенаправляет на `/controls`. Страницы загружаются лениво; наблюдатели освобождаются при переходе в
-другой раздел. Общее меню исключено из наблюдения. Страницы находятся в `projects/demo/src/app/pages`, инспектор — в
-`shared/observer-panel`. Библиотека от приложения demo не зависит.
-
-Подсветка контролов и DOM-узлов: [API и устройство слоя](docs/node-highlighting.md).
-
-## API библиотеки
-
-В Angular injection context:
-
-```ts
-import {inject} from '@angular/core';
-import {TrainingObserver} from '@training-observer/core';
-
-const observer = inject(TrainingObserver);
-
-// Вызвать в браузере, когда нужный DOM уже отрисован.
-const snapshot = observer.start(); // document.body по умолчанию
-// observer.start(element, {batchDelayMs: 50, propertyCheckIntervalMs: 500, maxNodes: 5000});
-// observer.capture(element); — ручной снимок
-// observer.snapshot() — последний снимок
-// observer.controls() — потенциальные контролы, в том числе disabled/hidden
-// observer.isObserving() — статус сессии
-// observer.stop() — остановить, сохранив последний снимок
-// observer.clear() — остановить и освободить последний снимок
-// observer.error() — ошибка фонового обновления
-// observer.scanCount() / observer.revision() — пересчёты / публикации
-```
-
-Параметры снимка задаются через `DOM_SNAPSHOT_OPTIONS`, параметры наблюдения — через `DOM_OBSERVATION_OPTIONS`.
-Настройки `start()` объединяются с defaults. Интервал `propertyCheckIntervalMs: 0` отключает сверку native-свойств без
-событий.
-
-Для привязки к жизни встраиваемого компонента укажите `providers: [TrainingObserver]` в нём: `DestroyRef` освободит
-ресурсы при уничтожении этого компонента. Корневой экземпляр сервиса живёт до уничтожения всего приложения. Собственный
-интерфейс наблюдателя можно исключить селектором `[data-training-observer-ignore]`. На чужих контролах атрибуты не
-требуются.
-
-Снимок: `nodes` по ID, `rootId`, `interactiveIds`, время обхода и статистика лимитов. ID стабилен только для того же
-живого DOM-узла в рамках экземпляра сервиса. `path` — структурный путь для диагностики, не локатор между сессиями.
-
-Текущие ограничения: light DOM одного документа, полные пересчёты, приблизительные подписи/интерактивность/видимость.
-iframe и открытые shadow roots отмечаются как необойдённые границы. `observer.logicalControls()` нормализует текстовые
-поля, числовые поля, кнопки, checkbox, radio, switch, select и combobox, включая адаптеры Taiga UI. Связанные dropdown
-вне формы включаются в снимок через `aria-controls`. Остальные типы доступны в DOM-снимке. Запись действий, подсветка и
-проверка ученика — следующие этапы. Автоматические обновления объединяются, поэтому снимки не заменяют
-последовательность действий. Обычная прокрутка не запускает пересчёт; служебные ползунки Taiga UI
-(`tui-scroll-controls`) исключены из снимка и наблюдения. Изменения DOM при виртуализации или подгрузке продолжают
-отслеживаться. Геометрия соответствует последнему снимку; при необходимости её можно актуализировать ручным `capture()`.
-Декоративные hover-переходы цветов и теней не запускают пересчёт. Появление меню, изменение видимости и другие изменения
-состояния при наведении продолжают отслеживаться.
-
-[Полный разбор buildDomTree.js и схема переноса](docs/build-dom-tree-analysis.md).
-[Автоматическое наблюдение: API, источники обновлений и ограничения](docs/automatic-observation.md).
-[Логические контролы: адаптеры, объединение DOM и признаки поиска](docs/logical-controls.md).
-[Form-контролы: Radio, Switch, InputNumber, подписи и значения](docs/form-controls.md).
-[Select и ComboBox: динамические dropdown, поиск и выбранные варианты](docs/dropdown-observation.md).
-[Матрица покрытия контролов и план областей data-mf](docs/control-coverage.md).
-[Независимые области data-mf: MicrofrontendObserver и стенд /microfrontends](docs/microfrontend-observation.md).
-[Нагрузка: 10 разных областей и стресс-сценарии на 100/300](docs/load-testing.md).
-
-## Проверки
+Открыть `http://localhost:4200/record`. Три раздела: `/record`, `/controls`, `/learn`. Корневой путь перенаправляется на
+запись.
 
 ```sh
-npm run build
-npm test
-npm run test:load
+npm run check                 # границы + формат + unit + production build
+npm run test:pw               # полный browser-набор, локальный сервер 4301
+npm run format                # применить единое оформление
+npm run test:load              # отдельные измерения, production сервер 4302
 ```
 
-Сборка: `dist/demo/browser`, `dist/training-observer`. Отдельная сборка библиотеки: `npx nx build training-observer`.
-Граф проектов: `npm run graph`.
+Каждая библиотека собирается отдельно. `npm run build` собирает все четыре библиотеки и demo в `dist/`. `npx nx graph`
+открывает граф Nx-проектов — это средство разработки, не часть обучения.
 
-Браузерные тесты Playwright используют установленный **Google Chrome** (`channel: chrome`) и автоматически запускают
-demo на порту 4301. Проверяют граф снимка, текущие значения, disabled/hidden/inert, перекрытия, динамическую замену
-узлов, редактирование пароля, границы обхода и лимиты. Дополнительно проверяют автообновление, объединение событий,
-сверку свойств, исключение инспектора, остановку, повторный запуск и DestroyRef. При отсутствии Chrome установите его
-перед запуском тестов.
+## Главные правила
+
+- Запись Input/Number/Select/ComboBox — после выхода фокуса из логического поля.
+- Начальные checkbox/radio записываются сразу, включая false; последнее значение остаётся в сценарии.
+- У ученика уже заполненные ответы учитываются при входе. Последующие правки текстовых полей — после blur.
+- Внутри экрана поля независимы по порядку; экраны идут по сохранённой последовательности.
+- ComboBox сравнивается по видимому тексту. Ручной ввод того же текста равнозначен выбору, если сам контрол его
+  сохранил.
+- Unknown, redacted и ambiguous не выдаются за ошибку ученика или за правильный ответ.
+- Наблюдение состояния не доказывает клик, происхождение изменения или скрытый backend ID.
+
+## Изменение импортов после разделения
+
+JSON v1 и ключи localStorage не изменены. Исходные импорты учебной логики из core нужно заменить:
+
+```ts
+import {provideDomObservation, TrainingObserver, readScreenState} from '@training-observer/core';
+
+// В компоненте-владельце: providers: [provideDomObservation()]
+import {ControlType, ScreenStatus} from '@training-observer/core/models';
+import {parseScenario, type TrainingScenario} from '@training-observer/contracts';
+import {StateRecorder, compileScenario} from '@training-observer/recording';
+import {ScenarioRuntime} from '@training-observer/runtime';
+```
+
+Полный пример и правила жизненного цикла — в руководстве разработчика.

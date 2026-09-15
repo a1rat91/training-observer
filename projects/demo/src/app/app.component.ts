@@ -1,3 +1,4 @@
+/** Корневая оболочка demo: размещает навигацию и маршруты внутри Taiga UI, обеспечивает слой уведомлений. */
 import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {TuiDocMain} from '@taiga-ui/addon-doc';
 import {TuiRoot} from '@taiga-ui/core';

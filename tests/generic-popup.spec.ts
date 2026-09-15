@@ -13,7 +13,7 @@ async function control(page: Page, id: string): Promise<ControlSnapshot | undefi
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await page.getByText('Обычные поля с dropdown', {exact: true}).click();
 });
 
@@ -80,6 +80,8 @@ test('real dialog popup is captured outside the scope and reconciles silent inpu
         .poll(async () => (await control(page, 'generic-dialog'))?.popup?.status)
         .toBe('closed');
     await expect.poll(async () => control(page, 'popup-detail')).toBeUndefined();
+    // Taiga UI 4 удаляет DOM закрытого popup после анимации. Ждём завершения перед новым открытием.
+    await expect(page.locator('#popup-detail')).toHaveCount(0);
     await page.locator('#generic-hint').focus();
     await page.locator('#generic-dialog').focus();
     await expect

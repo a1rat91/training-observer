@@ -24,7 +24,7 @@ async function settle(page: Page): Promise<void> {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/microfrontends');
+    await page.goto('/controls?fixture=microfrontends');
     await expect(page.getByTestId('mf-count')).toHaveText('3');
     await settle(page);
 });
@@ -456,7 +456,7 @@ test('DestroyRef releases property reads for a still-connected external area', a
     });
     await expect(page.getByTestId('mf-count')).toHaveText('4');
     await page
-        .getByRole('navigation', {name: 'Разделы demo'})
+        .locator('tui-doc-navigation nav')
         .getByRole('link', {name: 'Контролы', exact: true})
         .click();
     await page.getByRole('button', {name: 'Остановить', exact: true}).click();

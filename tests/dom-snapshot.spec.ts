@@ -28,7 +28,7 @@ function elements(snapshot: DomSnapshot): DomElementSnapshot[] {
 }
 
 function byId(snapshot: DomSnapshot, id: string): DomElementSnapshot {
-    const element = elements(snapshot).find((node) => node.attributes.id === id);
+    const element = elements(snapshot).find((node) => node.attributes['id'] === id);
 
     expect(element, `DOM element #${id} must be in the snapshot`).toBeDefined();
 
@@ -36,7 +36,7 @@ function byId(snapshot: DomSnapshot, id: string): DomElementSnapshot {
 }
 
 test.beforeEach(async ({page}) => {
-    await page.goto('/');
+    await page.goto('/controls');
     await expect(page.getByRole('heading', {name: 'Исследуем страницу'})).toBeVisible();
     await page.getByRole('button', {name: 'Остановить', exact: true}).click();
     await expect(page.getByTestId('observation-status')).toHaveText(
@@ -170,7 +170,7 @@ test('detects occlusion and distinguishes rendered offscreen elements', async ({
         root.insertAdjacentHTML(
             'beforeend',
             `
-            <button id="covered-button" style="position:fixed;left:10px;top:10px;width:100px;height:40px;z-index:100">Covered</button>
+            <button id="covered-button" style="position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:100">Covered</button>
             <button id="offscreen-button" style="position:absolute;top:5000px">Offscreen</button>
         `,
         );
@@ -178,7 +178,7 @@ test('detects occlusion and distinguishes rendered offscreen elements', async ({
 
         cover.id = 'test-cover';
         cover.style.cssText =
-            'position:fixed;left:10px;top:10px;width:100px;height:40px;z-index:101;background:red';
+            'position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:101;background:red';
         document.body.append(cover);
     });
     const covered = await capture(page);
@@ -216,9 +216,9 @@ test('updates added, removed and replaced nodes while retaining live-node IDs', 
     await expect(page.locator('#comment')).toHaveCount(0);
     const removed = await capture(page);
 
-    expect(elements(removed).some((element) => element.attributes.id === 'comment')).toBe(
-        false,
-    );
+    expect(
+        elements(removed).some((element) => element.attributes['id'] === 'comment'),
+    ).toBe(false);
     await page
         .locator('#department')
         .evaluate((element) => element.replaceWith(element.cloneNode(true)));
@@ -261,7 +261,7 @@ test('reports iframe and open shadow boundaries, ignores its own UI and excluded
     expect(byId(snapshot, 'shadow-host').boundaries).toEqual(['open-shadow-root']);
     expect(
         elements(snapshot).some((node) =>
-            ['excluded', 'shadow-button'].includes(node.attributes.id),
+            ['excluded', 'shadow-button'].includes(node.attributes['id']),
         ),
     ).toBe(false);
     expect(elements(snapshot).some((node) => node.tagName === 'script')).toBe(false);

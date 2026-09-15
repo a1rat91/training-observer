@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
 
-/** Demo stand-in for a foreign microfrontend root. No observer integration is required. */
+/** Контейнер демонстрирует корень внешнего микрофронта и выводит переданное содержимое. Связи с наблюдателем нет. */
 @Component({
     standalone: true,
     selector: 'demo-microfrontend',

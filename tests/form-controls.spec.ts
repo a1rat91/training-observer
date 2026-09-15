@@ -165,7 +165,7 @@ test('radio and switch inherit availability; a switch never becomes tri-state', 
 test('a radio group split across microfrontends updates peers and resets through an external form without polling', async ({
     page,
 }) => {
-    await page.goto('/microfrontends');
+    await page.goto('/controls?fixture=microfrontends');
     await page.getByLabel('Сверка свойств, мс').fill('0');
     await page.getByRole('button', {name: 'Применить интервал', exact: true}).click();
     await page.evaluate(() => {
@@ -195,7 +195,9 @@ test('a radio group split across microfrontends updates peers and resets through
     const areas = async (): Promise<MicrofrontendSnapshot[]> =>
         JSON.parse((await page.getByTestId('mf-json').textContent()) ?? '[]');
 
-    const field = async (id: string): Promise<ControlSnapshot | undefined> =>
+    const field = async (
+        id: string,
+    ): Promise<import('@training-observer/core/models').ControlSnapshot | undefined> =>
         (await areas())
             .flatMap((area) => area.logicalControls)
             .find((item) => item.locatorHints.id === id);

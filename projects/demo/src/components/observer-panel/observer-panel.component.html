@@ -13,8 +13,12 @@
         </span>
     </div>
     @if (observer.areas().length > 1) {
-        <label>Микрофронт
-            <select [ngModel]="selected()?.id" (ngModelChange)="selectedId.set($event)">
+        <label>
+            Микрофронт
+            <select
+                [ngModel]="selected()?.id"
+                (ngModelChange)="selectedId.set($event)"
+            >
                 @for (area of observer.areas(); track area.id) {
                     <option [value]="area.id">{{ area.name || area.id }}</option>
                 }
