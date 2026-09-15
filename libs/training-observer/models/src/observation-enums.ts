@@ -16,3 +16,8 @@ export enum ScreenStatus {
     Unavailable = 'unavailable',
     Ambiguous = 'ambiguous',
 }
+
+export enum ScreenIdentityKind {
+    Attribute = 'attribute',
+    Text = 'text',
+}

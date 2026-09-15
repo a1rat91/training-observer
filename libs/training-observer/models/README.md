@@ -28,3 +28,8 @@ ControlKind принимает строковые значения enum чере
 Начните с `src/index.ts`, затем ControlSnapshot и DomSnapshot. Новое поле модели добавляйте вместе с capture/ projection
 и тестом сериализации. Живые ссылки оставляйте в builder, не в этих интерфейсах. Сборка выполняется вместе с
 `npx nx build training-observer`.
+
+`ScreenElementSelector` описывает существующий элемент, `ScreenIdentitySource` — чтение его атрибута или прямого текста.
+`ScreenIdentityKind` задаёт эти способы через enum. `ScreenStateOptions.ready` — необязательный положительный признак
+готовности. Новые причины `identity-element-missing`, `identity-ambiguous` и `not-ready` уточняют неполноту чтения;
+готовый экран по-прежнему имеет `status: ready`. Это наблюдение, не контракт обучения.

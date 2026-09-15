@@ -124,3 +124,124 @@ test('visits distinguish A → B → A but not a remount; unknown and loading re
     expect(tracker.update(read(null))).toBe(null);
     expect(tracker.update(a).number).toBe(1);
 });
+
+function withIdentityElement(snapshot, id = 'screen-code', parentId = 'wrapper') {
+    snapshot.nodes[id] = element(
+        id,
+        parentId,
+        {'aria-label': 'Screen key', title: 'details'},
+        'output',
+    );
+    snapshot.nodes[id].children = [`${id}-text`, 'a'];
+    snapshot.nodes[`${id}-text`] = {
+        id: `${id}-text`,
+        parentId: id,
+        kind: 'text',
+        text: ' Details ',
+        visible: true,
+    };
+    return snapshot;
+}
+const separateIdentity = {
+    ...options,
+    identity: {
+        kind: 'text',
+        element: {
+            tagName: 'output',
+            attribute: {name: 'aria-label', value: 'Screen key'},
+        },
+    },
+};
+
+test('reads a nested identity independently from the container and preserves field scope', () => {
+    const snapshot = withIdentityElement(fixture());
+    const before = JSON.stringify(snapshot);
+    expect(read(snapshot, separateIdentity)).toMatchObject({
+        key: 'Details',
+        rootNodeId: 'screen',
+        controls: [controls[0]],
+    });
+    expect(JSON.stringify(snapshot)).toBe(before);
+    snapshot.nodes['screen-code'].parentId = 'screen';
+    snapshot.nodes.a.state = {value: 'Other value'};
+    expect(read(snapshot, separateIdentity).key).toBe('Details');
+    expect(
+        read(snapshot, {
+            ...separateIdentity,
+            identity: {...separateIdentity.identity, kind: 'attribute', name: 'title'},
+        }).key,
+    ).toBe('details');
+});
+
+test('does not use identity elements from siblings or portals and does not choose between duplicates', () => {
+    const snapshot = withIdentityElement(fixture());
+    withIdentityElement(snapshot, 'outside-code', 'outside');
+    expect(read(snapshot, separateIdentity).key).toBe('Details');
+    withIdentityElement(snapshot, 'duplicate');
+    expect(read(snapshot, separateIdentity)).toMatchObject({
+        status: 'ambiguous',
+        reason: 'identity-ambiguous',
+        key: null,
+        controls: [],
+    });
+    snapshot.nodes.duplicate.visible = false;
+    expect(read(snapshot, separateIdentity).key).toBe('Details');
+    snapshot.nodes['screen-code'].visible = false;
+    expect(read(snapshot, separateIdentity).reason).toBe('identity-element-missing');
+});
+
+test('empty identity text cannot fall back to the container ID or nested field text', () => {
+    const snapshot = withIdentityElement(fixture());
+    snapshot.nodes['screen-code-text'].text = ' ';
+    snapshot.nodes.a.children = ['answer'];
+    snapshot.nodes.answer = {
+        id: 'answer',
+        parentId: 'a',
+        kind: 'text',
+        text: 'User answer',
+    };
+    expect(read(snapshot, separateIdentity).reason).toBe('identity-missing');
+});
+
+test('positive readiness waits for the exact attribute before resolving a possibly incomplete identity', () => {
+    const snapshot = fixture();
+    const config = {...separateIdentity, ready: {name: 'aria-busy', value: 'false'}};
+    const tracker = new ScreenVisitTracker();
+    expect(read(snapshot, config)).toMatchObject({
+        status: 'loading',
+        reason: 'not-ready',
+        key: null,
+        rootNodeId: 'screen',
+        controls: [],
+    });
+    expect(tracker.update(read(snapshot, config))).toBe(null);
+    snapshot.nodes.screen.attributes['aria-busy'] = 'true';
+    expect(read(snapshot, config).reason).toBe('not-ready');
+    snapshot.nodes.screen.attributes['aria-busy'] = 'false';
+    expect(read(snapshot, config).reason).toBe('identity-element-missing');
+    withIdentityElement(snapshot);
+    expect(read(snapshot, config).status).toBe('ready');
+    expect(tracker.update(read(snapshot, config)).key).toBe('Details');
+    snapshot.nodes.screen.attributes['aria-busy'] = 'true';
+    expect(tracker.update(read(snapshot, config)).number).toBe(1);
+});
+
+test('loading still takes precedence when the positive readiness flag is satisfied', () => {
+    const snapshot = fixture();
+    snapshot.nodes.screen.attributes['aria-busy'] = 'true';
+    snapshot.nodes.screen.attributes['data-state'] = 'ready';
+    expect(
+        read(snapshot, {...options, ready: {name: 'data-state', value: 'ready'}}).status,
+    ).toBe('loading');
+});
+
+test('rejects empty selectors and readiness names before trying to read a snapshot', () => {
+    for (const config of [
+        {...options, identity: {kind: 'text', element: {}}},
+        {...options, identity: {kind: 'text', element: {tagName: ' '}}},
+        {...options, ready: {name: '', value: 'ready'}},
+        {...options, loading: {name: ' ', value: 'true'}},
+    ]) {
+        expect(() => read(null, config)).toThrow(/explicit/);
+    }
+});

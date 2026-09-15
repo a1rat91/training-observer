@@ -35,8 +35,14 @@ export type {
     InteractionReason,
 } from '@training-observer/core/models';
 export type {
+    ScreenElementSelector,
+    ScreenIdentitySource,
     ScreenState,
     ScreenStateOptions,
     ScreenVisit,
 } from '@training-observer/core/models';
-export {ControlType, ScreenStatus} from '@training-observer/core/models';
+export {
+    ControlType,
+    ScreenIdentityKind,
+    ScreenStatus,
+} from '@training-observer/core/models';
