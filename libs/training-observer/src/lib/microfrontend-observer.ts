@@ -1,21 +1,18 @@
 /** Angular-фасад нескольких областей. Обнаруживает корни, подключает общие источники событий, ведёт независимые сеансы и освобождает их через DestroyRef. */
 import {DOCUMENT} from '@angular/common';
 import {DestroyRef, inject, Injectable, NgZone, signal} from '@angular/core';
-import {
-    type DomSnapshot,
-    type MicrofrontendSnapshot,
-} from '@training-observer/core/models';
+import {type MicrofrontendSnapshot} from '@training-observer/core/models';
 
-import {DomElementAnalyzer} from './capture/dom-element-analyzer';
 import {isScrollDecoration} from './capture/dom-scroll-decoration';
 import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
-import {ControlSnapshotBuilder} from './controls/control-snapshot-builder';
-import {
-    DomObservationScope,
-    MICROFRONTEND_SELECTOR,
-} from './observation/dom-observation-scope';
-import {DomObservationSession, PAGE_EVENTS} from './observation/dom-observation-session';
+import {MICROFRONTEND_SELECTOR} from './observation/dom-observation-scope';
+import {PAGE_EVENTS, type SessionSnapshot} from './observation/dom-observation-session';
 import {isObserverUi, isObserverUiMutation} from './observation/dom-observer-ui';
+import {
+    ObservationSessionFactory,
+    type ObservationSessionRef,
+} from './observation/observation-session-factory';
+import {SessionSourceMode} from './observation/session-context';
 import {snapshotFingerprint} from './observation/snapshot-fingerprint';
 import {
     DOM_OBSERVATION_OPTIONS,
@@ -25,20 +22,19 @@ import {
 
 interface Area {
     readonly root: Element;
-    readonly session: DomObservationSession;
+    readonly sessionRef: ObservationSessionRef;
     parent: Element | null;
     state: MicrofrontendSnapshot;
     fingerprint: string | null;
 }
 
 /** Общие источники событий document и независимое объединение обновлений областей. */
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class MicrofrontendObserver {
     private readonly document = inject(DOCUMENT);
     private readonly zone = inject(NgZone);
     private readonly builder = inject(DomSnapshotBuilder);
-    private readonly controls = inject(ControlSnapshotBuilder);
-    private readonly analyzer = inject(DomElementAnalyzer);
+    private readonly sessions = inject(ObservationSessionFactory);
     private readonly defaults = inject(DOM_OBSERVATION_OPTIONS);
     private readonly current = signal<readonly MicrofrontendSnapshot[]>([]);
     private readonly active = signal(false);
@@ -116,7 +112,7 @@ export class MicrofrontendObserver {
         this.zone.runOutsideAngular(() => {
             for (const area of this.entries.values()) {
                 if (!id || area.state.id === id) {
-                    area.session.invalidate();
+                    area.sessionRef.session.invalidate();
                 }
             }
         });
@@ -129,7 +125,7 @@ export class MicrofrontendObserver {
         }
 
         for (const area of this.entries.values()) {
-            area.session.dispose();
+            area.sessionRef.destroy();
         }
 
         this.entries.clear();
@@ -164,7 +160,7 @@ export class MicrofrontendObserver {
 
             for (const area of this.entries.values()) {
                 if (existing.has(area)) {
-                    area.session.handleMutations(relevant);
+                    area.sessionRef.session.handleMutations(relevant);
                 }
             }
         });
@@ -180,7 +176,7 @@ export class MicrofrontendObserver {
         for (const name of PAGE_EVENTS) {
             const listener = (event: Event): void => {
                 for (const area of this.entries.values()) {
-                    area.session.handleEvent(event);
+                    area.sessionRef.session.handleEvent(event);
                 }
             };
 
@@ -201,7 +197,7 @@ export class MicrofrontendObserver {
         if (options.propertyCheckIntervalMs > 0) {
             const timer = view.setInterval(() => {
                 for (const area of this.entries.values()) {
-                    area.session.checkProperties();
+                    area.sessionRef.session.checkProperties();
                 }
             }, options.propertyCheckIntervalMs);
 
@@ -229,7 +225,7 @@ export class MicrofrontendObserver {
 
         for (const [element, area] of this.entries) {
             if (!mounted.has(element)) {
-                area.session.dispose();
+                area.sessionRef.destroy();
                 this.entries.delete(element);
                 changed = true;
             }
@@ -249,7 +245,7 @@ export class MicrofrontendObserver {
 
             if (area.parent !== area.root.parentElement) {
                 area.parent = area.root.parentElement;
-                area.session.invalidate();
+                area.sessionRef.session.invalidate();
             }
 
             if (area.state.name !== name || area.state.parentId !== parentId) {
@@ -271,18 +267,11 @@ export class MicrofrontendObserver {
             this.identities.set(root, id);
         }
 
-        const session = new DomObservationSession(root, options, this.analyzer, {
-            mode: 'shared',
-            scope: new DomObservationScope(
-                root,
-                options.ignoreSelector,
-                options.boundarySelector,
-            ),
-        });
+        const sessionRef = this.sessions.create(root, options, SessionSourceMode.Shared);
 
         const area: Area = {
             root,
-            session,
+            sessionRef,
             parent: root.parentElement,
             fingerprint: null,
             state: {
@@ -297,22 +286,19 @@ export class MicrofrontendObserver {
             },
         };
 
+        sessionRef.session.snapshots$.subscribe((result) => {
+            this.acceptArea(area, result);
+            this.publish();
+        });
+        sessionRef.session.errors$.subscribe((error) => {
+            this.failArea(area, error);
+            this.publish();
+        });
+
         try {
-            const initial = this.captureArea(area, options);
+            const initial = this.builder.build(root, options);
 
-            session.start(initial, {
-                captureAndPublish: () => {
-                    const snapshot = this.captureArea(area, options);
-
-                    this.publish();
-
-                    return snapshot;
-                },
-                onError: (error) => {
-                    this.failArea(area, error);
-                    this.publish();
-                },
-            });
+            this.acceptArea(area, sessionRef.session.start(initial));
         } catch (error: unknown) {
             this.failArea(area, error);
         }
@@ -321,15 +307,15 @@ export class MicrofrontendObserver {
     }
 
     private failArea(area: Area, error: unknown): void {
-        area.session.dispose();
+        area.sessionRef.destroy();
         area.state = {
             ...area.state,
             error: error instanceof Error ? error.message : String(error),
         };
     }
 
-    private captureArea(area: Area, options: DomObservationOptions): DomSnapshot {
-        const snapshot = this.builder.build(area.root, options);
+    private acceptArea(area: Area, result: SessionSnapshot): void {
+        const {snapshot, controls} = result;
         const fingerprint = snapshotFingerprint(snapshot);
         const changed = fingerprint !== area.fingerprint;
 
@@ -340,13 +326,11 @@ export class MicrofrontendObserver {
             ...(changed
                 ? {
                       snapshot,
-                      logicalControls: this.controls.build(snapshot),
+                      logicalControls: controls,
                       revision: area.state.revision + 1,
                   }
                 : {}),
         };
-
-        return snapshot;
     }
 
     private publish(): void {

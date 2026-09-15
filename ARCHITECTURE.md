@@ -55,8 +55,9 @@ contracts и runtime не импортируют Angular, Taiga, DOM-серви�
 
 ## 3. Наблюдение: DOM → ControlSnapshot
 
-`TrainingObserver` — Angular Facade одного сеанса. `start(root, overrides)` сначала проверяет настройки и строит
-исходный снимок, затем заменяет старый сеанс. Ошибочные настройки не останавливают рабочее наблюдение.
+`provideDomObservation()` подключает локальные Angular-фасады и фабрику сеансов. `TrainingObserver` — Angular Facade
+одного сеанса. `start(root, overrides)` сначала проверяет настройки и строит исходный снимок, затем заменяет старый
+сеанс. Ошибочные настройки не останавливают рабочее наблюдение.
 
 1. `DomSnapshotBuilder` запускает `DomCapture`. Обход учитывает лимиты глубины/узлов, исключённые области, видимость,
    текст, native/ARIA свойства и связанные popup.
@@ -72,9 +73,12 @@ DOM ID вроде `n17` и control ID сессионные. Они предна�
 
 ### Когда запускается capture
 
-`DomObservationSession` объединяет MutationObserver, browser events и проверку native properties. Окно batching по
-умолчанию 50 мс, проверка свойств — 500 мс. Это фиксированное окно, не бесконечно откладываемый debounce. Events служат
-поводом снять состояние, а не журналом кликов.
+`ObservationSessionFactory` создаёт дочерний EnvironmentInjector для каждого start/stop; в нём DI создаёт
+`DomObservationSession` и `BlurConfirmation`. DestroyRef освобождает ресурсы и отменяет ожидающий blur. Сеанс сам
+выполняет capture, проекцию и подтверждение, затем синхронно выдаёт результат через Observable; фасад публикует signals.
+Callback-сборки между этими стадиями нет. `DomObservationSession` объединяет MutationObserver, browser events и проверку
+native properties. Окно batching по умолчанию 50 мс, проверка свойств — 500 мс. Это фиксированное окно, не бесконечно
+откладываемый debounce. Events служат поводом снять состояние, а не журналом кликов.
 
 Служебный UI наблюдателя и декорация прокрутки исключаются, чтобы собственный вывод JSON/подсветка не запускал цикл
 наблюдения. Сам scroll не считается учебным действием. Виртуализация обнаруживается по результирующим DOM-изменениям;

@@ -10,7 +10,7 @@ import {
 import {FormsModule} from '@angular/forms';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
-import {MicrofrontendObserver} from '@training-observer/core';
+import {MicrofrontendObserver, provideDomObservation} from '@training-observer/core';
 
 @Component({
     selector: 'app-microfrontends',
@@ -25,7 +25,7 @@ import {MicrofrontendObserver} from '@training-observer/core';
     templateUrl: './microfrontends.component.html',
     styleUrl: './microfrontends.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [MicrofrontendObserver],
+    providers: [provideDomObservation()],
 })
 export class MicrofrontendsComponent {
     protected readonly observer = inject(MicrofrontendObserver);

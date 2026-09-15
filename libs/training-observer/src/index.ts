@@ -4,6 +4,7 @@ export {DomSnapshotBuilder} from './lib/capture/dom-snapshot-builder';
 export {ControlSnapshotBuilder} from './lib/controls/control-snapshot-builder';
 export {DomHighlighter} from './lib/highlight/dom-highlighter';
 export {MicrofrontendObserver} from './lib/microfrontend-observer';
+export {provideDomObservation} from './lib/provide-dom-observation';
 export {readScreenState} from './lib/screen/screen-state-reader';
 export {ScreenVisitTracker} from './lib/screen/screen-visit-tracker';
 export {

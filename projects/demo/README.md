@@ -56,3 +56,8 @@ Select/ComboBox используют `*tuiTextfieldDropdown` и `<tui-data-list-
 использует `ScenarioStore.saved`, поэтому не захватывает несохранённый черновик. Редактор принимает необязательный
 журнал: импортированный сценарий редактируется независимо от него. Связь с исходной записью сохраняется только для
 сценариев, скомпилированных в этом браузере.
+
+Все наблюдатели demo подключены через `provideDomObservation()` в локальных providers компонента. Angular DI и жизненный
+цикл проверяются в `src/app/shared/observation-providers.spec.ts`. В Angular fakeAsync-тестах используются глобальные
+test/beforeEach/afterEach, обёрнутые zone-testing; чистый Jest-набор в tests/unit по-прежнему использует импорт из
+@jest/globals.

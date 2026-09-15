@@ -9,7 +9,7 @@
 - `@training-observer/core/models` — модели и enum без Angular; [отдельное описание](models/README.md).
 
 `src/index.ts` — полный публичный API. Не импортируйте внутренние файлы из приложения. Пакет зависит от Angular
-common/core и tslib. На contracts/recording/runtime зависимостей нет.
+common/core, RxJS и tslib. На contracts/recording/runtime зависимостей нет.
 
 ## Структура и маршрут чтения
 
@@ -25,8 +25,9 @@ common/core и tslib. На contracts/recording/runtime зависимостей 
 | `src/lib/tokens/`                   | DI-настройки и их значения по умолчанию                |
 | `models/src/`                       | JSON-модели DOM и контролов                            |
 
-Читайте TrainingObserver → DomObservationSession → DomSnapshotBuilder → control-projection. Затем BlurConfirmation
-объясняет, почему сырое значение и подтверждённое значение отличаются.
+Читайте provideDomObservation → TrainingObserver → ObservationSessionFactory → DomObservationSession →
+DomSnapshotBuilder → control-projection. Затем BlurConfirmation объясняет, почему сырое значение и подтверждённое
+значение отличаются.
 
 ## Алгоритм
 
@@ -75,3 +76,20 @@ Taiga-адаптеры используют DOM-признаки версии 4.
 При чтении текстовой подписи действия capture исключает aria-hidden-потомков (например, декоративные иконки). Явные
 aria-labelledby и aria-label по-прежнему имеют приоритет. Это не полное вычисление Accessible Name. Измерение на
 реальных Taiga/HTML-контролах: [отчёт устойчивости](../../docs/reference/matching-resilience.md).
+
+## Angular DI и жизненный цикл
+
+Подключение: `providers: [provideDomObservation()]` в компоненте-владельце. Helper предоставляет TrainingObserver,
+MicrofrontendObserver и фабрику сеансов. Он заменяет прежний одиночный provider фасада; providedIn root у фасадов убран.
+Сервисы построения снимков и проекции могут оставаться общими, а состояние blur всегда изолировано на сеанс.
+
+ObservationSessionFactory создаёт EnvironmentInjector на один start/stop и сохраняет локальные overrides DOCUMENT,
+DomSnapshotBuilder, DomElementAnalyzer и ControlSnapshotBuilder. Внутри DI создаёт DomObservationSession и
+BlurConfirmation. Stop уничтожает контейнер; DestroyRef очищает браузерные ресурсы и инвалидирует ожидающие microtasks.
+Уничтожение владельца освобождает оставшиеся сеансы. Повторный destroy безопасен на уровне ObservationSessionRef.
+
+DomObservationSession выдаёт синхронные Observable snapshots$/errors$. Capture, проекция и подтверждение blur
+выполняются до выдачи результата; эффектов или асинхронной очереди между этими стадиями нет. Потоки завершаются при
+остановке, освобождая подписки фасада. Shared-сеансы публикуют только снимки областей, как и раньше; подтверждения
+ученика остаются контрактом TrainingObserver. Чистые объекты отдельного capture/snapshot и модели не превращены в
+DI-сервисы.

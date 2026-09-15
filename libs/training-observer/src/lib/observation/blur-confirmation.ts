@@ -2,28 +2,34 @@
  * Capture при focusout сохраняет уходящее поле; следующий settled capture уточняет его значение.
  * Внутренний фокус и связанный popup не завершают редактирование. Класс не знает о тренировках/записи.
  */
+import {DOCUMENT} from '@angular/common';
+import {DestroyRef, inject, Injectable} from '@angular/core';
 import {
     type ControlSnapshot,
     ControlType,
     type DomSnapshot,
 } from '@training-observer/core/models';
 
-import {type DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
-import {type ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
+import {DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
+import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {SelectionEvidence} from './selection-evidence';
 
+@Injectable()
 export class BlurConfirmation {
+    private readonly document = inject(DOCUMENT);
+    private readonly snapshots = inject(DomSnapshotBuilder);
+    private readonly controls = inject(ControlSnapshotBuilder);
+    private generation = 0;
     private readonly pending = new Map<string, ControlSnapshot>();
     private readonly evidence = new SelectionEvidence();
 
-    constructor(
-        private readonly document: Document,
-        private readonly snapshots: DomSnapshotBuilder,
-        private readonly controls: ControlSnapshotBuilder,
-    ) {}
+    constructor() {
+        inject(DestroyRef).onDestroy(() => this.reset());
+    }
 
     public reset(): void {
+        this.generation++;
         this.pending.clear();
         this.evidence.clear();
     }
@@ -59,10 +65,10 @@ export class BlurConfirmation {
         session: {
             root: Element;
             options: DomObservationOptions;
-            isCurrentSession(): boolean;
         },
     ): void {
-        const {root, options, isCurrentSession} = session;
+        const {root, options} = session;
+        const generation = this.generation;
 
         if (!snapshot || !event.target) {
             return;
@@ -99,7 +105,10 @@ export class BlurConfirmation {
         const departure = captured && this.evidence.confirm(captured);
 
         queueMicrotask(() => {
-            if (!isCurrentSession() || contains(control, this.document.activeElement)) {
+            if (
+                generation !== this.generation ||
+                contains(control, this.document.activeElement)
+            ) {
                 return;
             }
 

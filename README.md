@@ -64,7 +64,9 @@ npm run test:load              # отдельные измерения, producti
 JSON v1 и ключи localStorage не изменены. Исходные импорты учебной логики из core нужно заменить:
 
 ```ts
-import {TrainingObserver, readScreenState} from '@training-observer/core';
+import {provideDomObservation, TrainingObserver, readScreenState} from '@training-observer/core';
+
+// В компоненте-владельце: providers: [provideDomObservation()]
 import {ControlType, ScreenStatus} from '@training-observer/core/models';
 import {parseScenario, type TrainingScenario} from '@training-observer/contracts';
 import {StateRecorder, compileScenario} from '@training-observer/recording';

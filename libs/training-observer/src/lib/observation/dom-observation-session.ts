@@ -1,15 +1,20 @@
 /** Ресурсы одного browser-сеанса: listeners, MutationObserver, таймеры и polling свойств. Объединяет изменения и освобождает всё в dispose. */
-import {type DomSnapshot} from '@training-observer/core/models';
+import {DestroyRef, inject, Injectable} from '@angular/core';
+import {type ControlSnapshot, type DomSnapshot} from '@training-observer/core/models';
+import {Subject} from 'rxjs';
 
-import {type DomElementAnalyzer} from '../capture/dom-element-analyzer';
+import {DomElementAnalyzer} from '../capture/dom-element-analyzer';
 import {
     isScrollDecoration,
     SCROLL_DECORATION_SELECTOR,
 } from '../capture/dom-scroll-decoration';
+import {DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
 import {resolveRelatedRoots} from '../capture/snapshot-references';
-import {type DomObservationOptions} from '../tokens/dom-observation-options';
+import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
+import {BlurConfirmation} from './blur-confirmation';
 import {DomObservationScope} from './dom-observation-scope';
 import {isObserverUi, isObserverUiMutation} from './dom-observer-ui';
+import {SESSION_CONTEXT, SessionSourceMode} from './session-context';
 
 const PROPERTY_CONTROLS = 'input,textarea,select,option';
 
@@ -49,19 +54,25 @@ const DECORATIVE_TRANSITION_PROPERTIES = new Set([
     'text-shadow',
 ]);
 
-type SessionSources =
-    | {readonly mode: 'shared'; readonly scope: DomObservationScope}
-    | {readonly mode: 'standalone'};
-
-interface SessionCallbacks {
-    onEdit?(event: Event): void;
-    onFocusOut?(event: FocusEvent): void;
-    captureAndPublish(): DomSnapshot;
-    onError(error: unknown): void;
+export interface SessionSnapshot {
+    readonly snapshot: DomSnapshot;
+    readonly controls: readonly ControlSnapshot[];
+    readonly confirmedControls: Readonly<Record<string, ControlSnapshot>>;
 }
 
 /** Browser-ресурсы одного цикла start/stop. Создаются вне Angular zone. */
+@Injectable()
 export class DomObservationSession {
+    private readonly context = inject(SESSION_CONTEXT);
+    private readonly root = this.context.root;
+    private readonly options = this.context.options;
+    private readonly analyzer = inject(DomElementAnalyzer);
+    private readonly builder = inject(DomSnapshotBuilder);
+    private readonly controlBuilder = inject(ControlSnapshotBuilder);
+    private readonly confirmations = inject(BlurConfirmation);
+    private readonly snapshots = new Subject<SessionSnapshot>();
+    private readonly failures = new Subject<unknown>();
+    private current: SessionSnapshot | null = null;
     private readonly document: Document;
     private readonly view: Window & typeof globalThis;
     private readonly cleanups: Array<() => void> = [];
@@ -71,34 +82,50 @@ export class DomObservationSession {
     private propertyStates = new Map<Element, string>();
     private relatedRoots: Element[] = [];
     private disposed = false;
-    private callbacks: SessionCallbacks | null = null;
     private readonly scope: DomObservationScope | undefined;
 
-    constructor(
-        private readonly root: Element,
-        private readonly options: DomObservationOptions,
-        private readonly analyzer: DomElementAnalyzer,
-        private readonly sources: SessionSources,
-    ) {
-        this.document = root.ownerDocument;
+    public readonly snapshots$ = this.snapshots.asObservable();
+    public readonly errors$ = this.failures.asObservable();
+
+    constructor() {
+        this.document = this.root.ownerDocument;
         this.view = this.document.defaultView!;
-        this.scope =
-            sources.mode === 'shared'
-                ? sources.scope
-                : new DomObservationScope(
-                      root,
-                      options.ignoreSelector,
-                      options.boundarySelector ?? '',
-                  );
+        this.scope = new DomObservationScope(
+            this.root,
+            this.options.ignoreSelector,
+            this.options.boundarySelector ?? '',
+        );
+        inject(DestroyRef).onDestroy(() => this.dispose());
     }
 
-    public start(snapshot: DomSnapshot, callbacks: SessionCallbacks): void {
-        this.callbacks = callbacks;
+    public start(snapshot: DomSnapshot): SessionSnapshot {
+        if (this.disposed || this.current) {
+            throw new Error('Create a new session for each start.');
+        }
+
+        const result = this.project(snapshot);
+
         this.acceptSnapshot(snapshot);
 
-        if (this.sources.mode === 'standalone') {
+        if (this.context.mode === SessionSourceMode.Standalone) {
             this.connectOwnSources();
         }
+
+        return result;
+    }
+
+    /** Подготовка результата синхронна: blur подтверждается до публикации, без effect или scheduler. */
+    public project(snapshot: DomSnapshot): SessionSnapshot {
+        const controls = this.controlBuilder.build(snapshot);
+        const confirmedControls = this.confirmations.settle(
+            snapshot,
+            controls,
+            this.current?.confirmedControls ?? {},
+        );
+
+        this.current = {snapshot, controls, confirmedControls};
+
+        return this.current;
     }
 
     public handleMutations(records: readonly MutationRecord[]): void {
@@ -112,7 +139,7 @@ export class DomObservationSession {
             (record) =>
                 // В одиночном режиме несвязанный внешний overlay тоже может перекрыть область.
                 // Shared-режим сохраняет изоляцию областей и требует refresh для внешней геометрии.
-                (this.sources.mode === 'standalone' ||
+                (this.context.mode === SessionSourceMode.Standalone ||
                     !this.scope ||
                     this.scope.acceptsMutation(record)) &&
                 this.isRelevantMutation(record),
@@ -138,20 +165,33 @@ export class DomObservationSession {
             (target &&
                 (isObserverUi(target) ||
                     isScrollDecoration(target) ||
-                    this.excludedAncestor(target)))
+                    this.excludedAncestor(target))) ||
+            this.disposed
         ) {
             return;
         }
 
-        if (event.type === 'input' || event.type === 'reset') {
-            this.callbacks?.onEdit?.(event);
-        }
-
-        if (event.type === 'focusout') {
+        // Только одиночный фасад публикует blur-подтверждения; shared-области сохраняют прежний контракт снимков.
+        if (this.current && this.context.mode === SessionSourceMode.Standalone) {
             try {
-                this.callbacks?.onFocusOut?.(event as FocusEvent);
+                if (event.type === 'input' || event.type === 'reset') {
+                    this.confirmations.onEdit(
+                        event,
+                        this.current.snapshot,
+                        this.current.controls,
+                    );
+                }
+
+                if (event.type === 'focusout') {
+                    this.confirmations.onFocusOut(
+                        event as FocusEvent,
+                        this.current.snapshot,
+                        this.current.controls,
+                        this.context,
+                    );
+                }
             } catch (error: unknown) {
-                this.callbacks?.onError(error);
+                this.failures.next(error);
 
                 return;
             }
@@ -192,7 +232,7 @@ export class DomObservationSession {
                 this.schedule();
             }
         } catch (error: unknown) {
-            this.callbacks?.onError(error);
+            this.failures.next(error);
         }
     }
 
@@ -226,7 +266,10 @@ export class DomObservationSession {
 
         this.propertyStates.clear();
         this.relatedRoots = [];
-        this.callbacks = null;
+        this.current = null;
+        this.confirmations.reset();
+        this.snapshots.complete();
+        this.failures.complete();
     }
 
     private connectOwnSources(): void {
@@ -282,9 +325,8 @@ export class DomObservationSession {
 
     private capturePendingChanges(): void {
         this.batchTimer = null;
-        const callbacks = this.callbacks;
 
-        if (this.disposed || !callbacks) {
+        if (this.disposed || !this.current) {
             return;
         }
 
@@ -295,11 +337,13 @@ export class DomObservationSession {
                 );
             }
 
-            const snapshot = callbacks.captureAndPublish();
+            const snapshot = this.builder.build(this.root, this.options);
+
+            this.snapshots.next(this.project(snapshot));
 
             this.acceptSnapshot(snapshot);
         } catch (error: unknown) {
-            callbacks.onError(error);
+            this.failures.next(error);
         }
     }
 

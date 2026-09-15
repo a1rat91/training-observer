@@ -36,7 +36,7 @@ core → обучение или recording ↔ runtime. `npm run test:load` — 
 ```ts
 import {DOCUMENT} from '@angular/common';
 import {afterNextRender, ChangeDetectionStrategy, Component, inject} from '@angular/core';
-import {TrainingObserver} from '@training-observer/core';
+import {provideDomObservation, TrainingObserver} from '@training-observer/core';
 
 @Component({
   selector: 'app-observation-panel',
@@ -44,7 +44,7 @@ import {TrainingObserver} from '@training-observer/core';
   template: `
     <p>Контролов: {{ observer.logicalControls().length }}</p>
   `,
-  providers: [TrainingObserver],
+  providers: [provideDomObservation()],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ObservationPanel {
@@ -177,6 +177,27 @@ UI-интеграции замените обработку массива ст�
 положительное уведомление, `FeedbackKind.Error` — ошибку. Сценарий JSON v1 остаётся совместимым: новое поле
 `successMessage?: string` необязательно. Пустые сообщения не отображаются; исходные значения при входе на экран не
 вызывают уведомлений.
+
+## Область жизни Angular-сервисов
+
+`provideDomObservation()` подключается в `providers` компонента-владельца. Он предоставляет оба фасада
+(`TrainingObserver` и `MicrofrontendObserver`) и `ObservationSessionFactory`. Фасады больше не регистрируются
+автоматически в root: замените прежние `providers: [TrainingObserver]` или `[MicrofrontendObserver]` на
+`[provideDomObservation()]`. Подсветка остаётся отдельным provider.
+
+Каждый start создаёт дочерний EnvironmentInjector, который владеет `DomObservationSession` и `BlurConfirmation`.
+Остановка уничтожает injector; DestroyRef освобождает listeners, таймеры, подписки и ожидающее подтверждение blur. Для
+каждой области MicrofrontendObserver создаётся отдельный сеанс с общими источниками событий. Локальные переопределения
+DOCUMENT и сервисов capture/projection передаются из injector владельца в сеанс.
+
+Сеанс синхронно выполняет capture → projection → settle blur, затем выдаёт результат через RxJS Observable. Здесь нет
+effect или scheduler: фасад получает готовое состояние в том же вызове. Потоки завершаются при уничтожении сеанса.
+Signals фасада остаются публичным способом чтения состояния. DomCapture, DomGeometry и SnapshotReader остаются
+короткоживущими объектами конкретного обхода/снимка.
+
+`npm test` включает чистые Jest-тесты и Angular DI-проверки в demo. Последние используют TestBed,
+createEnvironmentInjector и fakeAsync: изоляция владельцев, stop/start, уничтожение с ожидающим blur. Для них настроен
+`createCjsPreset` из jest-preset-angular, преобразующий Angular .mjs.
 
 ## Контракты, совместимость, enum
 

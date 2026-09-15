@@ -11,7 +11,7 @@ import {FormsModule} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
-import {MicrofrontendObserver} from '@training-observer/core';
+import {MicrofrontendObserver, provideDomObservation} from '@training-observer/core';
 
 interface AreaFixture {
     readonly id: number;
@@ -40,7 +40,7 @@ const MIXED_KINDS: ReadonlyArray<AreaFixture['kind']> = [
     templateUrl: './load.component.html',
     styleUrl: './load.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [MicrofrontendObserver],
+    providers: [provideDomObservation()],
 })
 export class LoadComponent {
     private readonly params = inject(ActivatedRoute).snapshot.queryParamMap;

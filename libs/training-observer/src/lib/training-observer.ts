@@ -9,11 +9,16 @@ import {
     type DomSnapshot,
 } from '@training-observer/core/models';
 
-import {DomElementAnalyzer} from './capture/dom-element-analyzer';
 import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
 import {ControlSnapshotBuilder} from './controls/control-snapshot-builder';
-import {BlurConfirmation} from './observation/blur-confirmation';
-import {DomObservationSession} from './observation/dom-observation-session';
+import {
+    type DomObservationSession,
+    type SessionSnapshot,
+} from './observation/dom-observation-session';
+import {
+    ObservationSessionFactory,
+    type ObservationSessionRef,
+} from './observation/observation-session-factory';
 import {snapshotFingerprint} from './observation/snapshot-fingerprint';
 import {
     DOM_OBSERVATION_OPTIONS,
@@ -23,7 +28,7 @@ import {
 import {type DomSnapshotOptions} from './tokens/dom-snapshot-options';
 
 /** Один сеанс на экземпляр сервиса. Предоставляйте локально для жизненного цикла области. */
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class TrainingObserver {
     private readonly builder = inject(DomSnapshotBuilder);
     private readonly controlBuilder = inject(ControlSnapshotBuilder);
@@ -31,21 +36,16 @@ export class TrainingObserver {
     private readonly current = signal<DomSnapshot | null>(null);
     private readonly document = inject(DOCUMENT);
     private readonly defaults = inject(DOM_OBSERVATION_OPTIONS);
-    private readonly analyzer = inject(DomElementAnalyzer);
+    private readonly sessions = inject(ObservationSessionFactory);
     private readonly destroyRef = inject(DestroyRef);
     private readonly observing = signal(false);
     private readonly failure = signal<string | null>(null);
     private readonly scans = signal(0);
     private readonly publications = signal(0);
-    private session: DomObservationSession | null = null;
+    private sessionRef: ObservationSessionRef | null = null;
     private fingerprint: string | null = null;
     private destroyed = false;
     private readonly confirmed = signal<Readonly<Record<string, ControlSnapshot>>>({});
-    private readonly confirmations = new BlurConfirmation(
-        this.document,
-        this.builder,
-        this.controlBuilder,
-    );
 
     /** Последнее значение при выходе из логического поля. Сырые снимки обновляются независимо; отсутствие означает, что подтверждения нет. */
     public readonly confirmedControls = this.confirmed.asReadonly();
@@ -98,63 +98,31 @@ export class TrainingObserver {
         this.failure.set(null);
 
         this.zone.runOutsideAngular(() => {
-            const session = new DomObservationSession(root, options, this.analyzer, {
-                mode: 'standalone',
-            });
+            const ref = this.sessions.create(root, options);
 
-            this.session = session;
+            this.sessionRef = ref;
+            // Потоки синхронные; при уничтожении сеанса они завершаются вместе с подписками.
+            ref.session.snapshots$.subscribe((result) => this.publish(result, true));
+            ref.session.errors$.subscribe((error) => this.fail(error));
 
             try {
-                session.start(initial, {
-                    onEdit: (event) =>
-                        this.confirmations.onEdit(
-                            event,
-                            this.current(),
-                            this.logicalControls(),
-                        ),
-                    onFocusOut: (event) =>
-                        this.confirmations.onFocusOut(
-                            event,
-                            this.current(),
-                            this.logicalControls(),
-                            {
-                                root,
-                                options,
-                                isCurrentSession: () => this.session === session,
-                            },
-                        ),
-                    captureAndPublish: () => {
-                        const snapshot = this.builder.build(root, options);
+                const result = ref.session.start(initial);
 
-                        this.publish(snapshot, true);
-
-                        return snapshot;
-                    },
-                    onError: (error) =>
-                        this.zone.run(() => {
-                            this.stop();
-                            this.failure.set(
-                                error instanceof Error ? error.message : String(error),
-                            );
-                        }),
-                });
+                this.zone.run(() => this.observing.set(true));
+                this.publish(result, false);
             } catch (error: unknown) {
                 this.stop();
                 throw error;
             }
         });
 
-        this.observing.set(true);
-        this.publish(initial, false);
-
         return initial;
     }
 
     /** Оставить последний снимок, освободив observers/listeners и отменив ожидающую работу. */
     public stop(): void {
-        this.confirmations.reset();
-        this.session?.dispose();
-        this.session = null;
+        this.sessionRef?.destroy();
+        this.sessionRef = null;
         this.observing.set(false);
     }
 
@@ -164,7 +132,13 @@ export class TrainingObserver {
             this.builder.build(root, options),
         );
 
-        this.publish(snapshot, false);
+        const result = this.session?.project(snapshot) ?? {
+            snapshot,
+            controls: this.controlBuilder.build(snapshot),
+            confirmedControls: this.confirmed(),
+        };
+
+        this.publish(result, false);
         this.zone.runOutsideAngular(() => this.session?.resetPropertyBaseline());
 
         return snapshot;
@@ -184,16 +158,24 @@ export class TrainingObserver {
         this.confirmed.set({});
     }
 
-    private publish(snapshot: DomSnapshot, onlyIfChanged: boolean): void {
+    private get session(): DomObservationSession | null {
+        return this.sessionRef?.session ?? null;
+    }
+
+    private fail(error: unknown): void {
+        this.zone.run(() => {
+            this.stop();
+            this.failure.set(error instanceof Error ? error.message : String(error));
+        });
+    }
+
+    private publish(result: SessionSnapshot, onlyIfChanged: boolean): void {
+        const {snapshot, confirmedControls} = result;
         const fingerprint = snapshotFingerprint(snapshot);
 
         this.zone.run(() => {
             this.scans.update((count) => count + 1);
-            const controls = this.controlBuilder.build(snapshot);
-
-            this.confirmed.set(
-                this.confirmations.settle(snapshot, controls, this.confirmed()),
-            );
+            this.confirmed.set(confirmedControls);
 
             if (!onlyIfChanged || this.fingerprint !== fingerprint) {
                 this.fingerprint = fingerprint;

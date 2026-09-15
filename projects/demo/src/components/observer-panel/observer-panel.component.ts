@@ -15,6 +15,7 @@ import {
     DomHighlighter,
     type DomNodeId,
     MicrofrontendObserver,
+    provideDomObservation,
 } from '@training-observer/core';
 
 @Component({
@@ -23,7 +24,7 @@ import {
     templateUrl: './observer-panel.component.html',
     styleUrl: './observer-panel.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [MicrofrontendObserver, DomHighlighter],
+    providers: [provideDomObservation(), DomHighlighter],
     host: {'data-training-observer-ignore': '', 'data-training-observer-ui': ''},
 })
 export class ObserverPanelComponent {

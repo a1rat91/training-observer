@@ -19,6 +19,7 @@ import {type RecordedEvent, type StateRecording} from '@training-observer/contra
 import {
     type ControlSnapshot,
     DomHighlighter,
+    provideDomObservation,
     readScreenState,
     ScreenVisitTracker,
     TrainingObserver,
@@ -39,7 +40,7 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [TrainingObserver, DomHighlighter],
+    providers: [provideDomObservation(), DomHighlighter],
 })
 export class RecordPageComponent {
     private readonly recorder = new StateRecorder();

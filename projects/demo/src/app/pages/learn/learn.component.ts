@@ -14,7 +14,11 @@ import {
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 import {TuiAlertService} from '@taiga-ui/core';
-import {readScreenState, TrainingObserver} from '@training-observer/core';
+import {
+    provideDomObservation,
+    readScreenState,
+    TrainingObserver,
+} from '@training-observer/core';
 import {
     FeedbackKind,
     ScenarioRuntime,
@@ -30,7 +34,7 @@ import {ScenarioStore} from '../../shared/scenarios/scenario-store';
     templateUrl: './learn.component.html',
     styleUrl: './learn.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [TrainingObserver],
+    providers: [provideDomObservation()],
 })
 export class LearnComponent {
     private readonly observer = inject(TrainingObserver);

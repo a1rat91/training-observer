@@ -10,7 +10,12 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TuiButton} from '@taiga-ui/core';
-import {DomHighlighter, type DomNodeId, TrainingObserver} from '@training-observer/core';
+import {
+    DomHighlighter,
+    type DomNodeId,
+    provideDomObservation,
+    TrainingObserver,
+} from '@training-observer/core';
 
 @Component({
     selector: 'app-observer-panel',
@@ -18,7 +23,7 @@ import {DomHighlighter, type DomNodeId, TrainingObserver} from '@training-observ
     templateUrl: './observer-panel.component.html',
     styleUrl: './observer-panel.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [TrainingObserver, DomHighlighter],
+    providers: [provideDomObservation(), DomHighlighter],
     host: {'data-training-observer-ignore': ''},
 })
 export class ObserverPanelComponent {
