@@ -1,6 +1,6 @@
 /** Чистые контракты наблюдения: импорт этой точки входа не загружает Angular. */
-export * from './control-snapshot';
-export * from './dom-snapshot';
-export * from './microfrontend-snapshot';
+export type * from './control-snapshot';
+export type * from './dom-snapshot';
+export type * from './microfrontend-snapshot';
 export * from './observation-enums';
-export * from './screen-state';
+export type * from './screen-state';

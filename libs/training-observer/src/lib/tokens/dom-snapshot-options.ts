@@ -1,5 +1,5 @@
 /** DI-настройки обхода, лимитов и скрытия значений. Применяются до формирования сохраняемого снимка. */
-import { InjectionToken } from '@angular/core';
+import {InjectionToken} from '@angular/core';
 
 export interface DomSnapshotOptions {
     readonly maxDepth: number;
@@ -11,13 +11,16 @@ export interface DomSnapshotOptions {
     readonly boundarySelector?: string;
 }
 
-export const DOM_SNAPSHOT_OPTIONS = new InjectionToken<DomSnapshotOptions>('DOM_SNAPSHOT_OPTIONS', {
-    providedIn: 'root',
-    factory: () => ({
-        maxDepth: 100,
-        maxNodes: 10_000,
-        includeText: true,
-        cursorHeuristics: false,
-        ignoreSelector: '[data-training-observer-ignore]',
-    }),
-});
+export const DOM_SNAPSHOT_OPTIONS = new InjectionToken<DomSnapshotOptions>(
+    'DOM_SNAPSHOT_OPTIONS',
+    {
+        providedIn: 'root',
+        factory: () => ({
+            maxDepth: 100,
+            maxNodes: 10_000,
+            includeText: true,
+            cursorHeuristics: false,
+            ignoreSelector: '[data-training-observer-ignore]',
+        }),
+    },
+);

@@ -2,28 +2,29 @@
     <header data-training-observer-ignore>
         <h1>Запись тренировки</h1>
         <p>
-            Начните запись, заполните поля и перейдите по нужным экранам. Input, Select и ComboBox
-            записываются после выхода из поля. Для ComboBox сравнивается видимый текст, включая введённый
-            вручную.
+            Начните запись, заполните поля и перейдите по нужным экранам. Input, Select и ComboBox записываются после
+            выхода из поля. Для ComboBox сравнивается видимый текст, включая введённый вручную.
         </p>
         <p>
-            Завершите запись, чтобы сохранить её в браузере. Затем создайте ожидания из записи и сохраните
-            сценарий для ученика.
+            Завершите запись, чтобы сохранить её в браузере. Затем создайте ожидания из записи и сохраните сценарий для
+            ученика.
         </p>
         <button
-            tuiButton
             size="s"
+            tuiButton
             type="button"
             [disabled]="recording() || screen().status !== 'ready'"
-            (click)="startRecording()">
+            (click)="startRecording()"
+        >
             Начать запись
         </button>
         <button
-            tuiButton
             size="s"
+            tuiButton
             type="button"
             [disabled]="!recording() || stopping()"
-            (click)="stopRecording()">
+            (click)="stopRecording()"
+        >
             Завершить запись
         </button>
         <p aria-live="polite">
@@ -48,15 +49,16 @@
                 }
                 @if (!recording()) {
                     <p>
-                        Удаление исключает строку из будущего сценария. Сохранённый сценарий ученика
-                        обновляется только после явного сохранения в редакторе.
+                        Удаление исключает строку из будущего сценария. Сохранённый сценарий ученика обновляется только
+                        после явного сохранения в редакторе.
                     </p>
                     <button
-                        tuiButton
                         size="s"
+                        tuiButton
                         type="button"
                         [disabled]="!undoHistory().length"
-                        (click)="undoDeletion()">
+                        (click)="undoDeletion()"
+                    >
                         Отменить удаление
                     </button>
                     @if (editProblem()) {
@@ -69,20 +71,20 @@
                             {{ eventText(event) }}
                             @if (!recording()) {
                                 <button
-                                    tuiButton
-                                    size="s"
                                     appearance="flat"
+                                    size="s"
+                                    tuiButton
                                     type="button"
                                     [attr.aria-label]="'Удалить строку ' + event.sequence"
                                     [disabled]="event.kind === 'unavailable' && !event.field"
-                                    (click)="deleteEvent(event.sequence)">
+                                    (click)="deleteEvent(event.sequence)"
+                                >
                                     Удалить
                                 </button>
                                 @if (event.kind === 'unavailable' && !event.field) {
-                                    <small
-                                        >Общий пропуск наблюдения нельзя удалить: эту часть нужно записать
-                                        заново.</small
-                                    >
+                                    <small>
+                                        Общий пропуск наблюдения нельзя удалить: эту часть нужно записать заново.
+                                    </small>
                                 }
                             }
                         </li>
@@ -90,7 +92,12 @@
                 </ol>
                 <details>
                     <summary>JSON записи</summary>
-                    <textarea aria-label="JSON записи" readonly [value]="draft() | json" rows="10"></textarea>
+                    <textarea
+                        aria-label="JSON записи"
+                        readonly
+                        rows="10"
+                        [value]="draft() | json"
+                    ></textarea>
                 </details>
             </section>
             @if (!recording()) {
@@ -103,7 +110,10 @@
     </header>
     <div class="workspace">
         <app-procedure-form />
-        <aside data-training-observer-ignore aria-label="Распознанный экран">
+        <aside
+            aria-label="Распознанный экран"
+            data-training-observer-ignore
+        >
             <h2>Что видит библиотека</h2>
             <p role="status">{{ statuses[screen().status] }} · {{ screen().key ?? 'ID не определён' }}</p>
             @if (screen().status !== 'ready') {
@@ -134,13 +144,12 @@
                         }
                     </p>
                     <button
-                        tuiButton
-                        size="s"
                         appearance="flat"
+                        size="s"
+                        tuiButton
                         type="button"
-                        (click)="
-                            selected.set(selected() === control.targetNodeId ? null : control.targetNodeId)
-                        ">
+                        (click)="selected.set(selected() === control.targetNodeId ? null : control.targetNodeId)"
+                    >
                         {{ selected() === control.targetNodeId ? 'Убрать подсветку' : 'Показать в форме' }}
                     </button>
                 </article>

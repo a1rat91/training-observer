@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { TuiRoot } from '@taiga-ui/core';
+/** Корневая оболочка demo: размещает навигацию и маршруты внутри Taiga UI, обеспечивает слой уведомлений. */
+import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {TuiDocMain} from '@taiga-ui/addon-doc';
+import {TuiRoot} from '@taiga-ui/core';
 
 @Component({
-    selector: 'app-root',
-    imports: [RouterLink, RouterLinkActive, RouterOutlet, TuiRoot],
+    standalone: true,
+    selector: 'my-app',
+    imports: [TuiDocMain, TuiRoot],
     templateUrl: './app.component.html',
-    styleUrl: './app.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {}

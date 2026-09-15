@@ -1,0 +1,12 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./dist/out-tsc-server",
+        "target": "ES2022",
+        "types": ["node"]
+    },
+    "files": ["src/typings.d.ts", "src/main.server.ts", "server.ts"],
+    "angularCompilerOptions": {
+        "compilationMode": "full"
+    }
+}

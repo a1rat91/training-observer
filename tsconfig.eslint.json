@@ -1,0 +1,21 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "rootDir": ".",
+        "esModuleInterop": true
+    },
+    "include": [
+        "projects",
+        "scripts",
+        "tests",
+        "benchmarks",
+        "jest.config.ts",
+        "playwright.config.ts",
+        "playwright.load.config.ts",
+        "eslint.config.ts",
+        ".release-it.js",
+        "libs"
+    ],
+    "exclude": ["**/node_modules", "**/schematics/**", "**/.*/", "**/*.js", "**/typings.d.ts"]
+}

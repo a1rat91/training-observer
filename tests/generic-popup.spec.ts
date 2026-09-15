@@ -1,30 +1,34 @@
-import { expect, test, type Page } from '@playwright/test';
-import { type ControlSnapshot } from '../libs/training-observer/src/index';
+import {expect, type Page, test} from '@playwright/test';
 
-test.use({ trace: 'off' });
+import {type ControlSnapshot} from '../libs/training-observer/src';
+
+test.use({trace: 'off'});
 
 async function control(page: Page, id: string): Promise<ControlSnapshot | undefined> {
     const controls: ControlSnapshot[] = JSON.parse(
         (await page.getByTestId('controls-json').textContent()) ?? '[]',
     );
+
     return controls.find((item) => item.locatorHints.id === id);
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({page}) => {
     await page.goto('/controls');
-    await page.getByText('Обычные поля с dropdown', { exact: true }).click();
+    await page.getByText('Обычные поля с dropdown', {exact: true}).click();
 });
 
-test('real generic TuiInput resolves its popup without claiming selection semantics', async ({ page }) => {
+test('real generic TuiInput resolves its popup without claiming selection semantics', async ({
+    page,
+}) => {
     await page.locator('#generic-hint').fill('Новый запрос');
     await expect(page.locator('tui-dropdown')).toContainText('Введите несколько слов');
     await expect
-        .poll(() => control(page, 'generic-hint'))
+        .poll(async () => control(page, 'generic-hint'))
         .toMatchObject({
             kind: 'textbox',
             source: 'taiga-ui',
-            state: { value: 'Новый запрос' },
-            popup: { status: 'open', relation: 'aria-controls' },
+            state: {value: 'Новый запрос'},
+            popup: {status: 'open', relation: 'aria-controls'},
         });
     expect((await control(page, 'generic-hint'))?.choice).toBeUndefined();
     expect((await control(page, 'generic-hint'))!.popup!.rootNodeIds).toHaveLength(1);
@@ -42,11 +46,11 @@ test('a generic input without an explicit link remains present with an unresolve
             ),
         );
     await expect
-        .poll(() => control(page, 'unlinked-input'))
+        .poll(async () => control(page, 'unlinked-input'))
         .toMatchObject({
             kind: 'textbox',
-            state: { value: 'Запрос' },
-            popup: { status: 'unresolved', relation: 'missing', rootNodeIds: [] },
+            state: {value: 'Запрос'},
+            popup: {status: 'unresolved', relation: 'missing', rootNodeIds: []},
         });
 });
 
@@ -55,34 +59,51 @@ test('real dialog popup is captured outside the scope and reconciles silent inpu
 }) => {
     await page.locator('#generic-dialog').fill('Запрос');
     await expect(page.locator('tui-dropdown')).toHaveAttribute('role', 'dialog');
-    await expect.poll(async () => (await control(page, 'generic-dialog'))?.popup?.status).toBe('open');
-    await expect(page.getByTestId('observed-page').locator('#popup-detail')).toHaveCount(0);
-    await expect.poll(async () => (await control(page, 'popup-detail'))?.state.value).toBe('Начальное');
+    await expect
+        .poll(async () => (await control(page, 'generic-dialog'))?.popup?.status)
+        .toBe('open');
+    await expect(page.getByTestId('observed-page').locator('#popup-detail')).toHaveCount(
+        0,
+    );
+    await expect
+        .poll(async () => (await control(page, 'popup-detail'))?.state.value)
+        .toBe('Начальное');
     // No input/change event and no attribute mutation: only property reconciliation can see this.
     await page.locator('#popup-detail').evaluate((input: HTMLInputElement) => {
         input.value = 'Без события';
     });
-    await expect.poll(async () => (await control(page, 'popup-detail'))?.state.value).toBe('Без события');
-    await page.getByRole('button', { name: 'Готово', exact: true }).click();
-    await expect.poll(async () => (await control(page, 'generic-dialog'))?.popup?.status).toBe('closed');
-    await expect.poll(() => control(page, 'popup-detail')).toBeUndefined();
+    await expect
+        .poll(async () => (await control(page, 'popup-detail'))?.state.value)
+        .toBe('Без события');
+    await page.getByRole('button', {name: 'Готово', exact: true}).click();
+    await expect
+        .poll(async () => (await control(page, 'generic-dialog'))?.popup?.status)
+        .toBe('closed');
+    await expect.poll(async () => control(page, 'popup-detail')).toBeUndefined();
+    // Taiga UI 4 удаляет DOM закрытого popup после анимации. Ждём завершения перед новым открытием.
+    await expect(page.locator('#popup-detail')).toHaveCount(0);
     await page.locator('#generic-hint').focus();
     await page.locator('#generic-dialog').focus();
-    await expect.poll(async () => (await control(page, 'generic-dialog'))?.popup?.status).toBe('open');
+    await expect
+        .poll(async () => (await control(page, 'generic-dialog'))?.popup?.status)
+        .toBe('open');
     await page.locator('#popup-detail').evaluate((input: HTMLInputElement) => {
         input.value = 'После открытия';
     });
-    await expect.poll(async () => (await control(page, 'popup-detail'))?.state.value).toBe('После открытия');
+    await expect
+        .poll(async () => (await control(page, 'popup-detail'))?.state.value)
+        .toBe('После открытия');
 });
 
-test('an explicit link on the textfield host resolves a non-list popup', async ({ page }) => {
+test('an explicit link on the textfield host resolves a non-list popup', async ({
+    page,
+}) => {
     await page
         .getByTestId('observed-page')
         .evaluate((root) =>
             root.insertAdjacentHTML(
                 'beforeend',
-                '<tui-textfield aria-expanded="true" aria-haspopup="dialog" aria-controls="host-popup">' +
-                    '<input id="host-input" tuiInput role="combobox"></tui-textfield>',
+                '<tui-textfield aria-expanded="true" aria-haspopup="dialog" aria-controls="host-popup"><input id="host-input" tuiInput role="combobox"></tui-textfield>',
             ),
         );
     await page.evaluate(() =>
@@ -101,15 +122,20 @@ test('an explicit link on the textfield host resolves a non-list popup', async (
         });
 });
 
-test('excluded portal properties do not trigger scans', async ({ page }) => {
+test('excluded portal properties do not trigger scans', async ({page}) => {
     await page.locator('#generic-dialog').focus();
-    await expect.poll(async () => (await control(page, 'generic-dialog'))?.popup?.status).toBe('open');
+    await expect
+        .poll(async () => (await control(page, 'generic-dialog'))?.popup?.status)
+        .toBe('open');
     await page
         .locator('tui-dropdown')
         .evaluate((popup) => popup.setAttribute('data-training-observer-ignore', ''));
-    await expect.poll(async () => (await control(page, 'generic-dialog'))?.popup?.status).toBe('unresolved');
+    await expect
+        .poll(async () => (await control(page, 'generic-dialog'))?.popup?.status)
+        .toBe('unresolved');
     await page.waitForTimeout(600);
     const count = await page.getByTestId('scan-count').textContent();
+
     await page.locator('#popup-detail').evaluate((input: HTMLInputElement) => {
         input.value = 'Исключён';
     });
@@ -117,7 +143,7 @@ test('excluded portal properties do not trigger scans', async ({ page }) => {
     expect(await page.getByTestId('scan-count').textContent()).toBe(count);
 });
 
-test('native option label follows the visible label attribute', async ({ page }) => {
+test('native option label follows the visible label attribute', async ({page}) => {
     await page
         .getByTestId('observed-page')
         .evaluate((root) =>

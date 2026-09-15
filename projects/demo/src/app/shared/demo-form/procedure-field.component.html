@@ -1,70 +1,111 @@
 @switch (field().kind) {
     @case ('checkbox') {
-        <label class="choice"
-            ><input
+        <label class="choice">
+            <input
                 tuiCheckbox
                 type="checkbox"
                 [id]="field().id"
                 [ngModel]="value() === true"
-                (ngModelChange)="changed.emit($event)" />{{ field().label }}</label
-        >
+                (ngModelChange)="changed.emit($event)"
+            />
+            {{ field().label }}
+        </label>
     }
     @case ('radio') {
         <fieldset>
             <legend>{{ field().label }}</legend>
             @for (option of field().options; track option; let index = $index) {
-                <label class="choice"
-                    ><input
+                <label class="choice">
+                    <input
                         tuiRadio
                         type="radio"
                         [id]="field().id + '-' + index"
                         [name]="field().id"
-                        [value]="option"
                         [ngModel]="value()"
-                        (ngModelChange)="changed.emit($event)" />{{ option }}</label
-                >
+                        [value]="option"
+                        (ngModelChange)="changed.emit($event)"
+                    />
+                    {{ option }}
+                </label>
             }
         </fieldset>
     }
     @case ('select') {
-        <tui-textfield
-            ><label tuiLabel [for]="field().id">{{ field().label }}</label>
-            <input tuiSelect [id]="field().id" [ngModel]="value()" (ngModelChange)="changed.emit($event)" />
-            <tui-data-list-wrapper *tuiDropdown [items]="field().options ?? []" />
+        <tui-textfield>
+            <label
+                tuiLabel
+                [for]="field().id"
+            >
+                {{ field().label }}
+            </label>
+            <input
+                tuiSelect
+                [id]="field().id"
+                [ngModel]="value()"
+                (ngModelChange)="changed.emit($event)"
+            />
+            <tui-data-list-wrapper
+                *tuiTextfieldDropdown
+                new
+                [items]="field().options ?? []"
+            />
         </tui-textfield>
     }
     @case ('combobox') {
-        <tui-textfield
-            ><label tuiLabel [for]="field().id">{{ field().label }}</label>
+        <tui-textfield>
+            <label
+                tuiLabel
+                [for]="field().id"
+            >
+                {{ field().label }}
+            </label>
             <input
                 #search
                 tuiComboBox
                 [id]="field().id"
                 [ngModel]="value()"
                 (input)="query.set(search.value)"
-                (ngModelChange)="changed.emit($event)" />
-            <tui-data-list-wrapper *tuiDropdown [items]="results()" emptyContent="Ничего не найдено" />
+                (ngModelChange)="changed.emit($event)"
+            />
+            <tui-data-list-wrapper
+                *tuiTextfieldDropdown
+                emptyContent="Ничего не найдено"
+                new
+                [items]="results()"
+            />
         </tui-textfield>
     }
     @case ('number') {
-        <tui-textfield
-            ><label tuiLabel [for]="field().id">{{ field().label }}</label>
+        <tui-textfield>
+            <label
+                tuiLabel
+                [for]="field().id"
+            >
+                {{ field().label }}
+            </label>
             <input
                 tuiInputNumber
                 [id]="field().id"
                 [ngModel]="numberValue()"
-                (ngModelChange)="changed.emit($event)" />
+                (ngModelChange)="changed.emit($event)"
+            />
         </tui-textfield>
     }
     @default {
-        <tui-textfield
-            ><label tuiLabel [for]="field().id">{{ field().label }}</label>
+        <tui-textfield>
+            <label
+                tuiLabel
+                [for]="field().id"
+            >
+                {{ field().label }}
+            </label>
             <input
-                tuiInput
+                tuiTextfield
                 [id]="field().id"
                 [name]="field().id"
                 [ngModel]="value()"
-                (ngModelChange)="changed.emit($event)" />
+                (ngModelChange)="changed.emit($event)"
+            />
         </tui-textfield>
     }
 }

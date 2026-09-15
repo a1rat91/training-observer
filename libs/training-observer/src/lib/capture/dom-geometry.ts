@@ -1,5 +1,5 @@
 /** Чтение геометрии и доступности указателю. Проверяет rects, viewport и перекрытие; не использует координаты как постоянную идентичность. */
-import { type DomRectSnapshot, type HitTestResult } from '@training-observer/core/models';
+import {type DomRectSnapshot, type HitTestResult} from '@training-observer/core/models';
 
 /** Кэш одного capture: геометрия и computed styles не переиспользуются между снимками. */
 export class DomGeometry {
@@ -8,7 +8,7 @@ export class DomGeometry {
 
     constructor(private readonly view: Window) {}
 
-    style(element: Element): CSSStyleDeclaration {
+    public style(element: Element): CSSStyleDeclaration {
         let style = this.styles.get(element);
 
         if (!style) {
@@ -19,26 +19,33 @@ export class DomGeometry {
         return style;
     }
 
-    rects(element: Element): readonly DOMRect[] {
+    public rects(element: Element): readonly DOMRect[] {
         let rects = this.boxes.get(element);
 
         if (!rects) {
-            rects = Array.from(element.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+            rects = Array.from(element.getClientRects()).filter(
+                (rect) => rect.width > 0 && rect.height > 0,
+            );
             this.boxes.set(element, rects);
         }
 
         return rects;
     }
 
-    serializeRects(element: Element): readonly DomRectSnapshot[] {
-        return this.rects(element).map(({ x, y, width, height }) => ({ x, y, width, height }));
+    public serializeRects(element: Element): readonly DomRectSnapshot[] {
+        return this.rects(element).map(({x, y, width, height}) => ({
+            x,
+            y,
+            width,
+            height,
+        }));
     }
 
-    visible(element: Element): boolean {
+    public visible(element: Element): boolean {
         return this.rects(element).length > 0 && this.stylesAllowVisibility(element);
     }
 
-    textVisible(text: Text): boolean {
+    public textVisible(text: Text): boolean {
         if (!text.parentElement || !this.stylesAllowVisibility(text.parentElement)) {
             return false;
         }
@@ -47,14 +54,16 @@ export class DomGeometry {
 
         range.selectNodeContents(text);
 
-        return Array.from(range.getClientRects()).some((rect) => rect.width > 0 && rect.height > 0);
+        return Array.from(range.getClientRects()).some(
+            (rect) => rect.width > 0 && rect.height > 0,
+        );
     }
 
-    inViewport(element: Element): boolean {
+    public inViewport(element: Element): boolean {
         return this.rects(element).some((rect) => this.clipToViewport(rect) !== null);
     }
 
-    hitTest(element: Element): HitTestResult {
+    public hitTest(element: Element): HitTestResult {
         if (!this.visible(element) || !this.inViewport(element)) {
             return 'not-tested';
         }
@@ -70,10 +79,10 @@ export class DomGeometry {
                 continue;
             }
 
-            const { left, top, right, bottom } = clipped;
+            const {left, top, right, bottom} = clipped;
             const insetX = Math.min(2, (right - left) / 4);
             const insetY = Math.min(2, (bottom - top) / 4);
-            const points = [
+            const points: ReadonlyArray<readonly [number, number]> = [
                 [(left + right) / 2, (top + bottom) / 2],
                 [left + insetX, top + insetY],
                 [right - insetX, bottom - insetY],
@@ -99,10 +108,18 @@ export class DomGeometry {
         }
 
         // Потомок может переопределить visibility:hidden, но не opacity:0 предка.
-        for (let current: Element | null = element; current; current = current.parentElement) {
+        for (
+            let current: Element | null = element;
+            current;
+            current = current.parentElement
+        ) {
             const style = this.style(current);
 
-            if (style.display === 'none' || style.opacity === '0' || style.contentVisibility === 'hidden') {
+            if (
+                style.display === 'none' ||
+                style.opacity === '0' ||
+                style.contentVisibility === 'hidden'
+            ) {
                 return false;
             }
         }
@@ -112,12 +129,12 @@ export class DomGeometry {
 
     private clipToViewport(
         rect: DOMRect,
-    ): { left: number; top: number; right: number; bottom: number } | null {
+    ): {left: number; top: number; right: number; bottom: number} | null {
         const left = Math.max(0, rect.left);
         const top = Math.max(0, rect.top);
         const right = Math.min(this.view.innerWidth, rect.right);
         const bottom = Math.min(this.view.innerHeight, rect.bottom);
 
-        return right > left && bottom > top ? { left, top, right, bottom } : null;
+        return right > left && bottom > top ? {left, top, right, bottom} : null;
     }
 }

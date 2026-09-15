@@ -1,11 +1,22 @@
-<section aria-label="Экран процедуры" [attr.id]="screen()?.id ?? null" [attr.aria-busy]="loading()">
+<section
+    aria-label="Экран процедуры"
+    [attr.aria-busy]="loading()"
+    [attr.id]="screen()?.id ?? null"
+>
     <h2>{{ screen()?.title ?? 'Открываем заявку' }}</h2>
     @if (loading()) {
         <p role="status">Загрузка экрана…</p>
     }
     @if (error()) {
         <p role="alert">{{ error() }}</p>
-        <button tuiButton size="s" type="button" (click)="retry()">Повторить загрузку</button>
+        <button
+            size="s"
+            tuiButton
+            type="button"
+            (click)="retry()"
+        >
+            Повторить загрузку
+        </button>
     }
     @if (screen(); as current) {
         @if (current.id === 'application-other') {
@@ -23,7 +34,8 @@
                             <app-procedure-field
                                 [field]="field"
                                 [value]="values()[field.id] ?? null"
-                                (changed)="setValue(field.id, $event)" />
+                                (changed)="setValue(field.id, $event)"
+                            />
                         }
                     </div>
                 </fieldset>
@@ -32,29 +44,32 @@
     }
     <footer>
         <button
-            tuiButton
             size="s"
+            tuiButton
             type="button"
             [disabled]="loading() || !screen() || !!error() || index() >= 3"
-            (click)="load(index() + 1)">
+            (click)="load(index() + 1)"
+        >
             Далее
         </button>
         <button
-            tuiButton
-            size="s"
             appearance="secondary"
+            size="s"
+            tuiButton
             type="button"
             [disabled]="loading() || index() === 0"
-            (click)="load(index() === 4 ? returnIndex : index() - 1)">
+            (click)="load(index() === 4 ? returnIndex : index() - 1)"
+        >
             Назад
         </button>
         <button
-            tuiButton
-            size="s"
             appearance="secondary"
+            size="s"
+            tuiButton
             type="button"
             [disabled]="loading() || !screen() || !!error() || index() === 4"
-            (click)="wrong()">
+            (click)="wrong()"
+        >
             Неправильный переход
         </button>
     </footer>

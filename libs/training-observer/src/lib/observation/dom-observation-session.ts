@@ -1,14 +1,18 @@
 /** Ресурсы одного browser-сеанса: listeners, MutationObserver, таймеры и polling свойств. Объединяет изменения и освобождает всё в dispose. */
-import { type DomSnapshot } from '@training-observer/core/models';
-import { type DomObservationOptions } from '../tokens/dom-observation-options';
-import { type DomElementAnalyzer } from '../capture/dom-element-analyzer';
-import { isScrollDecoration, SCROLL_DECORATION_SELECTOR } from '../capture/dom-scroll-decoration';
-import { type DomObservationScope } from './dom-observation-scope';
-import { resolveRelatedRoots } from '../capture/snapshot-references';
+import {type DomSnapshot} from '@training-observer/core/models';
 
-import { isObserverUi, isObserverUiMutation } from './dom-observer-ui';
+import {type DomElementAnalyzer} from '../capture/dom-element-analyzer';
+import {
+    isScrollDecoration,
+    SCROLL_DECORATION_SELECTOR,
+} from '../capture/dom-scroll-decoration';
+import {resolveRelatedRoots} from '../capture/snapshot-references';
+import {type DomObservationOptions} from '../tokens/dom-observation-options';
+import {DomObservationScope} from './dom-observation-scope';
+import {isObserverUi, isObserverUiMutation} from './dom-observer-ui';
 
 const PROPERTY_CONTROLS = 'input,textarea,select,option';
+
 export const PAGE_EVENTS = [
     'input',
     'change',
@@ -23,44 +27,44 @@ export const PAGE_EVENTS = [
 // Эти переходы меняют декорацию, а не представленное в снимке состояние или геометрию.
 // Неизвестные свойства, opacity, visibility и изменения раскладки учитываются: они могут показать контролы.
 const DECORATIVE_TRANSITION_PROPERTIES = new Set([
-    'color',
     'background-color',
-    'border-color',
-    'border-top-color',
-    'border-right-color',
-    'border-bottom-color',
-    'border-left-color',
     'border-block-color',
-    'border-block-start-color',
     'border-block-end-color',
+    'border-block-start-color',
+    'border-bottom-color',
+    'border-color',
     'border-inline-color',
-    'border-inline-start-color',
     'border-inline-end-color',
+    'border-inline-start-color',
+    'border-left-color',
+    'border-right-color',
+    'border-top-color',
+    'box-shadow',
+    'caret-color',
+    'color',
+    'column-rule-color',
     'outline-color',
     'text-decoration-color',
     'text-emphasis-color',
-    'column-rule-color',
-    'caret-color',
-    'box-shadow',
     'text-shadow',
 ]);
 
 type SessionSources =
-    | { readonly mode: 'standalone' }
-    | { readonly mode: 'shared'; readonly scope: DomObservationScope };
+    | {readonly mode: 'shared'; readonly scope: DomObservationScope}
+    | {readonly mode: 'standalone'};
 
 interface SessionCallbacks {
-    readonly onEdit?: (event: Event) => void;
-    readonly onFocusOut?: (event: FocusEvent) => void;
-    readonly captureAndPublish: () => DomSnapshot;
-    readonly onError: (error: unknown) => void;
+    onEdit?(event: Event): void;
+    onFocusOut?(event: FocusEvent): void;
+    captureAndPublish(): DomSnapshot;
+    onError(error: unknown): void;
 }
 
 /** Browser-ресурсы одного цикла start/stop. Создаются вне Angular zone. */
 export class DomObservationSession {
     private readonly document: Document;
     private readonly view: Window & typeof globalThis;
-    private readonly cleanups: (() => void)[] = [];
+    private readonly cleanups: Array<() => void> = [];
     private mutationObserver: MutationObserver | null = null;
     private batchTimer: number | null = null;
     private propertyTimer: number | null = null;
@@ -78,83 +82,130 @@ export class DomObservationSession {
     ) {
         this.document = root.ownerDocument;
         this.view = this.document.defaultView!;
-        this.scope = sources.mode === 'shared' ? sources.scope : undefined;
+        this.scope =
+            sources.mode === 'shared'
+                ? sources.scope
+                : new DomObservationScope(
+                      root,
+                      options.ignoreSelector,
+                      options.boundarySelector ?? '',
+                  );
     }
 
-    start(snapshot: DomSnapshot, callbacks: SessionCallbacks): void {
+    public start(snapshot: DomSnapshot, callbacks: SessionCallbacks): void {
         this.callbacks = callbacks;
         this.acceptSnapshot(snapshot);
-        if (this.sources.mode === 'standalone') this.connectOwnSources();
+
+        if (this.sources.mode === 'standalone') {
+            this.connectOwnSources();
+        }
     }
 
-    handleMutations(records: readonly MutationRecord[]): void {
+    public handleMutations(records: readonly MutationRecord[]): void {
         if (!this.root.isConnected) {
             this.schedule();
+
             return;
         }
 
         const relevant = records.some(
             (record) =>
-                (!this.scope || this.scope.acceptsMutation(record)) && this.isRelevantMutation(record),
+                // В одиночном режиме несвязанный внешний overlay тоже может перекрыть область.
+                // Shared-режим сохраняет изоляцию областей и требует refresh для внешней геометрии.
+                (this.sources.mode === 'standalone' ||
+                    !this.scope ||
+                    this.scope.acceptsMutation(record)) &&
+                this.isRelevantMutation(record),
         );
-        if (relevant) this.schedule();
+
+        if (relevant) {
+            this.schedule();
+        }
     }
 
-    handleEvent(event: Event): void {
+    public handleEvent(event: Event): void {
         if (
             event.type === 'transitionend' &&
             DECORATIVE_TRANSITION_PROPERTIES.has((event as TransitionEvent).propertyName)
-        )
+        ) {
             return;
-        const target = event.target as Node | null;
-        if (target && this.scope && !this.scope.acceptsEvent(target, event.type)) return;
-        if (target && (isObserverUi(target) || isScrollDecoration(target) || this.excludedAncestor(target)))
-            return;
+        }
 
-        if (event.type === 'input' || event.type === 'reset') this.callbacks?.onEdit?.(event);
+        const target = event.target as Node | null;
+
+        if (
+            (target && this.scope && !this.scope.acceptsEvent(target, event.type)) ||
+            (target &&
+                (isObserverUi(target) ||
+                    isScrollDecoration(target) ||
+                    this.excludedAncestor(target)))
+        ) {
+            return;
+        }
+
+        if (event.type === 'input' || event.type === 'reset') {
+            this.callbacks?.onEdit?.(event);
+        }
 
         if (event.type === 'focusout') {
             try {
                 this.callbacks?.onFocusOut?.(event as FocusEvent);
             } catch (error: unknown) {
                 this.callbacks?.onError(error);
+
                 return;
             }
         }
+
         this.schedule();
     }
 
-    invalidate(): void {
+    public invalidate(): void {
         this.schedule();
     }
 
     /** Явная граница после рендера действия Stop; root и options сеанса сохраняются. */
-    flush(): void {
-        if (this.batchTimer !== null) this.view.clearTimeout(this.batchTimer);
+    public flush(): void {
+        if (this.batchTimer !== null) {
+            this.view.clearTimeout(this.batchTimer);
+        }
+
         this.capturePendingChanges();
     }
 
-    checkProperties(): void {
-        if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
+    public checkProperties(): void {
+        if (this.disposed || this.options.propertyCheckIntervalMs === 0) {
+            return;
+        }
+
         try {
             const next = this.readProperties();
             const changed =
                 next.size !== this.propertyStates.size ||
-                [...next].some(([element, value]) => this.propertyStates.get(element) !== value);
+                [...next].some(
+                    ([element, value]) => this.propertyStates.get(element) !== value,
+                );
+
             this.propertyStates = next;
-            if (changed || !this.root.isConnected) this.schedule();
+
+            if (changed || !this.root.isConnected) {
+                this.schedule();
+            }
         } catch (error: unknown) {
             this.callbacks?.onError(error);
         }
     }
 
     /** Обновляет baseline polling после ручного capture, не меняя область или popup сеанса. */
-    resetPropertyBaseline(): void {
-        if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
+    public resetPropertyBaseline(): void {
+        if (this.disposed || this.options.propertyCheckIntervalMs === 0) {
+            return;
+        }
+
         this.propertyStates = this.readProperties();
     }
 
-    dispose(): void {
+    public dispose(): void {
         this.disposed = true;
         this.mutationObserver?.disconnect();
         this.mutationObserver = null;
@@ -179,7 +230,9 @@ export class DomObservationSession {
     }
 
     private connectOwnSources(): void {
-        this.mutationObserver = new this.view.MutationObserver((records) => this.handleMutations(records));
+        this.mutationObserver = new this.view.MutationObserver((records) =>
+            this.handleMutations(records),
+        );
         // Стили предков, внешние подписи и перекрытия могут влиять даже на снимок ограниченной области.
         this.mutationObserver.observe(this.document, {
             subtree: true,
@@ -207,7 +260,10 @@ export class DomObservationSession {
     /** Зависимости должны обновляться даже при отключённой проверке native-свойств. */
     private acceptSnapshot(snapshot: DomSnapshot): void {
         this.scope?.update(snapshot);
-        if (this.disposed || this.options.propertyCheckIntervalMs === 0) return;
+
+        if (this.disposed || this.options.propertyCheckIntervalMs === 0) {
+            return;
+        }
 
         this.relatedRoots = resolveRelatedRoots(snapshot, this.document);
         this.resetPropertyBaseline();
@@ -218,13 +274,19 @@ export class DomObservationSession {
             return;
         }
 
-        this.batchTimer = this.view.setTimeout(() => this.capturePendingChanges(), this.options.batchDelayMs);
+        this.batchTimer = this.view.setTimeout(
+            () => this.capturePendingChanges(),
+            this.options.batchDelayMs,
+        );
     }
 
     private capturePendingChanges(): void {
         this.batchTimer = null;
         const callbacks = this.callbacks;
-        if (this.disposed || !callbacks) return;
+
+        if (this.disposed || !callbacks) {
+            return;
+        }
 
         try {
             if (!this.root.isConnected) {
@@ -234,6 +296,7 @@ export class DomObservationSession {
             }
 
             const snapshot = callbacks.captureAndPublish();
+
             this.acceptSnapshot(snapshot);
         } catch (error: unknown) {
             callbacks.onError(error);
@@ -241,7 +304,7 @@ export class DomObservationSession {
     }
 
     private listen(target: EventTarget, name: string, listener: EventListener): void {
-        target.addEventListener(name, listener, { capture: true, passive: true });
+        target.addEventListener(name, listener, {capture: true, passive: true});
         this.cleanups.push(() => target.removeEventListener(name, listener, true));
     }
 
@@ -261,20 +324,29 @@ export class DomObservationSession {
 
         if (record.type === 'childList') {
             const added = Array.from(record.addedNodes).some(
-                (node) => !isObserverUi(node) && !isScrollDecoration(node) && !this.excludedAncestor(node),
+                (node) =>
+                    !isObserverUi(node) &&
+                    !isScrollDecoration(node) &&
+                    !this.excludedAncestor(node),
             );
             // К моменту callback удалённый узел уже может находиться в исключённом поддереве.
             // Новые предки узла не должны скрывать факт удаления из наблюдаемого родителя.
-            const removed = Array.from(record.removedNodes).some(
-                (node) =>
-                    !isObserverUi(node) &&
-                    !(
-                        node.nodeType === 1 &&
-                        ((node as Element).matches(SCROLL_DECORATION_SELECTOR) ||
-                            (this.options.ignoreSelector &&
-                                (node as Element).matches(this.options.ignoreSelector)))
-                    ),
-            );
+            const removed = Array.from(record.removedNodes).some((node) => {
+                if (isObserverUi(node)) {
+                    return false;
+                }
+
+                if (node.nodeType !== 1) {
+                    return true;
+                }
+
+                const element = node as Element;
+
+                return element.matches(SCROLL_DECORATION_SELECTOR)
+                    ? false
+                    : !this.options.ignoreSelector ||
+                          !element.matches(this.options.ignoreSelector);
+            });
 
             return added || removed;
         }
@@ -285,7 +357,9 @@ export class DomObservationSession {
     private excludedAncestor(node: Node): Element | null {
         const element = node.nodeType === 1 ? (node as Element) : node.parentElement;
 
-        return this.options.ignoreSelector ? (element?.closest(this.options.ignoreSelector) ?? null) : null;
+        return this.options.ignoreSelector
+            ? (element?.closest(this.options.ignoreSelector) ?? null)
+            : null;
     }
 
     private readProperties(): Map<Element, string> {
@@ -293,9 +367,17 @@ export class DomObservationSession {
         const controls = new Set<Element>();
 
         for (const root of [this.root, ...this.relatedRoots]) {
-            if (!root.isConnected) continue;
-            if (root.matches(PROPERTY_CONTROLS)) controls.add(root);
-            root.querySelectorAll(PROPERTY_CONTROLS).forEach((element) => controls.add(element));
+            if (!root.isConnected) {
+                continue;
+            }
+
+            if (root.matches(PROPERTY_CONTROLS)) {
+                controls.add(root);
+            }
+
+            root.querySelectorAll(PROPERTY_CONTROLS).forEach((element) => {
+                controls.add(element);
+            });
         }
 
         for (const element of controls) {

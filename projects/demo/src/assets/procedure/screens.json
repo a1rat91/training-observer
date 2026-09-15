@@ -1,130 +1,115 @@
 [
-  {
-    "id": "application-profile",
-    "title": "Данные заявки",
-    "sections": [
-      {
-        "title": "Сведения о сотруднике",
-        "fields": [
-          {
-            "id": "surname",
-            "label": "Фамилия",
-            "kind": "input"
-          },
-          {
-            "id": "department",
-            "label": "Подразделение",
-            "kind": "select",
-            "options": [
-              "Разработка",
-              "Поддержка",
-              "Продажи"
-            ]
-          },
-          {
-            "id": "employee",
-            "label": "Сотрудник",
-            "kind": "combobox",
-            "options": [
-              "Анна Смирнова",
-              "Алексей Иванов",
-              "Мария Петрова"
-            ]
-          }
+    {
+        "id": "application-profile",
+        "title": "Данные заявки",
+        "sections": [
+            {
+                "title": "Сведения о сотруднике",
+                "fields": [
+                    {
+                        "id": "surname",
+                        "label": "Фамилия",
+                        "kind": "input"
+                    },
+                    {
+                        "id": "department",
+                        "label": "Подразделение",
+                        "kind": "select",
+                        "options": ["Разработка", "Поддержка", "Продажи"]
+                    },
+                    {
+                        "id": "employee",
+                        "label": "Сотрудник",
+                        "kind": "combobox",
+                        "options": ["Анна Смирнова", "Алексей Иванов", "Мария Петрова"]
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  },
-  {
-    "id": "application-details",
-    "title": "Детали обучения",
-    "sections": [
-      {
-        "title": "Программа",
-        "fields": [
-          {
-            "id": "course",
-            "label": "Курс",
-            "kind": "select",
-            "options": [
-              "Angular",
-              "TypeScript",
-              "Тестирование"
-            ]
-          },
-          {
-            "id": "goal",
-            "label": "Цель обучения",
-            "kind": "input"
-          },
-          {
-            "id": "days",
-            "label": "Продолжительность в днях",
-            "kind": "number"
-          },
-          {
-            "id": "materials",
-            "label": "Формат материалов",
-            "kind": "radio",
-            "options": [
-              "Электронный",
-              "Бумажный"
-            ]
-          },
-          {
-            "id": "practice",
-            "label": "Нужна практика",
-            "kind": "checkbox"
-          }
+    },
+    {
+        "id": "application-details",
+        "title": "Детали обучения",
+        "sections": [
+            {
+                "title": "Программа",
+                "fields": [
+                    {
+                        "id": "course",
+                        "label": "Курс",
+                        "kind": "select",
+                        "options": ["Angular", "TypeScript", "Тестирование"]
+                    },
+                    {
+                        "id": "goal",
+                        "label": "Цель обучения",
+                        "kind": "input"
+                    },
+                    {
+                        "id": "days",
+                        "label": "Продолжительность в днях",
+                        "kind": "number"
+                    },
+                    {
+                        "id": "materials",
+                        "label": "Формат материалов",
+                        "kind": "radio",
+                        "options": ["Электронный", "Бумажный"]
+                    },
+                    {
+                        "id": "practice",
+                        "label": "Нужна практика",
+                        "kind": "checkbox"
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  },
-  {
-    "id": "application-review",
-    "title": "Подтверждение заявки",
-    "sections": [
-      {
-        "title": "Проверка данных",
-        "fields": [
-          {
-            "id": "note",
-            "label": "Примечание к заявке",
-            "kind": "input"
-          },
-          {
-            "id": "reviewed",
-            "label": "Данные проверены",
-            "kind": "checkbox"
-          },
-          {
-            "id": "terms",
-            "label": "Условия согласованы",
-            "kind": "checkbox"
-          }
+    },
+    {
+        "id": "application-review",
+        "title": "Подтверждение заявки",
+        "sections": [
+            {
+                "title": "Проверка данных",
+                "fields": [
+                    {
+                        "id": "note",
+                        "label": "Примечание к заявке",
+                        "kind": "input"
+                    },
+                    {
+                        "id": "reviewed",
+                        "label": "Данные проверены",
+                        "kind": "checkbox"
+                    },
+                    {
+                        "id": "terms",
+                        "label": "Условия согласованы",
+                        "kind": "checkbox"
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  },
-  {
-    "id": "application-done",
-    "title": "Заявка оформлена",
-    "sections": []
-  },
-  {
-    "id": "application-other",
-    "title": "Другая ветка",
-    "sections": [
-      {
-        "title": "Дополнительный запрос",
-        "fields": [
-          {
-            "id": "otherComment",
-            "label": "Комментарий другой ветки",
-            "kind": "input"
-          }
+    },
+    {
+        "id": "application-done",
+        "title": "Заявка оформлена",
+        "sections": []
+    },
+    {
+        "id": "application-other",
+        "title": "Другая ветка",
+        "sections": [
+            {
+                "title": "Дополнительный запрос",
+                "fields": [
+                    {
+                        "id": "otherComment",
+                        "label": "Комментарий другой ветки",
+                        "kind": "input"
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  }
+    }
 ]

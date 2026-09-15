@@ -1,6 +1,6 @@
 /** Результат наблюдения отдельной области: снимок, проекция, счётчики и ошибка. Не содержит сценариев обучения. */
-import { type ControlSnapshot } from './control-snapshot';
-import { type DomSnapshot } from './dom-snapshot';
+import {type ControlSnapshot} from './control-snapshot';
+import {type DomSnapshot} from './dom-snapshot';
 
 /** Сериализуемое состояние одного смонтированного корня data-mf. Имя не обязано быть уникальным. */
 export interface MicrofrontendSnapshot {

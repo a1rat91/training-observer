@@ -1,35 +1,41 @@
-/** Проекция выбора и popup из DOM-графа. Различает отображаемый текст, выбранные варианты и неизвестную связь со списком. */
-import { type ChoiceSnapshot, type PopupSnapshot } from '@training-observer/core/models';
-import { type DomElementSnapshot, type DomNodeId, type DomSnapshot } from '@training-observer/core/models';
+/** Проекция выбора и popup из DOM-графа. Отображаемый текст не доказывает выбор объекта приложения. */
+import {
+    type ChoiceSnapshot,
+    type DomElementSnapshot,
+    type DomNodeId,
+    type DomSnapshot,
+    type PopupSnapshot,
+} from '@training-observer/core/models';
 
-/** Разрешение popup только по явным DOM-признакам. Без живого DOM, Angular-значений и догадок по фокусу. */
+/** Разрешает выбор только по явно наблюдаемым состояниям, без доступа к Angular-компонентам. */
 export function buildChoiceSnapshot(
     snapshot: DomSnapshot,
     target: DomElementSnapshot,
     host: DomElementSnapshot,
-    kind: 'select' | 'combobox',
+    kind: 'combobox' | 'select',
 ): ChoiceSnapshot {
     const popup = buildPopupSnapshot(snapshot, target, host);
     const selectedLabels = popup.options
         .filter((option) => option.selected === true)
         .map((option) => option.label);
-    const native = target.tagName === 'select';
-    const displayValue = native
-        ? selectedLabels.join(', ')
-        : typeof target.state.value === 'string'
-          ? target.state.value
-          : '';
 
-    return {
-        displayValue,
-        selection:
-            kind === 'select'
-                ? { status: 'observed', labels: native ? selectedLabels : displayValue ? [displayValue] : [] }
-                : selectedLabels.length
-                  ? { status: 'observed', labels: selectedLabels }
-                  : { status: 'unknown', labels: [] },
-        popup,
-    };
+    const native = target.tagName === 'select';
+    const inputValue = typeof target.state.value === 'string' ? target.state.value : '';
+    const displayValue = native ? selectedLabels.join(', ') : inputValue;
+    let selection: ChoiceSnapshot['selection'] = {status: 'unknown', labels: []};
+
+    if (kind === 'select') {
+        const displayedLabels = displayValue ? [displayValue] : [];
+
+        selection = {
+            status: 'observed',
+            labels: native ? selectedLabels : displayedLabels,
+        };
+    } else if (selectedLabels.length) {
+        selection = {status: 'observed', labels: selectedLabels};
+    }
+
+    return {displayValue, selection, popup};
 }
 
 export function buildPopupSnapshot(
@@ -47,67 +53,93 @@ export function buildPopupSnapshot(
                 .filter(Boolean),
         ),
     ];
+
     const elements = Object.values(snapshot.nodes).filter(
         (node): node is DomElementSnapshot => node.kind === 'element',
     );
-    const roots = native
-        ? [target]
-        : expanded === true
-          ? referencedIds.flatMap((id) => {
-                const matches = elements.filter((node) => node.attributes['id'] === id);
-                return matches.length === 1 ? matches : [];
-            })
-          : [];
+
+    let roots: DomElementSnapshot[] = [];
+
+    if (native) {
+        roots = [target];
+    } else if (expanded === true) {
+        roots = referencedIds.flatMap((id) => {
+            const matches = elements.filter((node) => node.attributes['id'] === id);
+
+            return matches.length === 1 ? matches : [];
+        });
+    }
+
     const descendants = new Set<DomElementSnapshot>();
     const text = (id: DomNodeId): string => {
         const node = snapshot.nodes[id];
-        return node?.kind === 'text'
-            ? node.text
-            : node?.kind === 'element'
-              ? node.children.map(text).join(' ')
-              : '';
+
+        if (node?.kind === 'text') {
+            return node.text;
+        }
+
+        return node?.kind === 'element' ? node.children.map(text).join(' ') : '';
     };
+
     const visit = (node: DomElementSnapshot): void => {
-        if (descendants.has(node)) return;
+        if (descendants.has(node)) {
+            return;
+        }
+
         descendants.add(node);
         node.children.forEach((id) => {
             const child = snapshot.nodes[id];
-            if (child?.kind === 'element') visit(child);
+
+            if (child?.kind === 'element') {
+                visit(child);
+            }
         });
     };
+
     roots.forEach(visit);
     const options = [...descendants]
-        .filter((node) => node.tagName === 'option' || node.attributes['role'] === 'option')
+        .filter(
+            (node) => node.tagName === 'option' || node.attributes['role'] === 'option',
+        )
         .map((node) => ({
             nodeId: node.id,
-            label: node.label || text(node.id).replace(/\s+/g, ' ').trim(),
-            // Angular [value] не обязан быть HTML-атрибутом: не используем ng-reflect и не выдумываем ключ.
+            label: node.label || text(node.id).replaceAll(/\s+/g, ' ').trim(),
+            // HTML value доступен; скрытый Angular-объект или backend ID не восстанавливаем.
             value: node.attributes['value'],
             selected: node.state.selected ?? null,
             disabled: node.state.disabled || node.state.inert,
         }));
+
     const busyNodes = [...descendants].filter((node) => 'aria-busy' in node.attributes);
+    let status: PopupSnapshot['status'] = 'unresolved';
+
+    if (native) {
+        status = 'native';
+    } else if (expanded === false) {
+        status = 'closed';
+    } else if (
+        expanded === true &&
+        roots.length > 0 &&
+        roots.length === referencedIds.length
+    ) {
+        status = 'open';
+    }
+
+    const relation = referencedIds.length ? 'aria-controls' : 'missing';
+    const busy = busyNodes.length
+        ? busyNodes.some((node) => node.attributes['aria-busy'] === 'true')
+        : null;
 
     return {
-        status: native
-            ? 'native'
-            : expanded === false
-              ? 'closed'
-              : expanded === true && roots.length > 0 && roots.length === referencedIds.length
-                ? 'open'
-                : 'unresolved',
-        relation: native ? 'native-options' : referencedIds.length ? 'aria-controls' : 'missing',
+        status,
+        relation: native ? 'native-options' : relation,
         referencedIds,
         rootNodeIds: roots.map((root) => root.id),
-        busy: busyNodes.some((node) => node.attributes['aria-busy'] === 'true')
-            ? true
-            : busyNodes.length
-              ? false
-              : null,
+        busy,
         text: roots
             .map((root) => text(root.id))
             .join(' ')
-            .replace(/\s+/g, ' ')
+            .replaceAll(/\s+/g, ' ')
             .trim(),
         options,
     };

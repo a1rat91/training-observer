@@ -1,68 +1,145 @@
-<section class="inspector" aria-labelledby="inspector-title">
+<section
+    aria-labelledby="inspector-title"
+    class="inspector"
+>
     <div class="toolbar">
         <h2 id="inspector-title">Инспектор</h2>
-        <span class="badge" [class.available]="observer.isObserving()" data-testid="observation-status">
+        <span
+            data-testid="observation-status"
+            class="badge"
+            [class.available]="observer.isObserving()"
+        >
             {{ observer.isObserving() ? 'Наблюдение включено' : 'Наблюдение остановлено' }}
         </span>
     </div>
     <div class="actions">
         @if (observer.isObserving()) {
-            <button tuiButton type="button" size="m" (click)="observer.stop()">Остановить</button>
+            <button
+                size="m"
+                tuiButton
+                type="button"
+                (click)="observer.stop()"
+            >
+                Остановить
+            </button>
         } @else {
-            <button tuiButton type="button" size="m" (click)="start()">Начать наблюдение</button>
+            <button
+                size="m"
+                tuiButton
+                type="button"
+                (click)="start()"
+            >
+                Начать наблюдение
+            </button>
         }
-        <button tuiButton type="button" size="m" appearance="secondary" (click)="capture()">
+        <button
+            appearance="secondary"
+            size="m"
+            tuiButton
+            type="button"
+            (click)="capture()"
+        >
             Снять снимок
         </button>
-        <button tuiButton type="button" size="m" appearance="flat" (click)="observer.clear()">
+        <button
+            appearance="flat"
+            size="m"
+            tuiButton
+            type="button"
+            (click)="observer.clear()"
+        >
             Очистить
         </button>
     </div>
     <div class="actions">
         <button
+            appearance="secondary"
+            size="s"
             tuiButton
             type="button"
-            size="s"
-            appearance="secondary"
             [disabled]="!observer.snapshot()"
-            (click)="highlight.set({ mode: 'all' })">
+            (click)="highlight.set({mode: 'all'})"
+        >
             Подсветить контролы
         </button>
         <button
+            appearance="secondary"
+            size="s"
             tuiButton
             type="button"
-            size="s"
-            appearance="secondary"
             [disabled]="!observer.snapshot()"
-            (click)="highlight.set({ mode: 'dom' })">
+            (click)="highlight.set({mode: 'dom'})"
+        >
             Подсветить DOM-ноды
         </button>
         <button
+            appearance="flat"
+            size="s"
             tuiButton
             type="button"
-            size="s"
-            appearance="flat"
             [disabled]="!highlight()"
-            (click)="highlight.set(null)">
+            (click)="highlight.set(null)"
+        >
             Убрать подсветку
         </button>
     </div>
     <p class="muted">
-        Пересчётов: <span data-testid="scan-count">{{ observer.scanCount() }}</span> · Публикаций:
+        Пересчётов:
+        <span data-testid="scan-count">{{ observer.scanCount() }}</span>
+        · Публикаций:
         <span data-testid="revision">{{ observer.revision() }}</span>
     </p>
     <details class="settings">
         <summary>Ограничения обхода</summary>
-        <label>Максимум узлов <input type="number" min="1" [(ngModel)]="maxNodes" /></label>
-        <label>Максимум уровней <input type="number" min="0" max="100" [(ngModel)]="maxDepth" /></label>
-        <label>Объединение событий, мс <input type="number" min="0" [(ngModel)]="batchDelayMs" /></label>
-        <label
-            >Сверка свойств, мс (0 — выключить)
-            <input type="number" min="0" [(ngModel)]="propertyCheckIntervalMs"
-        /></label>
-        <label>Вся страница <input type="checkbox" [(ngModel)]="wholeDocument" /></label>
+        <label>
+            Максимум узлов
+            <input
+                min="1"
+                type="number"
+                [(ngModel)]="maxNodes"
+            />
+        </label>
+        <label>
+            Максимум уровней
+            <input
+                max="100"
+                min="0"
+                type="number"
+                [(ngModel)]="maxDepth"
+            />
+        </label>
+        <label>
+            Объединение событий, мс
+            <input
+                min="0"
+                type="number"
+                [(ngModel)]="batchDelayMs"
+            />
+        </label>
+        <label>
+            Сверка свойств, мс (0 — выключить)
+            <input
+                min="0"
+                type="number"
+                [(ngModel)]="propertyCheckIntervalMs"
+            />
+        </label>
+        <label>
+            Вся страница
+            <input
+                type="checkbox"
+                [(ngModel)]="wholeDocument"
+            />
+        </label>
         <p class="muted">Настройки наблюдения применяются при запуске.</p>
-        <button tuiButton type="button" size="s" (click)="start()">Применить настройки</button>
+        <button
+            size="s"
+            tuiButton
+            type="button"
+            (click)="start()"
+        >
+            Применить настройки
+        </button>
     </details>
     @if (error()) {
         <p role="alert">{{ error() }}</p>
@@ -71,55 +148,62 @@
         <p role="alert">{{ observer.error() }}</p>
     }
     @if (observer.snapshot(); as snapshot) {
-        <p class="stats" aria-live="polite">
-            {{ snapshot.stats.nodeCount }} узлов · {{ observer.logicalControls().length }} логических
-            контролов · {{ observer.controls().length }} потенциальных DOM-контролов ·
-            {{ snapshot.durationMs.toFixed(1) }} мс
+        <p
+            aria-live="polite"
+            class="stats"
+        >
+            {{ snapshot.stats.nodeCount }} узлов · {{ observer.logicalControls().length }} логических контролов ·
+            {{ observer.controls().length }} потенциальных DOM-контролов · {{ snapshot.durationMs.toFixed(1) }} мс
         </p>
         @if (snapshot.stats.truncated) {
-            <p role="alert">
-                Снимок неполный: достигнут лимит {{ snapshot.stats.limitsReached.join(', ') }}.
-            </p>
+            <p role="alert">Снимок неполный: достигнут лимит {{ snapshot.stats.limitsReached.join(', ') }}.</p>
         }
         @if (snapshot.stats.boundaryCount) {
             <p>
-                Найдено границ iframe / Shadow DOM: {{ snapshot.stats.boundaryCount }}. Их содержимое пока не
-                обходится.
+                Найдено границ iframe / Shadow DOM: {{ snapshot.stats.boundaryCount }}. Их содержимое пока не обходится.
             </p>
         }
-        <div class="choice-states" data-testid="choice-states">
+        <div
+            data-testid="choice-states"
+            class="choice-states"
+        >
             @for (control of observer.logicalControls(); track control.id) {
                 @if (control.popup; as popup) {
-                    <section class="choice-state" [attr.data-control-id]="control.locatorHints.id">
+                    <section
+                        class="choice-state"
+                        [attr.data-control-id]="control.locatorHints.id"
+                    >
                         <h3>{{ control.label }} · поле с dropdown</h3>
                         <p>
-                            Popup: <strong>{{ popupLabels[popup.status] }}</strong>
+                            Popup:
+                            <strong>{{ popupLabels[popup.status] }}</strong>
                         </p>
-                        <small
-                            >Связь: {{ popup.relation }} ·
-                            {{ popup.referencedIds.join(', ') || 'нет ID' }}</small
-                        >
+                        <small>Связь: {{ popup.relation }} · {{ popup.referencedIds.join(', ') || 'нет ID' }}</small>
                         @if (popup.text) {
                             <p>{{ popup.text }}</p>
                         }
                     </section>
                 }
                 @if (control.choice; as choice) {
-                    <section class="choice-state" [attr.data-control-id]="control.locatorHints.id">
+                    <section
+                        class="choice-state"
+                        [attr.data-control-id]="control.locatorHints.id"
+                    >
                         <h3>{{ control.label }} · {{ control.kind }}</h3>
                         <p>
-                            Текст поля: <strong>{{ choice.displayValue || 'пусто' }}</strong>
+                            Текст поля:
+                            <strong>{{ choice.displayValue || 'пусто' }}</strong>
                         </p>
                         <p>
-                            Список: <strong>{{ popupLabels[choice.popup.status] }}</strong>
+                            Список:
+                            <strong>{{ popupLabels[choice.popup.status] }}</strong>
                             @if (choice.popup.busy) {
                                 <span class="badge">Загрузка</span>
                             }
                         </p>
-                        <small
-                            >Связь: {{ choice.popup.relation }} ·
-                            {{ choice.popup.referencedIds.join(', ') || 'нет ID' }}</small
-                        >
+                        <small>
+                            Связь: {{ choice.popup.relation }} · {{ choice.popup.referencedIds.join(', ') || 'нет ID' }}
+                        </small>
                         <p>
                             Выбор по DOM:
                             {{
@@ -145,10 +229,10 @@
                         } @else if (choice.popup.text) {
                             <p>{{ choice.popup.text }}</p>
                         }
-                        <small
-                            >В текущем DOM-снимке {{ choice.popup.options.length }} вариантов. Список может
-                            быть загружен частично.</small
-                        >
+                        <small>
+                            В текущем DOM-снимке {{ choice.popup.options.length }} вариантов. Список может быть загружен
+                            частично.
+                        </small>
                     </section>
                 }
             }
@@ -167,15 +251,16 @@
                     @for (control of observer.logicalControls(); track control.id) {
                         <tr>
                             <td>
-                                <code>{{ control.kind }}</code
-                                ><small>{{ control.source }}</small
-                                ><small>{{ control.id }}</small>
+                                <code>{{ control.kind }}</code>
+                                <small>{{ control.source }}</small>
+                                <small>{{ control.id }}</small>
                                 <button
+                                    appearance="flat"
+                                    size="s"
                                     tuiButton
                                     type="button"
-                                    size="s"
-                                    appearance="flat"
-                                    (click)="highlight.set({ mode: 'one', nodeId: control.targetNodeId })">
+                                    (click)="highlight.set({mode: 'one', nodeId: control.targetNodeId})"
+                                >
                                     Подсветить {{ $index + 1 }}
                                 </button>
                             </td>
@@ -237,14 +322,17 @@
             </table>
         </div>
         <p class="muted">
-            Поддержаны текстовые и числовые поля, кнопки, checkbox, radio, switch, select и combobox Taiga UI.
-            Признаки поиска ещё не гарантируют уникальность.
+            Поддержаны текстовые и числовые поля, кнопки, checkbox, radio, switch, select и combobox Taiga UI. Признаки
+            поиска ещё не гарантируют уникальность.
         </p>
         <details class="json">
             <summary>Логические контролы JSON</summary>
             <pre data-testid="controls-json">{{ observer.logicalControls() | json }}</pre>
         </details>
-        <details class="json" open>
+        <details
+            open
+            class="json"
+        >
             <summary>Полный снимок JSON</summary>
             <pre data-testid="snapshot-json">{{ snapshot | json }}</pre>
         </details>

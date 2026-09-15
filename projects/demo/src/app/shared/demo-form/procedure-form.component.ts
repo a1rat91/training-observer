@@ -2,7 +2,7 @@
  * Demo-плеер загружает экраны из HTTP fixture, сохраняет ответы при навигации и отменяет устаревший запрос.
  * ID секции — обычная идентичность экрана приложения. Никаких импортов библиотеки обучения или учебных правил.
  */
-import { HttpClient } from '@angular/common/http';
+import {HttpClient} from '@angular/common/http';
 import {
     afterNextRender,
     ChangeDetectionStrategy,
@@ -11,15 +11,22 @@ import {
     inject,
     signal,
 } from '@angular/core';
-import { TuiButton } from '@taiga-ui/core';
-import { type Subscription } from 'rxjs';
+import {TuiButton} from '@taiga-ui/core';
+import {type Subscription} from 'rxjs';
 
-import { type FieldValue, type ProcedureField, ProcedureFieldComponent } from './procedure-field.component';
+import {
+    type FieldValue,
+    type ProcedureField,
+    ProcedureFieldComponent,
+} from './procedure-field.component';
 
 interface ProcedureScreen {
     readonly id: string;
     readonly title: string;
-    readonly sections: readonly { readonly title: string; readonly fields: readonly ProcedureField[] }[];
+    readonly sections: ReadonlyArray<{
+        readonly title: string;
+        readonly fields: readonly ProcedureField[];
+    }>;
 }
 
 @Component({
@@ -33,6 +40,7 @@ export class ProcedureFormComponent {
     private readonly http = inject(HttpClient);
     private request?: Subscription;
     private requestedIndex = 0;
+
     protected readonly screen = signal<ProcedureScreen | null>(null);
     protected readonly values = signal<Record<string, FieldValue>>({});
     protected readonly loading = signal(true);
@@ -46,7 +54,7 @@ export class ProcedureFormComponent {
     }
 
     protected setValue(id: string, value: FieldValue): void {
-        this.values.update((values) => ({ ...values, [id]: value }));
+        this.values.update((values) => ({...values, [id]: value}));
     }
 
     protected wrong(): void {
@@ -63,21 +71,25 @@ export class ProcedureFormComponent {
         this.requestedIndex = index;
         this.loading.set(true);
         this.error.set('');
-        this.request = this.http.get<readonly ProcedureScreen[]>('/assets/procedure/screens.json').subscribe({
-            next: (screens) => {
-                if (!screens[index]) {
-                    this.error.set('Экран не найден.');
+        this.request = this.http
+            .get<readonly ProcedureScreen[]>('/assets/procedure/screens.json')
+            .subscribe({
+                next: (screens) => {
+                    if (!screens[index]) {
+                        this.error.set('Экран не найден.');
+                        this.loading.set(false);
+
+                        return;
+                    }
+
+                    this.screen.set(screens[index]);
+                    this.index.set(index);
                     this.loading.set(false);
-                    return;
-                }
-                this.screen.set(screens[index]);
-                this.index.set(index);
-                this.loading.set(false);
-            },
-            error: () => {
-                this.error.set('Не удалось загрузить экран. Попробуйте ещё раз.');
-                this.loading.set(false);
-            },
-        });
+                },
+                error: () => {
+                    this.error.set('Не удалось загрузить экран. Попробуйте ещё раз.');
+                    this.loading.set(false);
+                },
+            });
     }
 }

@@ -1,33 +1,68 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "demo",
+    "generators": {},
+    "prefix": "app",
     "projectType": "application",
     "sourceRoot": "projects/demo/src",
-    "prefix": "app",
-    "tags": [
-        "type:application",
-        "layer:app"
-    ],
     "targets": {
         "build": {
-            "executor": "@angular-devkit/build-angular:application",
-            "outputs": [
-                "{workspaceRoot}/dist/demo"
-            ],
+            "configurations": {
+                "development": {},
+                "github": {
+                    "baseHref": "/training-observer/",
+                    "budgets": [
+                        {
+                            "maximumError": "5mb",
+                            "maximumWarning": "2mb",
+                            "type": "initial"
+                        }
+                    ],
+                    "buildOptimizer": true,
+                    "extractLicenses": true,
+                    "fileReplacements": [
+                        {
+                            "replace": "projects/demo/src/environments/environment.ts",
+                            "with": "projects/demo/src/environments/environment.prod.ts"
+                        }
+                    ],
+                    "namedChunks": false,
+                    "optimization": true,
+                    "outputHashing": "all",
+                    "sourceMap": false,
+                    "vendorChunk": false
+                },
+                "production": {
+                    "budgets": [
+                        {
+                            "maximumError": "5mb",
+                            "maximumWarning": "2mb",
+                            "type": "initial"
+                        }
+                    ],
+                    "buildOptimizer": true,
+                    "extractLicenses": true,
+                    "fileReplacements": [
+                        {
+                            "replace": "projects/demo/src/environments/environment.ts",
+                            "with": "projects/demo/src/environments/environment.prod.ts"
+                        }
+                    ],
+                    "namedChunks": false,
+                    "optimization": true,
+                    "outputHashing": "all",
+                    "sourceMap": false,
+                    "vendorChunk": false
+                }
+            },
+            "defaultConfiguration": "production",
+            "executor": "@angular-builders/custom-webpack:browser",
             "options": {
-                "outputPath": "dist/demo",
-                "index": "projects/demo/src/index.html",
-                "browser": "projects/demo/src/main.ts",
-                "polyfills": [
-                    "zone.js"
-                ],
-                "tsConfig": "projects/demo/tsconfig.app.json",
-                "inlineStyleLanguage": "less",
                 "assets": [
                     {
                         "glob": "**/*",
-                        "input": "projects/demo/src/assets",
-                        "output": "assets"
+                        "input": "projects/demo/src/assets/",
+                        "output": "./assets/"
                     },
                     {
                         "glob": "**/*",
@@ -35,59 +70,138 @@
                         "output": "assets/taiga-ui/icons"
                     }
                 ],
-                "styles": [
-                    "node_modules/@taiga-ui/styles/taiga-ui-theme.less",
-                    "node_modules/@taiga-ui/styles/taiga-ui-fonts.less",
-                    "projects/demo/src/styles.less"
-                ]
-            },
-            "configurations": {
-                "production": {
-                    "budgets": [
-                        {
-                            "type": "initial",
-                            "maximumWarning": "1mb",
-                            "maximumError": "2mb"
-                        },
-                        {
-                            "type": "anyComponentStyle",
-                            "maximumWarning": "4kb",
-                            "maximumError": "8kb"
-                        }
-                    ],
-                    "outputHashing": "all"
+                "baseHref": "/",
+                "buildOptimizer": false,
+                "customWebpackConfig": {
+                    "path": "projects/demo/webpack.config.ts"
                 },
-                "development": {
-                    "optimization": false,
-                    "extractLicenses": false,
-                    "sourceMap": true
-                }
+                "extractLicenses": false,
+                "index": "projects/demo/src/index.html",
+                "main": "projects/demo/src/main.browser.ts",
+                "namedChunks": true,
+                "optimization": false,
+                "outputPath": "dist/demo/browser",
+                "polyfills": "projects/demo/src/polyfills.ts",
+                "scripts": [],
+                "sourceMap": true,
+                "styles": [
+                    "node_modules/@taiga-ui/core/styles/taiga-ui-theme.less",
+                    "node_modules/@taiga-ui/core/styles/taiga-ui-fonts.less",
+                    "projects/demo/src/styles.css"
+                ],
+                "tsConfig": "projects/demo/tsconfig.app.json",
+                "vendorChunk": true
             },
-            "defaultConfiguration": "production"
+            "outputs": ["{workspaceRoot}/dist/demo/browser"]
+        },
+        "prerender": {
+            "configurations": {
+                "github": {
+                    "browserTarget": "demo:build:github"
+                },
+                "production": {}
+            },
+            "executor": "@angular-devkit/build-angular:prerender",
+            "options": {
+                "browserTarget": "demo:build:production",
+                "routes": ["/"],
+                "serverTarget": "demo:server:production"
+            }
         },
         "serve": {
-            "executor": "@angular-devkit/build-angular:dev-server",
-            "options": {
-                "port": 4200,
-                "host": "127.0.0.1"
-            },
             "configurations": {
-                "production": {
-                    "buildTarget": "demo:build:production"
-                },
                 "development": {
                     "buildTarget": "demo:build:development"
+                },
+                "production": {
+                    "buildTarget": "demo:build:production"
                 }
             },
-            "defaultConfiguration": "development"
+            "defaultConfiguration": "development",
+            "executor": "@angular-builders/custom-webpack:dev-server",
+            "options": {
+                "buildTarget": "demo:build",
+                "sslCert": ".ssl/localhost.pem",
+                "sslKey": ".ssl/localhost-key.pem",
+                "host": "127.0.0.1"
+            }
+        },
+        "serve-ip": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "nx serve --open --host 0.0.0.0 --disable-host-check"
+            }
+        },
+        "serve-ssl": {
+            "executor": "nx:run-commands",
+            "options": {
+                "commands": [
+                    "echo \"mkcert is a simple tool for making locally-trusted development certificates\"",
+                    "echo \"Read about installation and more: https://github.com/FiloSottile/mkcert\"",
+                    "echo ------",
+                    "mkcert -install",
+                    "mkdir -p .ssl",
+                    "mkcert -key-file .ssl/localhost-key.pem -cert-file .ssl/localhost.pem localhost 127.0.0.1 ::1",
+                    "nx serve --ssl"
+                ],
+                "parallel": false
+            }
+        },
+        "serve-ssr": {
+            "configurations": {
+                "development": {
+                    "browserTarget": "demo:build:development",
+                    "serverTarget": "demo:server:development"
+                },
+                "production": {
+                    "browserTarget": "demo:build:production",
+                    "serverTarget": "demo:server:production"
+                }
+            },
+            "defaultConfiguration": "development",
+            "executor": "@angular-devkit/build-angular:ssr-dev-server",
+            "options": {
+                "browserTarget": "demo:build",
+                "serverTarget": "demo:server"
+            }
+        },
+        "server": {
+            "configurations": {
+                "development": {},
+                "production": {
+                    "buildOptimizer": false,
+                    "optimization": false,
+                    "outputHashing": "media",
+                    "sourceMap": false
+                }
+            },
+            "defaultConfiguration": "production",
+            "executor": "@nx/angular:webpack-server",
+            "options": {
+                "customWebpackConfig": {
+                    "path": "projects/demo/webpack.config.ts"
+                },
+                "main": "projects/demo/server.ts",
+                "buildOptimizer": false,
+                "optimization": false,
+                "outputPath": "dist/demo/server",
+                "sourceMap": true,
+                "tsConfig": "projects/demo/tsconfig.server.json"
+            }
+        },
+        "test": {
+            "executor": "@nx/jest:jest",
+            "options": {
+                "jestConfig": "projects/demo/jest.config.ts"
+            },
+            "outputs": ["{workspaceRoot}/coverage/projects/demo"]
         },
         "lint": {
             "executor": "@nx/eslint:lint",
             "options": {
-                "lintFilePatterns": [
-                    "projects/demo/**/*.ts"
-                ]
+                "lintFilePatterns": ["projects/demo/**/*.ts"]
             }
         }
-    }
+    },
+    "tags": ["type:application", "layer:app"]
 }

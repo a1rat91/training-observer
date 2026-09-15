@@ -2,11 +2,11 @@
  * Исходная запись не меняется. Пропуски наблюдения блокируют компиляцию; тексты — редактируемые значения по умолчанию.
  */
 import {
-    RecordingEventKind,
     type FieldExpectation,
-    type TrainingScenario,
+    RecordingEventKind,
     type ScenarioStep,
     type StateRecording,
+    type TrainingScenario,
 } from '@training-observer/contracts';
 
 interface RecordedScreen {
@@ -19,16 +19,32 @@ export function compileScenario(recording: StateRecording): TrainingScenario {
         !recording.complete ||
         recording.events.some((event) => event.kind === RecordingEventKind.Unavailable)
     ) {
-        throw new Error('В записи есть неподтверждённые значения или пропуски. Запишите пример без них.');
+        throw new Error(
+            'В записи есть неподтверждённые значения или пропуски. Запишите пример без них.',
+        );
     }
+
     const visits = new Map<number, RecordedScreen>();
+
     for (const event of recording.events) {
         if (event.kind === RecordingEventKind.Screen) {
-            visits.set(event.visit, { key: event.screenKey, fields: new Map() });
+            visits.set(event.visit, {key: event.screenKey, fields: new Map()});
         }
-        if (event.kind !== RecordingEventKind.Value || !event.field || event.value === undefined) continue;
+
+        if (
+            event.kind !== RecordingEventKind.Value ||
+            !event.field ||
+            event.value === undefined
+        ) {
+            continue;
+        }
+
         const screen = visits.get(event.visit);
-        if (!screen || screen.key !== event.screenKey) throw new Error('Нарушен порядок экранов записи.');
+
+        if (screen?.key !== event.screenKey) {
+            throw new Error('Нарушен порядок экранов записи.');
+        }
+
         screen.fields.set(JSON.stringify(event.field), {
             descriptor: structuredClone(event.field),
             expected: structuredClone(event.value),
@@ -36,8 +52,16 @@ export function compileScenario(recording: StateRecording): TrainingScenario {
             optional: false,
         });
     }
-    if (!visits.size) throw new Error('Запись не содержит экранов.');
-    return { kind: 'training-state-scenario', version: 1, steps: [...visits.values()].map(createStep) };
+
+    if (!visits.size) {
+        throw new Error('Запись не содержит экранов.');
+    }
+
+    return {
+        kind: 'training-state-scenario',
+        version: 1,
+        steps: [...visits.values()].map(createStep),
+    };
 }
 
 function createStep(screen: RecordedScreen): ScenarioStep {

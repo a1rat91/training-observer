@@ -5,14 +5,23 @@ import {
     type DomNodeSnapshot,
     type DomSnapshot,
 } from '@training-observer/core/models';
-import { type DomSnapshotOptions } from '../tokens/dom-snapshot-options';
-import { type DomElementAnalyzer } from './dom-element-analyzer';
-import { isObserverUi } from '../observation/dom-observer-ui';
-import { DomGeometry } from './dom-geometry';
-import { findPopupRoots } from './dom-popup-roots';
-import { isScrollDecoration } from './dom-scroll-decoration';
 
-const SKIP_TAGS = new Set(['script', 'style', 'link', 'meta', 'noscript', 'template', 'svg']);
+import {isObserverUi} from '../observation/dom-observer-ui';
+import {type DomSnapshotOptions} from '../tokens/dom-snapshot-options';
+import {type DomElementAnalyzer} from './dom-element-analyzer';
+import {DomGeometry} from './dom-geometry';
+import {findPopupRoots} from './dom-popup-roots';
+import {isScrollDecoration} from './dom-scroll-decoration';
+
+const SKIP_TAGS = new Set([
+    'link',
+    'meta',
+    'noscript',
+    'script',
+    'style',
+    'svg',
+    'template',
+]);
 
 /** Один экземпляр на синхронный capture. Основное дерево и popup используют общие лимиты и геометрию. */
 export class DomCapture {
@@ -40,14 +49,26 @@ export class DomCapture {
         this.geometry = new DomGeometry(this.view);
     }
 
-    capture(): DomSnapshot {
-        const ignored = this.options.ignoreSelector && this.root.closest(this.options.ignoreSelector);
-        const rootId = ignored ? null : this.visit(this.root, null, this.rootPath(this.root), 0);
+    public capture(): DomSnapshot {
+        const ignored =
+            this.options.ignoreSelector && this.root.closest(this.options.ignoreSelector);
+
+        const rootId = ignored
+            ? null
+            : this.visit(this.root, null, this.rootPath(this.root), 0);
+
         const relatedRootIds: DomNodeId[] = [];
 
-        for (const element of findPopupRoots(this.root, Object.values(this.nodes), this.options)) {
+        for (const element of findPopupRoots(
+            this.root,
+            Object.values(this.nodes),
+            this.options,
+        )) {
             const id = this.visit(element, null, this.rootPath(element), 0);
-            if (id) relatedRootIds.push(id);
+
+            if (id) {
+                relatedRootIds.push(id);
+            }
         }
 
         return {
@@ -69,32 +90,56 @@ export class DomCapture {
         };
     }
 
-    private visit(node: Node, parentId: DomNodeId | null, path: string, depth: number): DomNodeId | null {
-        if (isObserverUi(node)) return null;
-        if (node.nodeType !== 1 && node.nodeType !== 3) return null;
+    private visit(
+        node: Node,
+        parentId: DomNodeId | null,
+        path: string,
+        depth: number,
+    ): DomNodeId | null {
+        if (isObserverUi(node) || (node.nodeType !== 1 && node.nodeType !== 3)) {
+            return null;
+        }
+
         // Порядок проверок существенен: даже исключаемый далее узел может достигнуть лимита capture.
         if (depth > this.options.maxDepth) {
             this.limits.add('maxDepth');
+
             return null;
         }
+
         if (this.nodeCount >= this.options.maxNodes) {
             this.limits.add('maxNodes');
+
             return null;
         }
 
-        if (node.nodeType === 3) return this.captureText(node as Text, parentId);
-        const element = node as Element;
-        if (this.excludesElement(element)) return null;
+        if (node.nodeType === 3) {
+            return this.captureText(node as Text, parentId);
+        }
 
-        return this.captureElement(element, parentId, path, depth);
+        const element = node as Element;
+
+        return this.excludesElement(element)
+            ? null
+            : this.captureElement(element, parentId, path, depth);
     }
 
     private captureText(node: Text, parentId: DomNodeId | null): DomNodeId | null {
         const text = node.textContent?.trim();
-        if (!this.options.includeText || !text) return null;
+
+        if (!this.options.includeText || !text) {
+            return null;
+        }
+
         const id = this.idFor(node);
 
-        this.nodes[id] = { kind: 'text', id, parentId, text, visible: this.geometry.textVisible(node) };
+        this.nodes[id] = {
+            kind: 'text',
+            id,
+            parentId,
+            text,
+            visible: this.geometry.textVisible(node),
+        };
         this.nodeCount++;
         this.textCount++;
 
@@ -102,15 +147,16 @@ export class DomCapture {
     }
 
     private excludesElement(element: Element): boolean {
-        if (
-            element !== this.root &&
+        return (element !== this.root &&
             this.options.boundarySelector &&
-            element.matches(this.options.boundarySelector)
-        )
-            return true;
-        if (isScrollDecoration(element) || SKIP_TAGS.has(element.localName)) return true;
-
-        return Boolean(this.options.ignoreSelector && element.matches(this.options.ignoreSelector));
+            element.matches(this.options.boundarySelector)) ||
+            isScrollDecoration(element) ||
+            SKIP_TAGS.has(element.localName)
+            ? true
+            : Boolean(
+                  this.options.ignoreSelector &&
+                  element.matches(this.options.ignoreSelector),
+              );
     }
 
     private captureElement(
@@ -127,13 +173,20 @@ export class DomCapture {
             this.geometry,
             this.options.cursorHeuristics,
         );
+
         const interactive = interactionReasons.length > 0;
         const visible = this.geometry.visible(element);
         const inViewport = this.geometry.inViewport(element);
         const hitTest = interactive ? this.geometry.hitTest(element) : 'not-tested';
-        const boundaries: ('iframe' | 'open-shadow-root')[] = [];
-        if (element.localName === 'iframe') boundaries.push('iframe');
-        if (element.shadowRoot) boundaries.push('open-shadow-root');
+        const boundaries: Array<'iframe' | 'open-shadow-root'> = [];
+
+        if (element.localName === 'iframe') {
+            boundaries.push('iframe');
+        }
+
+        if (element.shadowRoot) {
+            boundaries.push('open-shadow-root');
+        }
 
         const data: DomElementSnapshot = {
             kind: 'element',
@@ -153,14 +206,22 @@ export class DomCapture {
             state,
             boundaries,
             pointerActionable:
-                interactive && visible && inViewport && hitTest === 'hit' && !state.disabled && !state.inert,
+                interactive &&
+                visible &&
+                inViewport &&
+                hitTest === 'hit' &&
+                !state.disabled &&
+                !state.inert,
         };
 
         this.nodes[id] = data;
         this.nodeCount++;
         this.elementCount++;
         this.boundaryCount += boundaries.length;
-        if (interactive) this.interactiveIds.push(id);
+
+        if (interactive) {
+            this.interactiveIds.push(id);
+        }
 
         this.captureChildren(element, id, path, depth, children);
 
@@ -176,32 +237,50 @@ export class DomCapture {
     ): void {
         // Скрытая обёртка или обёртка без собственного rect может содержать видимые контролы; поддерево не отсекается.
         const positions = new Map<string, number>();
+
         for (const child of Array.from(element.childNodes)) {
             let childPath = path;
+
             if (child.nodeType === 1) {
                 const tag = (child as Element).localName;
                 const position = (positions.get(tag) ?? 0) + 1;
+
                 positions.set(tag, position);
                 childPath = `${path}/${tag}[${position}]`;
             }
 
             const childId = this.visit(child, parentId, childPath, depth + 1);
-            if (childId) children.push(childId);
-            if (this.limits.has('maxNodes')) break;
+
+            if (childId) {
+                children.push(childId);
+            }
+
+            if (this.limits.has('maxNodes')) {
+                break;
+            }
         }
     }
 
     private rootPath(root: Element): string {
         const parts: string[] = [];
-        for (let current: Element | null = root; current; current = current.parentElement) {
+
+        for (
+            let current: Element | null = root;
+            current;
+            current = current.parentElement
+        ) {
             let position = 1;
+
             for (
                 let sibling = current.previousElementSibling;
                 sibling;
                 sibling = sibling.previousElementSibling
             ) {
-                if (sibling.localName === current.localName) position++;
+                if (sibling.localName === current.localName) {
+                    position++;
+                }
             }
+
             parts.unshift(`${current.localName}[${position}]`);
         }
 

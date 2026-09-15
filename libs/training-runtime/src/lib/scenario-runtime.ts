@@ -2,14 +2,22 @@
  * FieldEvaluator отвечает за поля, FeedbackTracker — за повторы сообщений. Runtime не зависит от Angular/UI.
  * Один экземпляр — одна попытка. Сценарий копируется при создании и не изменяется во время прохождения.
  */
-import type { ScreenState } from '@training-observer/core/models';
-import { ScreenStatus } from '@training-observer/core/models';
-import { TrainingStatus } from '@training-observer/contracts';
-import type { TrainingScenario, ScenarioStep } from '@training-observer/contracts';
-import { FieldEvaluator, requiredFieldCount, type ConfirmedControls } from './field-evaluator';
-import { FeedbackTracker } from './feedback-tracker';
-import type { TrainingProgress } from './training-progress';
-export type { TrainingProgress } from './training-progress';
+import {
+    type ScenarioStep,
+    type TrainingScenario,
+    TrainingStatus,
+} from '@training-observer/contracts';
+import {type ScreenState, ScreenStatus} from '@training-observer/core/models';
+
+import {FeedbackTracker} from './feedback-tracker';
+import {
+    type ConfirmedControls,
+    FieldEvaluator,
+    requiredFieldCount,
+} from './field-evaluator';
+import {type TrainingProgress} from './training-progress';
+
+export type {TrainingProgress} from './training-progress';
 
 export class ScenarioRuntime {
     private stepIndex = 0;
@@ -23,28 +31,44 @@ export class ScenarioRuntime {
         this.scenario = structuredClone(scenario);
     }
 
-    update(screen: ScreenState, confirmed: ConfirmedControls): TrainingProgress {
+    public update(screen: ScreenState, confirmed: ConfirmedControls): TrainingProgress {
         const messages: string[] = [];
+
         if (screen.status !== ScreenStatus.Ready) {
             return this.progress(
-                screen.status === ScreenStatus.Loading ? TrainingStatus.Waiting : TrainingStatus.Blocked,
+                screen.status === ScreenStatus.Loading
+                    ? TrainingStatus.Waiting
+                    : TrainingStatus.Blocked,
                 messages,
                 0,
                 'Ожидаем доступный экран.',
             );
         }
+
         if (screen.key !== this.currentStep.key) {
             const rejected = this.tryTransition(screen, confirmed, messages);
-            if (rejected) return rejected;
+
+            if (rejected) {
+                return rejected;
+            }
         }
+
         if (!this.entered) {
             this.fields.enter(confirmed);
             this.entered = true;
         }
+
         this.feedback.clearTransition();
         this.previousScreen = screen;
-        const evaluation = this.fields.evaluate(this.currentStep, screen, confirmed, true);
+        const evaluation = this.fields.evaluate(
+            this.currentStep,
+            screen,
+            confirmed,
+            true,
+        );
+
         this.feedback.reconcile(evaluation.errors, messages);
+
         if (evaluation.blocked) {
             return this.progress(
                 TrainingStatus.Blocked,
@@ -53,7 +77,10 @@ export class ScenarioRuntime {
                 'Не удалось однозначно прочитать все поля.',
             );
         }
-        const complete = evaluation.allComplete && this.stepIndex === this.scenario.steps.length - 1;
+
+        const complete =
+            evaluation.allComplete && this.stepIndex === this.scenario.steps.length - 1;
+
         return this.progress(
             complete ? TrainingStatus.Complete : TrainingStatus.Active,
             messages,
@@ -62,7 +89,13 @@ export class ScenarioRuntime {
     }
 
     private get currentStep(): ScenarioStep {
-        return this.scenario.steps[this.stepIndex];
+        const step = this.scenario.steps[this.stepIndex];
+
+        if (!step) {
+            throw new Error('Scenario step is unavailable.');
+        }
+
+        return step;
     }
 
     private tryTransition(
@@ -72,19 +105,32 @@ export class ScenarioRuntime {
     ): TrainingProgress | undefined {
         // Последний blur может прийти после удаления старого DOM; проверяем его до перехода.
         const previous = this.previousScreen
-            ? this.fields.evaluate(this.currentStep, this.previousScreen, confirmed, false)
+            ? this.fields.evaluate(
+                  this.currentStep,
+                  this.previousScreen,
+                  confirmed,
+                  false,
+              )
             : null;
+
         const expectedScreen = this.scenario.steps[this.stepIndex + 1]?.key;
+
         if (this.entered && previous?.allComplete && screen.key === expectedScreen) {
             this.stepIndex++;
             this.entered = false;
             this.feedback.clear();
+
             return undefined;
         }
+
         const issue = previous?.blocked
             ? 'Не удалось проверить поля предыдущего экрана. Вернитесь к нему.'
             : this.currentStep.transitionMessage;
-        if (!previous?.blocked) this.feedback.report('transition', String(screen.key), issue, messages);
+
+        if (!previous?.blocked) {
+            this.feedback.report('transition', String(screen.key), issue, messages);
+        }
+
         return this.progress(
             previous?.blocked ? TrainingStatus.Blocked : TrainingStatus.Active,
             messages,

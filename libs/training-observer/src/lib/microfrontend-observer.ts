@@ -1,17 +1,22 @@
 /** Angular-фасад нескольких областей. Обнаруживает корни, подключает общие источники событий, ведёт независимые сеансы и освобождает их через DestroyRef. */
-import { DOCUMENT } from '@angular/common';
-import { DestroyRef, inject, Injectable, NgZone, signal } from '@angular/core';
+import {DOCUMENT} from '@angular/common';
+import {DestroyRef, inject, Injectable, NgZone, signal} from '@angular/core';
+import {
+    type DomSnapshot,
+    type MicrofrontendSnapshot,
+} from '@training-observer/core/models';
 
-import { type DomSnapshot } from '@training-observer/core/models';
-import { type MicrofrontendSnapshot } from '@training-observer/core/models';
-import { ControlSnapshotBuilder } from './controls/control-snapshot-builder';
-import { DomElementAnalyzer } from './capture/dom-element-analyzer';
-import { DomObservationScope, MICROFRONTEND_SELECTOR } from './observation/dom-observation-scope';
-import { DomObservationSession, PAGE_EVENTS } from './observation/dom-observation-session';
-import { isObserverUi, isObserverUiMutation } from './observation/dom-observer-ui';
-import { isScrollDecoration } from './capture/dom-scroll-decoration';
-import { DomSnapshotBuilder } from './capture/dom-snapshot-builder';
-import { snapshotFingerprint } from './observation/snapshot-fingerprint';
+import {DomElementAnalyzer} from './capture/dom-element-analyzer';
+import {isScrollDecoration} from './capture/dom-scroll-decoration';
+import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
+import {ControlSnapshotBuilder} from './controls/control-snapshot-builder';
+import {
+    DomObservationScope,
+    MICROFRONTEND_SELECTOR,
+} from './observation/dom-observation-scope';
+import {DomObservationSession, PAGE_EVENTS} from './observation/dom-observation-session';
+import {isObserverUi, isObserverUiMutation} from './observation/dom-observer-ui';
+import {snapshotFingerprint} from './observation/snapshot-fingerprint';
 import {
     DOM_OBSERVATION_OPTIONS,
     type DomObservationOptions,
@@ -27,7 +32,7 @@ interface Area {
 }
 
 /** Общие источники событий document и независимое объединение обновлений областей. */
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class MicrofrontendObserver {
     private readonly document = inject(DOCUMENT);
     private readonly zone = inject(NgZone);
@@ -40,11 +45,11 @@ export class MicrofrontendObserver {
     private readonly entries = new Map<Element, Area>();
     private readonly identities = new WeakMap<Element, string>();
     private nextId = 0;
-    private cleanups: (() => void)[] = [];
+    private readonly cleanups: Array<() => void> = [];
     private destroyed = false;
 
-    readonly areas = this.current.asReadonly();
-    readonly isObserving = this.active.asReadonly();
+    public readonly areas = this.current.asReadonly();
+    public readonly isObserving = this.active.asReadonly();
 
     constructor() {
         inject(DestroyRef).onDestroy(() => {
@@ -53,13 +58,32 @@ export class MicrofrontendObserver {
         });
     }
 
-    start(root: Element = this.document.body, overrides: Partial<DomObservationOptions> = {}): void {
-        if (this.destroyed) throw new Error('MicrofrontendObserver has been destroyed.');
-        const view = this.document.defaultView;
-        if (!view || !root?.isConnected || root.ownerDocument !== this.document) {
-            throw new Error('Microfrontend discovery requires a connected root in the injected document.');
+    public start(
+        root: Element = this.document.body,
+        overrides: Partial<DomObservationOptions> = {},
+    ): void {
+        if (this.destroyed) {
+            throw new Error('MicrofrontendObserver has been destroyed.');
         }
-        const options = { ...this.defaults, ...overrides, boundarySelector: MICROFRONTEND_SELECTOR };
+
+        const view = this.document.defaultView;
+
+        if (!view || !root?.isConnected || root.ownerDocument !== this.document) {
+            throw new Error(
+                'Microfrontend discovery requires a connected root in the injected document.',
+            );
+        }
+
+        const options = {
+            ...this.defaults,
+            ...overrides,
+            boundarySelector: overrides.boundarySelector ?? MICROFRONTEND_SELECTOR,
+        };
+
+        if (!options.boundarySelector.trim()) {
+            throw new Error('Provide a non-empty microfrontend boundary selector.');
+        }
+
         validateObservationTiming(options);
         this.builder.validateOptions(options);
         this.stop();
@@ -70,24 +94,49 @@ export class MicrofrontendObserver {
         this.active.set(true);
     }
 
+    /** Находит существующие и поздно смонтированные области по селекторам в текущем документе. */
+    public observe(
+        selectors: string | readonly string[],
+        overrides: Partial<DomObservationOptions> = {},
+    ): void {
+        const selector = typeof selectors === 'string' ? selectors : selectors.join(',');
+
+        if (
+            !selector.trim() ||
+            (Array.isArray(selectors) && selectors.some((item) => !item.trim()))
+        ) {
+            throw new Error('Provide at least one non-empty microfrontend selector.');
+        }
+
+        this.start(this.document.body, {...overrides, boundarySelector: selector});
+    }
+
     /** Обновить одну область или все области после внешнего изменения раскладки. */
-    refresh(id?: string): void {
+    public refresh(id?: string): void {
         this.zone.runOutsideAngular(() => {
             for (const area of this.entries.values()) {
-                if (!id || area.state.id === id) area.session.invalidate();
+                if (!id || area.state.id === id) {
+                    area.session.invalidate();
+                }
             }
         });
     }
 
     /** Сохраняет результаты, освобождает DOM-ссылки и все browser-ресурсы. */
-    stop(): void {
-        for (const cleanup of this.cleanups.splice(0)) cleanup();
-        for (const area of this.entries.values()) area.session.dispose();
+    public stop(): void {
+        for (const cleanup of this.cleanups.splice(0)) {
+            cleanup();
+        }
+
+        for (const area of this.entries.values()) {
+            area.session.dispose();
+        }
+
         this.entries.clear();
         this.active.set(false);
     }
 
-    clear(): void {
+    public clear(): void {
         this.stop();
         this.current.set([]);
     }
@@ -101,14 +150,25 @@ export class MicrofrontendObserver {
             const relevant = records.filter((record) =>
                 this.discoveryRelevant(record, options.ignoreSelector),
             );
-            if (!relevant.length) return;
+
+            if (!relevant.length) {
+                return;
+            }
+
             const existing = new Set(this.entries.values());
+
             // Изменение атрибутов влияет как на произвольный ignoreSelector, так и на data-mf.
-            if (relevant.some((record) => record.type !== 'characterData')) this.reconcile(root, options);
+            if (relevant.some((record) => record.type !== 'characterData')) {
+                this.reconcile(root, options);
+            }
+
             for (const area of this.entries.values()) {
-                if (existing.has(area)) area.session.handleMutations(relevant);
+                if (existing.has(area)) {
+                    area.session.handleMutations(relevant);
+                }
             }
         });
+
         mutations.observe(this.document, {
             subtree: true,
             childList: true,
@@ -116,36 +176,57 @@ export class MicrofrontendObserver {
             characterData: true,
         });
         this.cleanups.push(() => mutations.disconnect());
+
         for (const name of PAGE_EVENTS) {
             const listener = (event: Event): void => {
-                for (const area of this.entries.values()) area.session.handleEvent(event);
+                for (const area of this.entries.values()) {
+                    area.session.handleEvent(event);
+                }
             };
-            this.document.addEventListener(name, listener, { capture: true, passive: true });
-            this.cleanups.push(() => this.document.removeEventListener(name, listener, true));
+
+            this.document.addEventListener(name, listener, {
+                capture: true,
+                passive: true,
+            });
+            this.cleanups.push(() =>
+                this.document.removeEventListener(name, listener, true),
+            );
         }
+
         const resize = (): void => this.refresh();
-        view.addEventListener('resize', resize, { passive: true });
+
+        view.addEventListener('resize', resize, {passive: true});
         this.cleanups.push(() => view.removeEventListener('resize', resize));
+
         if (options.propertyCheckIntervalMs > 0) {
             const timer = view.setInterval(() => {
-                for (const area of this.entries.values()) area.session.checkProperties();
+                for (const area of this.entries.values()) {
+                    area.session.checkProperties();
+                }
             }, options.propertyCheckIntervalMs);
+
             this.cleanups.push(() => view.clearInterval(timer));
         }
     }
 
     private reconcile(root: Element, options: DomObservationOptions): void {
         const roots = root.isConnected
-            ? [root, ...Array.from(root.querySelectorAll(MICROFRONTEND_SELECTOR))].filter(
+            ? [
+                  root,
+                  ...Array.from(root.querySelectorAll(options.boundarySelector!)),
+              ].filter(
                   (element) =>
-                      element.matches(MICROFRONTEND_SELECTOR) &&
+                      element.matches(options.boundarySelector!) &&
                       !isObserverUi(element) &&
                       !isScrollDecoration(element) &&
-                      !(options.ignoreSelector && element.closest(options.ignoreSelector)),
+                      (!options.ignoreSelector ||
+                          !element.closest(options.ignoreSelector)),
               )
             : [];
+
         const mounted = new Set(roots);
         let changed = false;
+
         for (const [element, area] of this.entries) {
             if (!mounted.has(element)) {
                 area.session.dispose();
@@ -153,38 +234,52 @@ export class MicrofrontendObserver {
                 changed = true;
             }
         }
+
         for (const element of roots) {
             if (!this.entries.has(element)) {
                 this.entries.set(element, this.createArea(element, options));
                 changed = true;
             }
         }
+
         for (const area of this.entries.values()) {
             const name = area.root.getAttribute('data-mf') ?? '';
-            const parent = area.root.parentElement?.closest(MICROFRONTEND_SELECTOR);
+            const parent = area.root.parentElement?.closest(options.boundarySelector!);
             const parentId = parent ? (this.entries.get(parent)?.state.id ?? null) : null;
+
             if (area.parent !== area.root.parentElement) {
                 area.parent = area.root.parentElement;
                 area.session.invalidate();
             }
+
             if (area.state.name !== name || area.state.parentId !== parentId) {
-                area.state = { ...area.state, name, parentId };
+                area.state = {...area.state, name, parentId};
                 changed = true;
             }
         }
-        if (changed || !roots.length) this.publish();
+
+        if (changed || (!roots.length && this.current().length > 0)) {
+            this.publish();
+        }
     }
 
     private createArea(root: Element, options: DomObservationOptions): Area {
         let id = this.identities.get(root);
+
         if (!id) {
             id = `mf${++this.nextId}`;
             this.identities.set(root, id);
         }
+
         const session = new DomObservationSession(root, options, this.analyzer, {
             mode: 'shared',
-            scope: new DomObservationScope(root, options.ignoreSelector),
+            scope: new DomObservationScope(
+                root,
+                options.ignoreSelector,
+                options.boundarySelector,
+            ),
         });
+
         const area: Area = {
             root,
             session,
@@ -201,12 +296,16 @@ export class MicrofrontendObserver {
                 error: null,
             },
         };
+
         try {
             const initial = this.captureArea(area, options);
+
             session.start(initial, {
                 captureAndPublish: () => {
                     const snapshot = this.captureArea(area, options);
+
                     this.publish();
+
                     return snapshot;
                 },
                 onError: (error) => {
@@ -217,18 +316,23 @@ export class MicrofrontendObserver {
         } catch (error: unknown) {
             this.failArea(area, error);
         }
+
         return area;
     }
 
     private failArea(area: Area, error: unknown): void {
         area.session.dispose();
-        area.state = { ...area.state, error: error instanceof Error ? error.message : String(error) };
+        area.state = {
+            ...area.state,
+            error: error instanceof Error ? error.message : String(error),
+        };
     }
 
     private captureArea(area: Area, options: DomObservationOptions): DomSnapshot {
         const snapshot = this.builder.build(area.root, options);
         const fingerprint = snapshotFingerprint(snapshot);
         const changed = fingerprint !== area.fingerprint;
+
         area.fingerprint = fingerprint;
         area.state = {
             ...area.state,
@@ -241,18 +345,28 @@ export class MicrofrontendObserver {
                   }
                 : {}),
         };
+
         return snapshot;
     }
 
     private publish(): void {
-        this.zone.run(() => this.current.set([...this.entries.values()].map((area) => area.state)));
+        this.zone.run(() =>
+            this.current.set([...this.entries.values()].map((area) => area.state)),
+        );
     }
 
     private discoveryRelevant(record: MutationRecord, ignoreSelector: string): boolean {
-        if (isObserverUiMutation(record) || isScrollDecoration(record.target)) return false;
+        if (isObserverUiMutation(record) || isScrollDecoration(record.target)) {
+            return false;
+        }
+
         const target =
-            record.target.nodeType === 1 ? (record.target as Element) : record.target.parentElement;
+            record.target.nodeType === 1
+                ? (record.target as Element)
+                : record.target.parentElement;
+
         const ignored = ignoreSelector ? target?.closest(ignoreSelector) : null;
+
         return !ignored || (record.type === 'attributes' && target === ignored);
     }
 }

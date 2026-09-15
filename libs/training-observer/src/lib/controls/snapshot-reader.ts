@@ -1,17 +1,22 @@
 /** Навигация по сериализованному графу: родители, потомки, текст и подписи. Не обращается к живому DOM или Angular DI. */
-import { type DomElementSnapshot, type DomNodeId, type DomSnapshot } from '@training-observer/core/models';
+import {
+    type DomElementSnapshot,
+    type DomNodeId,
+    type DomSnapshot,
+} from '@training-observer/core/models';
 
 export function normalizeText(value: string): string {
-    return value.replace(/\s+/g, ' ').trim();
+    return value.replaceAll(/\s+/g, ' ').trim();
 }
 
 /** Чтение одного сохранённого графа. Ссылки не разрешаются через живой document. */
 export class SnapshotReader {
-    readonly elements: readonly DomElementSnapshot[];
-    readonly labels: readonly DomElementSnapshot[];
     private readonly lastElementByHtmlId = new Map<string, DomElementSnapshot>();
 
-    constructor(readonly snapshot: DomSnapshot) {
+    public readonly elements: readonly DomElementSnapshot[];
+    public readonly labels: readonly DomElementSnapshot[];
+
+    constructor(public readonly snapshot: DomSnapshot) {
         this.elements = Object.values(snapshot.nodes).filter(
             (node): node is DomElementSnapshot => node.kind === 'element',
         );
@@ -19,11 +24,14 @@ export class SnapshotReader {
 
         for (const element of this.elements) {
             const htmlId = element.attributes['id'];
-            if (htmlId) this.lastElementByHtmlId.set(htmlId, element);
+
+            if (htmlId) {
+                this.lastElementByHtmlId.set(htmlId, element);
+            }
         }
     }
 
-    ancestors(node: DomElementSnapshot): DomElementSnapshot[] {
+    public ancestors(node: DomElementSnapshot): DomElementSnapshot[] {
         const result: DomElementSnapshot[] = [];
         let parent = node.parentId ? this.snapshot.nodes[node.parentId] : undefined;
 
@@ -35,16 +43,20 @@ export class SnapshotReader {
         return result;
     }
 
-    text(id: DomNodeId): string {
+    public text(id: DomNodeId): string {
         const node = this.snapshot.nodes[id];
-        if (node?.kind === 'text') return node.text;
-        if (node?.kind === 'element') return node.children.map((child) => this.text(child)).join(' ');
 
-        return '';
+        if (node?.kind === 'text') {
+            return node.text;
+        }
+
+        return node?.kind === 'element'
+            ? node.children.map((child) => this.text(child)).join(' ')
+            : '';
     }
 
     /** Сохраняет существующее правило контекстной подписи: последний дубликат HTML id побеждает. */
-    referencedText(ids: string): string {
+    public referencedText(ids: string): string {
         return ids
             .trim()
             .split(/\s+/)
@@ -54,7 +66,7 @@ export class SnapshotReader {
             .join(' ');
     }
 
-    legendText(fieldset: DomElementSnapshot): string {
+    public legendText(fieldset: DomElementSnapshot): string {
         const legend = fieldset.children
             .map((id) => this.snapshot.nodes[id])
             .find((node) => node?.kind === 'element' && node.tagName === 'legend');
@@ -62,32 +74,43 @@ export class SnapshotReader {
         return legend ? this.text(legend.id) : '';
     }
 
-    relatedLabels(
+    public relatedLabels(
         target: DomElementSnapshot,
         ancestors: readonly DomElementSnapshot[],
     ): readonly DomElementSnapshot[] {
         return this.labels.filter(
             (label) =>
-                (target.attributes['id'] && label.attributes['for'] === target.attributes['id']) ||
+                (target.attributes['id'] &&
+                    label.attributes['for'] === target.attributes['id']) ||
                 ancestors.some((parent) => parent.id === label.id),
         );
     }
 
     /** Сохраняет порядок обхода и останавливается на другом контроле вместе с его потомками. */
-    members(
+    public members(
         roots: readonly DomNodeId[],
         targetId: DomNodeId,
         controlTargets: ReadonlySet<DomNodeId>,
     ): Set<DomNodeId> {
         const members = new Set<DomNodeId>();
         const visit = (id: DomNodeId): void => {
-            if (id !== targetId && controlTargets.has(id)) return;
+            if (id !== targetId && controlTargets.has(id)) {
+                return;
+            }
+
             const node = this.snapshot.nodes[id];
-            if (!node) return;
+
+            if (!node) {
+                return;
+            }
 
             members.add(id);
-            if (node.kind === 'element') node.children.forEach(visit);
+
+            if (node.kind === 'element') {
+                node.children.forEach(visit);
+            }
         };
+
         roots.forEach(visit);
 
         return members;

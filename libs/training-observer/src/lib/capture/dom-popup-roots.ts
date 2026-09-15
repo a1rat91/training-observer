@@ -1,11 +1,12 @@
+/* eslint-disable unicorn/prefer-query-selector -- Нужен точный поиск HTML ID, включая пустые строки и специальные символы CSS. */
 /** Поиск связанных popup для capture. Явные ссылки позволяют включать portal за пределами основного корня. */
-import { type DomNodeSnapshot } from '@training-observer/core/models';
-import { type DomSnapshotOptions } from '../tokens/dom-snapshot-options';
-import { isScrollDecoration } from './dom-scroll-decoration';
+import {type DomNodeSnapshot} from '@training-observer/core/models';
 
-import { isObserverUi } from '../observation/dom-observer-ui';
+import {isObserverUi} from '../observation/dom-observer-ui';
+import {type DomSnapshotOptions} from '../tokens/dom-snapshot-options';
+import {isScrollDecoration} from './dom-scroll-decoration';
 
-const POPUP_ROLES = new Set(['true', 'menu', 'listbox', 'tree', 'grid', 'dialog']);
+const POPUP_ROLES = new Set(['dialog', 'grid', 'listbox', 'menu', 'tree', 'true']);
 
 /** Однократно следует ссылкам основного дерева, не обходит цепочки popup рекурсивно. */
 export function findPopupRoots(
@@ -19,26 +20,36 @@ export function findPopupRoots(
         if (
             node.kind !== 'element' ||
             node.attributes['aria-expanded'] !== 'true' ||
-            !POPUP_ROLES.has(node.attributes['aria-haspopup'])
-        )
+            !POPUP_ROLES.has(node.attributes['aria-haspopup'] ?? '')
+        ) {
             continue;
+        }
 
         for (const id of (node.attributes['aria-controls'] ?? '').trim().split(/\s+/)) {
             const element = root.ownerDocument.getElementById(id);
-            if (element && isExternalPopup(root, element, options)) linked.add(element);
+
+            if (element && isExternalPopup(root, element, options)) {
+                linked.add(element);
+            }
         }
     }
 
     // Пересекающиеся ссылки используют внешний корень, сохраняя согласованность parent-связей.
     return [...linked].filter(
-        (element) => ![...linked].some((other) => other !== element && other.contains(element)),
+        (element) =>
+            ![...linked].some((other) => other !== element && other.contains(element)),
     );
 }
 
-function isExternalPopup(root: Element, element: Element, options: DomSnapshotOptions): boolean {
-    if (root.contains(element) || element.contains(root)) return false;
-    if (options.boundarySelector && element.closest(options.boundarySelector)) return false;
-    if (options.ignoreSelector && element.closest(options.ignoreSelector)) return false;
-
-    return !isScrollDecoration(element) && !isObserverUi(element);
+function isExternalPopup(
+    root: Element,
+    element: Element,
+    options: DomSnapshotOptions,
+): boolean {
+    return root.contains(element) ||
+        element.contains(root) ||
+        (options.boundarySelector && element.closest(options.boundarySelector)) ||
+        (options.ignoreSelector && element.closest(options.ignoreSelector))
+        ? false
+        : !isScrollDecoration(element) && !isObserverUi(element);
 }

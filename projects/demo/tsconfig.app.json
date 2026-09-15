@@ -1,13 +1,12 @@
 {
-    "extends": "../../tsconfig.base.json",
+    "extends": "../../tsconfig.json",
     "compilerOptions": {
-        "outDir": "../../dist/out-tsc/demo",
-        "types": []
+        "outDir": "../out-tsc/app",
+        "target": "ES2022",
+        "useDefineForClassFields": false
     },
-    "files": [
-        "src/main.ts"
-    ],
-    "include": [
-        "src/**/*.d.ts"
-    ]
+    "angularCompilerOptions": {
+        "compilationMode": "full"
+    },
+    "files": ["./src/typings.d.ts", "./src/main.browser.ts", "./src/polyfills.ts"]
 }

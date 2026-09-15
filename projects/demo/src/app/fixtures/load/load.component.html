@@ -2,29 +2,72 @@
     <header data-training-observer-ignore>
         <h1>Нагрузочный стенд</h1>
         <p>
-            Основной сценарий: 10 областей с разным содержимым. Стресс-сценарии: 100 и 300 одинаковых областей
-            по 5 полей. Снимки хранятся в памяти; здесь выводятся только счётчики.
+            Основной сценарий: 10 областей с разным содержимым. Стресс-сценарии: 100 и 300 одинаковых областей по 5
+            полей. Снимки хранятся в памяти; здесь выводятся только счётчики.
         </p>
         <div class="actions">
-            <button tuiButton size="s" (click)="mountMixed()">10 разных областей</button>
+            <button
+                size="s"
+                tuiButton
+                (click)="mountMixed()"
+            >
+                10 разных областей
+            </button>
             @for (count of [10, 100, 300]; track count) {
-                <button tuiButton size="s" (click)="mount(count)">{{ count }} областей</button>
+                <button
+                    size="s"
+                    tuiButton
+                    (click)="mount(count)"
+                >
+                    {{ count }} областей
+                </button>
             }
-            <button tuiButton size="s" (click)="replace()">Заменить первые 30</button>
-            <label>Сверка свойств, мс <input type="number" min="0" [(ngModel)]="polling" /></label>
-            <button tuiButton size="s" (click)="start()">Перезапустить</button>
-            <button tuiButton size="s" (click)="observer.stop()">Остановить</button>
+            <button
+                size="s"
+                tuiButton
+                (click)="replace()"
+            >
+                Заменить первые 30
+            </button>
+            <label>
+                Сверка свойств, мс
+                <input
+                    min="0"
+                    type="number"
+                    [(ngModel)]="polling"
+                />
+            </label>
+            <button
+                size="s"
+                tuiButton
+                (click)="start()"
+            >
+                Перезапустить
+            </button>
+            <button
+                size="s"
+                tuiButton
+                (click)="observer.stop()"
+            >
+                Остановить
+            </button>
         </div>
         <p aria-live="polite">
-            Областей: <b data-testid="load-count">{{ observer.areas().length }}</b> · контролов:
-            <b data-testid="load-controls">{{ totals().controls }}</b> · узлов:
-            <b data-testid="load-nodes">{{ totals().nodes }}</b> · пересчётов:
-            <b data-testid="load-scans">{{ totals().scans }}</b> · ошибок:
+            Областей:
+            <b data-testid="load-count">{{ observer.areas().length }}</b>
+            · контролов:
+            <b data-testid="load-controls">{{ totals().controls }}</b>
+            · узлов:
+            <b data-testid="load-nodes">{{ totals().nodes }}</b>
+            · пересчётов:
+            <b data-testid="load-scans">{{ totals().scans }}</b>
+            · ошибок:
             <b data-testid="load-errors">{{ totals().errors }}</b>
         </p>
         <p>
-            Синхронный start(): <b data-testid="load-start-ms">{{ startMs() | number: '1.1-1' }}</b> мс.
-            Рендер Angular и последующие пересчёты сюда не входят.
+            Синхронный start():
+            <b data-testid="load-start-ms">{{ startMs() | number: '1.1-1' }}</b>
+            мс. Рендер Angular и последующие пересчёты сюда не входят.
         </p>
         <p data-testid="load-status">
             {{ observer.isObserving() ? 'Наблюдение включено' : 'Наблюдение остановлено' }}
@@ -37,7 +80,8 @@
                         class="area-status"
                         [attr.data-name]="area.name"
                         [attr.data-scans]="area.scanCount"
-                        [attr.data-value]="area.logicalControls.at(0)?.state?.value">
+                        [attr.data-value]="area.logicalControls.at(0)?.state?.value"
+                    >
                         {{ area.name }}: {{ area.scanCount }} пересчётов
                         @if (area.error) {
                             <span role="alert">{{ area.error }}</span>
@@ -52,23 +96,31 @@
             <section [attr.data-mf]="'load-' + item.id">
                 <h2>Область {{ item.id }} · {{ item.fields.length + 1 }} контролов</h2>
                 <tui-textfield [tuiTextfieldCleaner]="false">
-                    <label tuiLabel [for]="'load-' + item.id + '-0'">Имя</label>
-                    <input tuiInput [id]="'load-' + item.id + '-0'" value="Анна" />
+                    <label
+                        tuiLabel
+                        [for]="'load-' + item.id + '-0'"
+                    >
+                        Имя
+                    </label>
+                    <input
+                        tuiTextfield
+                        value="Анна"
+                        [id]="'load-' + item.id + '-0'"
+                    />
                 </tui-textfield>
                 @if (item.kind === 'table') {
                     <table>
-                        <caption>
-                            Редактируемые строки
-                        </caption>
+                        <caption>Редактируемые строки</caption>
                         <tbody>
                             @for (field of item.fields; track field) {
                                 <tr>
                                     <th scope="row">{{ field }}</th>
                                     <td>
                                         <input
-                                            [id]="'load-' + item.id + '-' + field"
+                                            value="Исходное"
                                             [attr.aria-label]="'Строка ' + field"
-                                            value="Исходное" />
+                                            [id]="'load-' + item.id + '-' + field"
+                                        />
                                     </td>
                                 </tr>
                             }
@@ -76,14 +128,15 @@
                     </table>
                 } @else {
                     @for (field of item.fields; track field) {
-                        <label class="native"
-                            >Поле {{ field }}
+                        <label class="native">
+                            Поле {{ field }}
                             @switch (item.kind) {
                                 @case ('checkbox') {
                                     <input
                                         tuiCheckbox
                                         type="checkbox"
-                                        [id]="'load-' + item.id + '-' + field" />
+                                        [id]="'load-' + item.id + '-' + field"
+                                    />
                                 }
                                 @case ('select') {
                                     <select [id]="'load-' + item.id + '-' + field">
@@ -93,7 +146,10 @@
                                     </select>
                                 }
                                 @default {
-                                    <input [id]="'load-' + item.id + '-' + field" value="Исходное" />
+                                    <input
+                                        value="Исходное"
+                                        [id]="'load-' + item.id + '-' + field"
+                                    />
                                 }
                             }
                         </label>

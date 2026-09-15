@@ -1,17 +1,21 @@
-import { expect, test, type Page } from '@playwright/test';
+import {expect, type Page, test} from '@playwright/test';
 
-import { type DomElementSnapshot, type DomSnapshot } from '../libs/training-observer/src/index';
+import {type DomElementSnapshot, type DomSnapshot} from '../libs/training-observer/src';
 
 async function capture(page: Page): Promise<DomSnapshot> {
     const output = page.getByTestId('snapshot-json');
-    const previous = (await output.count()) ? JSON.parse(await output.innerText()).capturedAt : null;
+    const previous = (await output.count())
+        ? JSON.parse(await output.innerText()).capturedAt
+        : null;
 
-    await page.getByRole('button', { name: 'Снять снимок' }).click();
+    await page.getByRole('button', {name: 'Снять снимок'}).click();
     // Angular coalesces rendering until the next frame; wait for this capture, not the old JSON.
     await expect
-        .poll(async () => {
-            return (await output.count()) ? JSON.parse(await output.innerText()).capturedAt : null;
-        })
+        .poll(async () =>
+            (await output.count())
+                ? JSON.parse(await output.innerText()).capturedAt
+                : null,
+        )
         .not.toBe(previous);
 
     return JSON.parse(await output.innerText()) as DomSnapshot;
@@ -31,15 +35,22 @@ function byId(snapshot: DomSnapshot, id: string): DomElementSnapshot {
     return element!;
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({page}) => {
     await page.goto('/controls');
-    await expect(page.getByRole('heading', { name: 'Исследуем страницу' })).toBeVisible();
-    await page.getByRole('button', { name: 'Остановить', exact: true }).click();
-    await expect(page.getByTestId('observation-status')).toHaveText('Наблюдение остановлено');
+    await expect(page.getByRole('heading', {name: 'Исследуем страницу'})).toBeVisible();
+    await page.getByRole('button', {name: 'Остановить', exact: true}).click();
+    await expect(page.getByTestId('observation-status')).toHaveText(
+        'Наблюдение остановлено',
+    );
 });
 
-test('captures a serializable, consistent graph without modifying the observed DOM', async ({ page }) => {
-    const before = await page.getByTestId('observed-page').evaluate((root) => root.outerHTML);
+test('captures a serializable, consistent graph without modifying the observed DOM', async ({
+    page,
+}) => {
+    const before = await page
+        .getByTestId('observed-page')
+        .evaluate((root) => root.outerHTML);
+
     const snapshot = await capture(page);
 
     expect(snapshot.rootId).not.toBeNull();
@@ -50,7 +61,7 @@ test('captures a serializable, consistent graph without modifying the observed D
     expect(byId(snapshot, 'full-name')).toMatchObject({
         interactive: true,
         label: 'Имя',
-        state: { value: 'Алексей' },
+        state: {value: 'Алексей'},
     });
 
     for (const element of elements(snapshot)) {
@@ -59,10 +70,14 @@ test('captures a serializable, consistent graph without modifying the observed D
         }
     }
 
-    expect(await page.getByTestId('observed-page').evaluate((root) => root.outerHTML)).toBe(before);
+    expect(
+        await page.getByTestId('observed-page').evaluate((root) => root.outerHTML),
+    ).toBe(before);
 });
 
-test('reads current input, checkbox and select properties; snapshots remain manual', async ({ page }) => {
+test('reads current input, checkbox and select properties; snapshots remain manual', async ({
+    page,
+}) => {
     await page
         .getByTestId('observed-page')
         .evaluate((root) =>
@@ -76,7 +91,9 @@ test('reads current input, checkbox and select properties; snapshots remain manu
     await page.locator('#full-name').fill('Мария');
     await page.locator('#notifications').uncheck();
     await page.locator('#native-department').selectOption('support');
-    expect(JSON.parse(await page.getByTestId('snapshot-json').innerText())).toEqual(before);
+    expect(JSON.parse(await page.getByTestId('snapshot-json').innerText())).toEqual(
+        before,
+    );
 
     const after = await capture(page);
 
@@ -92,13 +109,28 @@ test('reads current input, checkbox and select properties; snapshots remain manu
     expect(byId(await capture(page), 'full-name').state.value).toBe('Из кода');
 });
 
-test('retains hidden controls and does not let cursor:pointer override disabled', async ({ page }) => {
+test('retains hidden controls and does not let cursor:pointer override disabled', async ({
+    page,
+}) => {
     const snapshot = await capture(page);
-    const save = elements(snapshot).find((node) => node.tagName === 'button' && node.label === 'Сохранить');
-    const hidden = elements(snapshot).find((node) => node.attributes['aria-label'] === 'Скрытое поле');
+    const save = elements(snapshot).find(
+        (node) => node.tagName === 'button' && node.label === 'Сохранить',
+    );
 
-    expect(save).toMatchObject({ interactive: true, pointerActionable: false, state: { disabled: true } });
-    expect(hidden).toMatchObject({ visible: false, interactive: true, pointerActionable: false });
+    const hidden = elements(snapshot).find(
+        (node) => node.attributes['aria-label'] === 'Скрытое поле',
+    );
+
+    expect(save).toMatchObject({
+        interactive: true,
+        pointerActionable: false,
+        state: {disabled: true},
+    });
+    expect(hidden).toMatchObject({
+        visible: false,
+        interactive: true,
+        pointerActionable: false,
+    });
 });
 
 test('handles display:contents, ancestor opacity, inert, inherited disabled and readonly', async ({
@@ -122,21 +154,23 @@ test('handles display:contents, ancestor opacity, inert, inherited disabled and 
     expect(byId(snapshot, 'transparent-button').visible).toBe(false);
     expect(byId(snapshot, 'inert-button')).toMatchObject({
         pointerActionable: false,
-        state: { inert: true },
+        state: {inert: true},
     });
     expect(byId(snapshot, 'fieldset-input').state.disabled).toBe(true);
     expect(byId(snapshot, 'readonly-input')).toMatchObject({
         interactive: true,
-        state: { readOnly: true, value: 'Только чтение' },
+        state: {readOnly: true, value: 'Только чтение'},
     });
 });
 
-test('detects occlusion and distinguishes rendered offscreen elements', async ({ page }) => {
+test('detects occlusion and distinguishes rendered offscreen elements', async ({
+    page,
+}) => {
     await page.getByTestId('observed-page').evaluate((root) => {
         root.insertAdjacentHTML(
             'beforeend',
             `
-            <button id="covered-button" style="position:fixed;left:10px;top:10px;width:100px;height:40px;z-index:100">Covered</button>
+            <button id="covered-button" style="position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:100">Covered</button>
             <button id="offscreen-button" style="position:absolute;top:5000px">Offscreen</button>
         `,
         );
@@ -144,7 +178,7 @@ test('detects occlusion and distinguishes rendered offscreen elements', async ({
 
         cover.id = 'test-cover';
         cover.style.cssText =
-            'position:fixed;left:10px;top:10px;width:100px;height:40px;z-index:101;background:red';
+            'position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:101;background:red';
         document.body.append(cover);
     });
     const covered = await capture(page);
@@ -167,27 +201,37 @@ test('detects occlusion and distinguishes rendered offscreen elements', async ({
     });
 });
 
-test('updates added, removed and replaced nodes while retaining live-node IDs', async ({ page }) => {
+test('updates added, removed and replaced nodes while retaining live-node IDs', async ({
+    page,
+}) => {
     const initial = await capture(page);
 
-    await page.getByRole('button', { name: 'Добавить поле' }).click();
+    await page.getByRole('button', {name: 'Добавить поле'}).click();
     await expect(page.locator('#comment')).toBeVisible();
     const added = await capture(page);
 
     expect(byId(added, 'comment').tagName).toBe('textarea');
     expect(byId(added, 'full-name').id).toBe(byId(initial, 'full-name').id);
-    await page.getByRole('button', { name: 'Убрать поле' }).click();
+    await page.getByRole('button', {name: 'Убрать поле'}).click();
     await expect(page.locator('#comment')).toHaveCount(0);
     const removed = await capture(page);
 
-    expect(elements(removed).some((element) => element.attributes['id'] === 'comment')).toBe(false);
-    await page.locator('#department').evaluate((element) => element.replaceWith(element.cloneNode(true)));
-    expect(byId(await capture(page), 'department').id).not.toBe(byId(initial, 'department').id);
+    expect(
+        elements(removed).some((element) => element.attributes['id'] === 'comment'),
+    ).toBe(false);
+    await page
+        .locator('#department')
+        .evaluate((element) => element.replaceWith(element.cloneNode(true)));
+    expect(byId(await capture(page), 'department').id).not.toBe(
+        byId(initial, 'department').id,
+    );
 });
 
-test('redacts password property and value attribute', async ({ page }) => {
+test('redacts password property and value attribute', async ({page}) => {
     await page.locator('#secret').fill('do-not-record-this');
-    await page.locator('#secret').evaluate((element) => element.setAttribute('value', 'do-not-record-this'));
+    await page
+        .locator('#secret')
+        .evaluate((element) => element.setAttribute('value', 'do-not-record-this'));
     const snapshot = await capture(page);
 
     expect(byId(snapshot, 'secret').state.redacted).toBe(true);
@@ -202,7 +246,8 @@ test('reports iframe and open shadow boundaries, ignores its own UI and excluded
         const host = document.createElement('div');
 
         host.id = 'shadow-host';
-        host.attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-button">Shadow</button>';
+        host.attachShadow({mode: 'open'}).innerHTML =
+            '<button id="shadow-button">Shadow</button>';
         root.append(host);
         root.insertAdjacentHTML(
             'beforeend',
@@ -215,17 +260,26 @@ test('reports iframe and open shadow boundaries, ignores its own UI and excluded
     expect(byId(snapshot, 'frame').boundaries).toEqual(['iframe']);
     expect(byId(snapshot, 'shadow-host').boundaries).toEqual(['open-shadow-root']);
     expect(
-        elements(snapshot).some((node) => ['excluded', 'shadow-button'].includes(node.attributes['id'])),
+        elements(snapshot).some((node) =>
+            ['excluded', 'shadow-button'].includes(node.attributes['id']),
+        ),
     ).toBe(false);
     expect(elements(snapshot).some((node) => node.tagName === 'script')).toBe(false);
 });
 
-test('reports truncation and keeps references valid when a limit is reached', async ({ page }) => {
-    await page.getByText('Ограничения обхода', { exact: true }).click();
+test('reports truncation and keeps references valid when a limit is reached', async ({
+    page,
+}) => {
+    await page.getByText('Ограничения обхода', {exact: true}).click();
     await page.getByLabel('Максимум узлов').fill('3');
     const limited = await capture(page);
 
-    expect(limited.stats).toMatchObject({ nodeCount: 3, truncated: true, limitsReached: ['maxNodes'] });
+    expect(limited.stats).toMatchObject({
+        nodeCount: 3,
+        truncated: true,
+        limitsReached: ['maxNodes'],
+    });
+
     for (const element of elements(limited)) {
         for (const child of element.children) {
             expect(limited.nodes[child]).toBeDefined();
@@ -236,8 +290,12 @@ test('reports truncation and keeps references valid when a limit is reached', as
     await page.getByLabel('Максимум уровней').fill('0');
     const shallow = await capture(page);
 
-    expect(shallow.stats).toMatchObject({ nodeCount: 1, truncated: true, limitsReached: ['maxDepth'] });
+    expect(shallow.stats).toMatchObject({
+        nodeCount: 1,
+        truncated: true,
+        limitsReached: ['maxDepth'],
+    });
     await page.getByLabel('Максимум уровней').fill('-1');
-    await page.getByRole('button', { name: 'Снять снимок' }).click();
+    await page.getByRole('button', {name: 'Снять снимок'}).click();
     await expect(page.getByRole('alert').first()).toContainText('maxDepth must be');
 });

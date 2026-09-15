@@ -1,10 +1,18 @@
 /** Проверка сценария без зависимости от записи или runtime. Общие descriptor/value guards защищают обе JSON-границы. */
-import type { TrainingScenario, ScenarioStep, FieldExpectation } from './scenario.models';
-import { isObject, hasOnlyKeys, isControlDescriptor, isRecordedValue } from './validation';
+import {
+    type FieldExpectation,
+    type ScenarioStep,
+    type TrainingScenario,
+} from './scenario.models';
+import {hasOnlyKeys, isControlDescriptor, isObject, isRecordedValue} from './validation';
 
 export function parseScenario(json: string): TrainingScenario {
-    if (json.length > 1_000_000) throw new Error('Сценарий слишком большой.');
+    if (json.length > 1_000_000) {
+        throw new Error('Сценарий слишком большой.');
+    }
+
     const data: unknown = JSON.parse(json);
+
     if (
         !isObject(data) ||
         !hasOnlyKeys(data, ['kind', 'version', 'steps']) ||
@@ -16,7 +24,12 @@ export function parseScenario(json: string): TrainingScenario {
     ) {
         throw new Error('Некорректный сценарий.');
     }
-    return { kind: 'training-state-scenario', version: 1, steps: data['steps'].map(parseStep) };
+
+    return {
+        kind: 'training-state-scenario',
+        version: 1,
+        steps: data['steps'].map(parseStep),
+    };
 }
 
 function parseStep(step: unknown): ScenarioStep {
@@ -28,8 +41,10 @@ function parseStep(step: unknown): ScenarioStep {
         typeof step['task'] !== 'string' ||
         typeof step['transitionMessage'] !== 'string' ||
         !Array.isArray(step['fields'])
-    )
+    ) {
         throw new Error('Некорректный экран.');
+    }
+
     return {
         key: step['key'],
         task: step['task'],
@@ -46,8 +61,10 @@ function parseField(field: unknown): FieldExpectation {
         typeof field['optional'] !== 'boolean' ||
         !isControlDescriptor(field['descriptor']) ||
         !isRecordedValue(field['expected'])
-    )
+    ) {
         throw new Error('Некорректное ожидание.');
+    }
+
     return {
         descriptor: field['descriptor'],
         expected: field['expected'],

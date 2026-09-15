@@ -5,8 +5,7 @@ import {
     type DomRectSnapshot,
     type HitTestResult,
 } from './dom-snapshot';
-
-import type { ControlType } from './observation-enums';
+import {type ControlType} from './observation-enums';
 
 /** Для совместимости интеграция принимает строковые значения JSON наряду с членами enum. */
 export type ControlKind = `${ControlType}`;
@@ -25,20 +24,20 @@ export interface ChoiceSnapshot {
 
 /** Явная связь с popup; его содержимое не обязательно является списком вариантов. */
 export interface PopupSnapshot {
-    readonly status: 'closed' | 'open' | 'unresolved' | 'native';
-    readonly relation: 'aria-controls' | 'native-options' | 'missing';
+    readonly status: 'closed' | 'native' | 'open' | 'unresolved';
+    readonly relation: 'aria-controls' | 'missing' | 'native-options';
     readonly referencedIds: readonly string[];
     readonly rootNodeIds: readonly DomNodeId[];
     readonly busy: boolean | null;
     readonly text: string;
     /** Только варианты текущего снимка, а не весь набор источника данных. */
-    readonly options: readonly {
+    readonly options: ReadonlyArray<{
         readonly nodeId: DomNodeId;
         readonly label: string;
         readonly value?: string;
         readonly selected: boolean | null;
         readonly disabled: boolean;
-    }[];
+    }>;
 }
 
 /** Признаки поиска, а не гарантированно уникальный локатор. Без текущего значения и геометрии. */
@@ -52,11 +51,11 @@ export interface ControlLocatorHints {
     readonly name?: string;
     readonly testId?: string;
     readonly placeholder?: string;
-    readonly context: readonly {
+    readonly context: ReadonlyArray<{
         readonly tagName: string;
         readonly id?: string;
         readonly label: string;
-    }[];
+    }>;
 }
 
 export interface ControlSnapshot {

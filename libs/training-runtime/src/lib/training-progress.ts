@@ -1,5 +1,6 @@
 /** Результат одного обновления runtime. feedback содержит только новые сообщения, а не историю уведомлений. */
-import type { TrainingStatus } from '@training-observer/contracts';
+import {type TrainingStatus} from '@training-observer/contracts';
+
 export interface TrainingProgress {
     readonly status: `${TrainingStatus}`;
     readonly step: number;

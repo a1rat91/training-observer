@@ -1,14 +1,28 @@
 /** Поле demo: отрисовывает HTTP-схему через публичные Taiga controls, передаёт значение форме. Наблюдатель не используется. */
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { TuiCheckbox, TuiInput, TuiRadio } from '@taiga-ui/core';
-import { TuiComboBox, TuiDataListWrapper, TuiInputNumber, TuiSelect } from '@taiga-ui/kit';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    input,
+    output,
+    signal,
+} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {TuiTextfield} from '@taiga-ui/core';
+import {
+    TuiCheckbox,
+    TuiComboBox,
+    TuiDataListWrapper,
+    TuiInputNumber,
+    TuiRadio,
+    TuiSelect,
+} from '@taiga-ui/kit';
 
-export type FieldValue = string | number | boolean | null;
+export type FieldValue = boolean | number | string | null;
 export interface ProcedureField {
     readonly id: string;
     readonly label: string;
-    readonly kind: 'input' | 'number' | 'checkbox' | 'radio' | 'select' | 'combobox';
+    readonly kind: 'checkbox' | 'combobox' | 'input' | 'number' | 'radio' | 'select';
     readonly options?: readonly string[];
 }
 
@@ -16,29 +30,33 @@ export interface ProcedureField {
     selector: 'app-procedure-field',
     imports: [
         FormsModule,
-        TuiInput,
         TuiCheckbox,
-        TuiRadio,
-        TuiSelect,
         TuiComboBox,
         TuiDataListWrapper,
         TuiInputNumber,
+        TuiRadio,
+        TuiSelect,
+        TuiTextfield,
     ],
     templateUrl: './procedure-field.component.html',
     styleUrl: './procedure-field.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProcedureFieldComponent {
-    readonly field = input.required<ProcedureField>();
-    readonly value = input<FieldValue>(null);
-    readonly changed = output<FieldValue>();
     protected readonly query = signal('');
     protected readonly results = computed(() =>
         (this.field().options ?? []).filter((option) =>
             option.toLowerCase().includes(this.query().toLowerCase()),
         ),
     );
-    protected readonly numberValue = computed(() =>
-        typeof this.value() === 'number' ? (this.value() as number) : null,
-    );
+
+    protected readonly numberValue = computed(() => {
+        const value = this.value();
+
+        return typeof value === 'number' ? value : null;
+    });
+
+    public readonly field = input.required<ProcedureField>();
+    public readonly value = input<FieldValue>(null);
+    public readonly changed = output<FieldValue>();
 }

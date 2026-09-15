@@ -1,12 +1,34 @@
 <details data-training-observer-ignore>
     <summary>Дополнительные проверки контролов</summary>
-    <a routerLink="/controls">Обычные контролы</a> ·
-    <a routerLink="/controls" [queryParams]="{ fixture: 'microfrontends' }">Несколько областей</a> ·
-    <a routerLink="/controls" [queryParams]="{ fixture: 'load' }">Нагрузка</a>
+    <a routerLink="/controls">Обычные контролы</a>
+    ·
+    <a
+        routerLink="/controls"
+        [queryParams]="{fixture: 'microfrontends'}"
+    >
+        Несколько областей
+    </a>
+    ·
+    <a
+        routerLink="/controls"
+        [queryParams]="{fixture: 'load'}"
+    >
+        Нагрузка
+    </a>
+    ·
+    <a
+        routerLink="/controls"
+        [queryParams]="{fixture: 'selectors'}"
+    >
+        Поиск областей по селекторам
+    </a>
 </details>
 @switch (params()?.get('fixture')) {
     @case ('microfrontends') {
         <app-microfrontends />
+    }
+    @case ('selectors') {
+        <controls-example />
     }
     @case ('load') {
         <app-load />

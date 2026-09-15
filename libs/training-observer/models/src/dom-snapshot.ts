@@ -22,8 +22,9 @@ export interface DomControlState {
     readonly redacted: boolean;
 }
 
-export type InteractionReason = 'native' | 'role' | 'editable' | 'tabindex' | 'inline-handler' | 'cursor';
-export type HitTestResult = 'hit' | 'covered' | 'not-tested' | 'unavailable';
+export type InteractionReason =
+    'cursor' | 'editable' | 'inline-handler' | 'native' | 'role' | 'tabindex';
+export type HitTestResult = 'covered' | 'hit' | 'not-tested' | 'unavailable';
 
 interface DomNodeBase {
     readonly id: DomNodeId;
@@ -55,7 +56,7 @@ export interface DomElementSnapshot extends DomNodeBase {
     readonly pointerActionable: boolean;
     readonly state: DomControlState;
     /** Границы присутствуют в диагностике, но содержимое за ними не обходится. */
-    readonly boundaries: readonly ('iframe' | 'open-shadow-root')[];
+    readonly boundaries: ReadonlyArray<'iframe' | 'open-shadow-root'>;
 }
 
 export type DomNodeSnapshot = DomElementSnapshot | DomTextSnapshot;
@@ -75,6 +76,6 @@ export interface DomSnapshot {
         readonly textCount: number;
         readonly boundaryCount: number;
         readonly truncated: boolean;
-        readonly limitsReached: readonly ('maxDepth' | 'maxNodes')[];
+        readonly limitsReached: ReadonlyArray<'maxDepth' | 'maxNodes'>;
     };
 }

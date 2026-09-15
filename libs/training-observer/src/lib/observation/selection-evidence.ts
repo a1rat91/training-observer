@@ -1,5 +1,6 @@
 /** Хранит выбор, реально увиденный в связанном popup, без вывода по совпадению текста. Доказательство принадлежит связи control/host/popup; редактирование, изменение значения, открытый список без выбора, потеря связи, удаление и новый сеанс сбрасывают его. Сырой снимок не меняется; доказательство используется только при подтверждении blur. */
-import type { ControlSnapshot } from '@training-observer/core/models';
+import {type ControlSnapshot} from '@training-observer/core/models';
+
 interface Evidence {
     readonly displayValue: string;
     readonly label: string;
@@ -9,17 +10,29 @@ interface Evidence {
 export class SelectionEvidence {
     private readonly entries = new Map<string, Evidence>();
 
-    observe(controls: readonly ControlSnapshot[]): void {
+    public observe(controls: readonly ControlSnapshot[]): void {
         const ids = new Set(controls.map((control) => control.id));
-        for (const id of this.entries.keys()) if (!ids.has(id)) this.entries.delete(id);
-        for (const control of controls) this.remember(control);
+
+        for (const id of this.entries.keys()) {
+            if (!ids.has(id)) {
+                this.entries.delete(id);
+            }
+        }
+
+        for (const control of controls) {
+            this.remember(control);
+        }
     }
 
-    remember(control: ControlSnapshot): void {
-        if (control.kind !== 'combobox') return;
+    public remember(control: ControlSnapshot): void {
+        if (control.kind !== 'combobox') {
+            return;
+        }
+
         const choice = control.choice;
         const previous = this.entries.get(control.id);
         const popupIds = JSON.stringify(choice?.popup.referencedIds ?? []);
+
         if (
             !choice ||
             control.state.redacted ||
@@ -29,8 +42,10 @@ export class SelectionEvidence {
             choice.popup.status === 'unresolved'
         ) {
             this.invalidate(control.id);
+
             return;
         }
+
         // Ранее выбранный вариант при вводе нового запроса не подтверждает новый запрос.
         if (
             choice.popup.status === 'open' &&
@@ -44,24 +59,26 @@ export class SelectionEvidence {
                 hostNodeId: control.hostNodeId,
                 popupIds,
             });
+
             return;
         }
+
         if (
             choice.popup.status !== 'closed' ||
             previous?.displayValue !== choice.displayValue ||
             previous.hostNodeId !== control.hostNodeId ||
             previous.popupIds !== popupIds
-        )
+        ) {
             this.invalidate(control.id);
+        }
     }
 
-    confirm(control: ControlSnapshot): ControlSnapshot {
+    public confirm(control: ControlSnapshot): ControlSnapshot {
         const evidence = this.entries.get(control.id);
         const choice = control.choice;
-        if (
-            !evidence ||
-            !choice ||
-            choice.selection.status !== 'unknown' ||
+
+        return !evidence ||
+            choice?.selection.status !== 'unknown' ||
             choice.popup.status !== 'closed' ||
             control.state.redacted ||
             choice.popup.busy ||
@@ -69,21 +86,25 @@ export class SelectionEvidence {
             evidence.displayValue !== choice.displayValue ||
             evidence.hostNodeId !== control.hostNodeId ||
             evidence.popupIds !== JSON.stringify(choice.popup.referencedIds)
-        )
-            return control;
-        return {
-            ...control,
-            choice: {
-                ...choice,
-                selection: { status: 'observed', labels: [evidence.label], evidence: 'previous-snapshot' },
-            },
-        };
+            ? control
+            : {
+                  ...control,
+                  choice: {
+                      ...choice,
+                      selection: {
+                          status: 'observed',
+                          labels: [evidence.label],
+                          evidence: 'previous-snapshot',
+                      },
+                  },
+              };
     }
 
-    invalidate(id: string): void {
+    public invalidate(id: string): void {
         this.entries.delete(id);
     }
-    clear(): void {
+
+    public clear(): void {
         this.entries.clear();
     }
 }

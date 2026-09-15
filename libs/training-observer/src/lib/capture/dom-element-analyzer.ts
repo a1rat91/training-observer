@@ -1,33 +1,37 @@
+/* eslint-disable unicorn/prefer-query-selector -- Нужен точный поиск HTML ID, включая пустые строки и специальные символы CSS. */
 /** Адаптер живого DOM в наблюдаемые свойства. Читает native/ARIA состояния и подписи, применяет скрытие чувствительных значений. */
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
+import {
+    type DomControlState,
+    type InteractionReason,
+} from '@training-observer/core/models';
 
-import { type DomControlState, type InteractionReason } from '@training-observer/core/models';
-import { type DomGeometry } from './dom-geometry';
+import {type DomGeometry} from './dom-geometry';
 
 const INTERACTIVE_ROLES = new Set([
     'button',
-    'link',
     'checkbox',
-    'radio',
-    'switch',
-    'textbox',
-    'searchbox',
     'combobox',
+    'link',
     'listbox',
-    'option',
-    'slider',
-    'spinbutton',
-    'tab',
     'menuitem',
     'menuitemcheckbox',
     'menuitemradio',
+    'option',
+    'radio',
     'scrollbar',
+    'searchbox',
+    'slider',
+    'spinbutton',
+    'switch',
+    'tab',
+    'textbox',
     'treeitem',
 ]);
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class DomElementAnalyzer {
-    interactionReasons(
+    public interactionReasons(
         element: Element,
         geometry: DomGeometry,
         cursorHeuristics: boolean,
@@ -50,11 +54,17 @@ export class DomElementAnalyzer {
             reasons.push('editable');
         }
 
-        if (element.hasAttribute('tabindex') && Number(element.getAttribute('tabindex')) >= 0) {
+        if (
+            element.hasAttribute('tabindex') &&
+            Number(element.getAttribute('tabindex')) >= 0
+        ) {
             reasons.push('tabindex');
         }
 
-        if (element.hasAttribute('onclick') || typeof (element as HTMLElement).onclick === 'function') {
+        if (
+            element.hasAttribute('onclick') ||
+            typeof (element as HTMLElement).onclick === 'function'
+        ) {
             reasons.push('inline-handler');
         }
 
@@ -62,7 +72,8 @@ export class DomElementAnalyzer {
         if (
             cursorHeuristics &&
             geometry.style(element).cursor === 'pointer' &&
-            (!element.parentElement || geometry.style(element.parentElement).cursor !== 'pointer')
+            (!element.parentElement ||
+                geometry.style(element.parentElement).cursor !== 'pointer')
         ) {
             reasons.push('cursor');
         }
@@ -70,7 +81,7 @@ export class DomElementAnalyzer {
         return reasons;
     }
 
-    attributes(element: Element): Record<string, string> {
+    public attributes(element: Element): Record<string, string> {
         const result: Record<string, string> = {};
         const redacted = element.matches('input[type="password"],input[type="file"]');
 
@@ -86,25 +97,31 @@ export class DomElementAnalyzer {
         return result;
     }
 
-    label(element: Element): string {
+    public label(element: Element): string {
         const labelledBy = element
             .getAttribute('aria-labelledby')
             ?.trim()
             .split(/\s+/)
             .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? '')
             .join(' ');
+
         const labels = (element as HTMLInputElement).labels;
         const associatedLabel = labels
             ? Array.from(labels)
                   .map((label) => label.textContent ?? '')
                   .join(' ')
             : '';
+
+        const actionText = element.matches(
+            'button,a,summary,[role="button"],[role="option"]',
+        )
+            ? element.textContent
+            : '';
+
         const text =
             element.localName === 'option'
                 ? (element as HTMLOptionElement).label
-                : element.matches('button,a,summary,[role="button"],[role="option"]')
-                  ? element.textContent
-                  : '';
+                : actionText;
 
         return this.normalize(
             labelledBy ||
@@ -117,17 +134,26 @@ export class DomElementAnalyzer {
         );
     }
 
-    state(element: Element): DomControlState {
+    public state(element: Element): DomControlState {
         const control = element as HTMLInputElement;
         const redacted = element.matches('input[type="password"],input[type="file"]');
         const state: DomControlState = {
-            disabled: element.matches(':disabled') || element.getAttribute('aria-disabled') === 'true',
-            readOnly: Boolean(control.readOnly) || element.getAttribute('aria-readonly') === 'true',
+            disabled:
+                element.matches(':disabled') ||
+                element.getAttribute('aria-disabled') === 'true',
+            readOnly:
+                ('readOnly' in element && control.readOnly) ||
+                element.getAttribute('aria-readonly') === 'true',
             inert: Boolean(element.closest('[inert]')),
-            required: Boolean(control.required) || element.getAttribute('aria-required') === 'true',
-            invalid: element.matches(':invalid') || element.getAttribute('aria-invalid') === 'true',
+            required:
+                ('required' in element && control.required) ||
+                element.getAttribute('aria-required') === 'true',
+            invalid:
+                element.matches(':invalid') ||
+                element.getAttribute('aria-invalid') === 'true',
             redacted,
         };
+
         let value: string | readonly string[] | undefined;
 
         if (!redacted) {
@@ -147,36 +173,45 @@ export class DomElementAnalyzer {
         const checked = element.matches('input[type="checkbox"],input[type="radio"]')
             ? control.checked
             : this.ariaBoolean(element, 'aria-checked');
+
+        const ariaIndeterminate =
+            element.getAttribute('aria-checked') === 'mixed' ? true : undefined;
+
         const indeterminate = element.matches('input[type="checkbox"]')
             ? control.indeterminate
-            : element.getAttribute('aria-checked') === 'mixed'
-              ? true
-              : undefined;
+            : ariaIndeterminate;
+
         const selected = element.matches('option')
             ? (element as HTMLOptionElement).selected
             : this.ariaBoolean(element, 'aria-selected');
+
         const expanded = element.matches('details')
             ? (element as HTMLDetailsElement).open
             : this.ariaBoolean(element, 'aria-expanded');
 
-        return { ...state, value, checked, indeterminate, selected, expanded };
+        return {...state, value, checked, indeterminate, selected, expanded};
     }
 
     private ariaBoolean(element: Element, name: string): boolean | undefined {
         const value = element.getAttribute(name);
 
-        return value === 'true' ? true : value === 'false' ? false : undefined;
+        if (value === 'true') {
+            return true;
+        }
+
+        return value === 'false' ? false : undefined;
     }
 
     private editable(element: Element): boolean {
         // Контролом является editing host, а не каждый форматированный потомок.
         return (
-            Boolean((element as HTMLElement).isContentEditable) &&
-            !Boolean((element.parentElement as HTMLElement | null)?.isContentEditable)
+            'isContentEditable' in element &&
+            (element as HTMLElement).isContentEditable &&
+            !element.parentElement?.isContentEditable
         );
     }
 
     private normalize(value: string): string {
-        return value.replace(/\s+/g, ' ').trim();
+        return value.replaceAll(/\s+/g, ' ').trim();
     }
 }

@@ -1,8 +1,8 @@
 # Demo: Angular-интеграция
 
-Приложение показывает три независимые зоны: запись `/record`, диагностику `/controls`, прохождение `/learn`.
-Оно использует Angular 19.2 и Taiga UI 5.15. К бизнес-алгоритмам библиотек относится только передача снимков
-и обработка результатов; формы, HTTP и localStorage остаются здесь.
+Приложение показывает три независимые зоны: запись `/record`, диагностику `/controls`, прохождение `/learn`. Оно
+использует Angular 19.2 и Taiga UI 4.98. К бизнес-алгоритмам библиотек относится только передача снимков и обработка
+результатов; формы, HTTP и localStorage остаются здесь.
 
 ## Структура
 
@@ -16,19 +16,30 @@
 
 ## Алгоритм
 
-RecordPageComponent наблюдает document.body, исключает собственный UI и передаёт ScreenState/
-confirmedControls в StateRecorder только при включённой записи. После Stop редактор создаёт ожидания,
-даёт их изменить и явно публикует в ScenarioStore.
-LearnComponent читает публикацию, создаёт новый runtime и observer для новой попытки, передаёт обновления
+RecordPageComponent наблюдает document.body, исключает собственный UI и передаёт ScreenState/ confirmedControls в
+StateRecorder только при включённой записи. После Stop редактор создаёт ожидания, даёт их изменить и явно публикует в
+ScenarioStore. LearnComponent читает публикацию, создаёт новый runtime и observer для новой попытки, передаёт обновления
 и отображает только новые строки feedback. Сама форма не знает, записывает ли администратор или проходит ученик.
 
-Компоненты standalone/OnPush. DOM запускается через afterNextRender, значения выводятся signals,
-сервисы хранения публикуют readonly signals. Шаблоны и стили вынесены в соседние файлы.
-Подписки/наблюдатели освобождаются по DestroyRef. При изменении маршрута попытка не переносится в новую страницу.
+Компоненты standalone/OnPush. DOM запускается через afterNextRender, значения выводятся signals, сервисы хранения
+публикуют readonly signals. Шаблоны и стили вынесены в соседние файлы. Подписки/наблюдатели освобождаются по DestroyRef.
+При изменении маршрута попытка не переносится в новую страницу.
 
 ## Запуск и тесты
 
-Из корня: `npm start`, затем http://localhost:4200/record.
-Пользовательская инструкция — [docs/demo-guide.md](../../docs/demo-guide.md).
-`npx nx build demo` собирает приложение с зависимостями. `npm test` запускает browser-regression.
-Сохранение сценариев локальное, обмен между разными браузерами и серверная публикация не реализованы.
+Из корня: `npm start`, затем http://localhost:4200/record. Пользовательская инструкция —
+[docs/demo-guide.md](../../docs/demo-guide.md). `npx nx build demo` собирает приложение с зависимостями.
+`npm run test:pw` запускает browser-regression. Сохранение сценариев локальное, обмен между разными браузерами и
+серверная публикация не реализованы.
+
+## Обновление из main
+
+Оболочка TuiDocMain содержит те же три раздела: запись, контролы, тренировка. `/controls?fixture=selectors` открывает
+перенесённый инспектор областей по селекторам; старый адрес `/controls-example` перенаправляет на этот пример. Формы
+используют API Taiga UI 4: TuiTextfield из core, TuiCheckbox/TuiRadio из kit, уведомления — TuiAlertService.
+Select/ComboBox используют `*tuiTextfieldDropdown` и `<tui-data-list-wrapper new>`: это API новых контролов внутри v4.
+Справка: [Taiga UI v4](https://taiga-ui.dev/v4/getting-started). Повторы providers из исходной конфигурации устранены.
+
+Сборка использует custom-webpack, `main.browser.ts`, настройки SSR и окружения из main. `npm test` — Jest,
+`npm run test:pw` — браузерные сценарии. Полные проверки описаны в
+[руководстве разработчика](../../docs/developer-guide.md).

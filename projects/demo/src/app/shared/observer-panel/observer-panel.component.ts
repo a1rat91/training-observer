@@ -1,4 +1,4 @@
-import { DOCUMENT, JsonPipe } from '@angular/common';
+import {DOCUMENT, JsonPipe} from '@angular/common';
 import {
     afterNextRender,
     ChangeDetectionStrategy,
@@ -8,24 +8,29 @@ import {
     input,
     signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { TuiButton } from '@taiga-ui/core';
-import { DomHighlighter, type DomNodeId, TrainingObserver } from '@training-observer/core';
+import {FormsModule} from '@angular/forms';
+import {TuiButton} from '@taiga-ui/core';
+import {DomHighlighter, type DomNodeId, TrainingObserver} from '@training-observer/core';
 
 @Component({
     selector: 'app-observer-panel',
     imports: [FormsModule, JsonPipe, TuiButton],
-    providers: [TrainingObserver, DomHighlighter],
-    host: { 'data-training-observer-ignore': '' },
     templateUrl: './observer-panel.component.html',
     styleUrl: './observer-panel.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [TrainingObserver, DomHighlighter],
+    host: {'data-training-observer-ignore': ''},
 })
 export class ObserverPanelComponent {
-    readonly root = input.required<HTMLElement>();
-    protected readonly observer = inject(TrainingObserver);
     private readonly highlighter = inject(DomHighlighter);
-    protected readonly highlight = signal<{ mode: 'all' | 'dom' | 'one'; nodeId?: DomNodeId } | null>(null);
+
+    protected readonly observer = inject(TrainingObserver);
+
+    protected readonly highlight = signal<{
+        mode: 'all' | 'dom' | 'one';
+        nodeId?: DomNodeId;
+    } | null>(null);
+
     protected readonly error = signal('');
     protected readonly document = inject(DOCUMENT);
     protected maxNodes = 10_000;
@@ -40,19 +45,31 @@ export class ObserverPanelComponent {
         native: 'Native options',
     };
 
+    public readonly root = input.required<HTMLElement>();
+
     constructor() {
         effect(() => {
             const selection = this.highlight();
             const snapshot = this.observer.snapshot();
+
             if (!selection || !snapshot) {
                 this.highlighter.clear();
+
                 return;
             }
+
             const ids =
                 selection.mode === 'dom'
                     ? snapshot.interactiveIds
-                    : this.observer.logicalControls().map((control) => control.targetNodeId);
-            this.highlighter.show(snapshot, ids, selection.mode === 'one' ? selection.nodeId : undefined);
+                    : this.observer
+                          .logicalControls()
+                          .map((control) => control.targetNodeId);
+
+            this.highlighter.show(
+                snapshot,
+                ids,
+                selection.mode === 'one' ? selection.nodeId : undefined,
+            );
         });
         afterNextRender(() => this.start());
     }
@@ -70,7 +87,10 @@ export class ObserverPanelComponent {
 
     protected capture(): void {
         this.run(() =>
-            this.observer.capture(this.observedRoot(), { maxNodes: this.maxNodes, maxDepth: this.maxDepth }),
+            this.observer.capture(this.observedRoot(), {
+                maxNodes: this.maxNodes,
+                maxDepth: this.maxDepth,
+            }),
         );
     }
 

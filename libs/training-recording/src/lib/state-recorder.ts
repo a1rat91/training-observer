@@ -1,12 +1,24 @@
 /** Регистратор состояний без UI. Запоминает владельцев полей и принимает уходящие blur-подтверждения до перехода. Хранит значения и признаки поиска; не выдумывает клик или недоступное значение. Исходные checkbox/radio записываются для каждого посещения, последнее значение используется компилятором. Один экземпляр владеет одной записью. */
-import type { ControlSnapshot } from '@training-observer/core/models';
-import type { ScreenState } from '@training-observer/core/models';
+import {
+    readControlValue,
+    type RecordedEvent,
+    RecordingEventKind,
+    recordsInitialState,
+    requiresBlur,
+    type StateRecording,
+} from '@training-observer/contracts';
+import {
+    type ControlSnapshot,
+    ControlType,
+    type ScreenState,
+    ScreenStatus,
+} from '@training-observer/core/models';
 
-export type { StateRecording, RecordedEvent, RecordedValue } from '@training-observer/contracts';
-import type { StateRecording, RecordedEvent } from '@training-observer/contracts';
-import { readControlValue, requiresBlur, recordsInitialState } from '@training-observer/contracts';
-import { ControlType, ScreenStatus } from '@training-observer/core/models';
-import { RecordingEventKind } from '@training-observer/contracts';
+export type {
+    RecordedEvent,
+    RecordedValue,
+    StateRecording,
+} from '@training-observer/contracts';
 
 export class StateRecorder {
     private running = false;
@@ -15,13 +27,18 @@ export class StateRecorder {
     private key = '';
     private complete = true;
     private gap = '';
-    private readonly owners = new Map<string, { visit: number; key: string }>();
+    private readonly owners = new Map<string, {visit: number; key: string}>();
     private seen = new Map<string, ControlSnapshot>();
     private readonly immediateValues = new Map<string, string>();
 
-    start(screen: ScreenState, confirmed: Readonly<Record<string, ControlSnapshot>>): void {
-        if (screen.status !== ScreenStatus.Ready || !screen.key)
+    public start(
+        screen: ScreenState,
+        confirmed: Readonly<Record<string, ControlSnapshot>>,
+    ): void {
+        if (screen.status !== ScreenStatus.Ready || !screen.key) {
             throw new Error('Дождитесь готового экрана.');
+        }
+
         this.events = [];
         this.visit = 0;
         this.key = '';
@@ -34,10 +51,20 @@ export class StateRecorder {
         this.observe(screen, confirmed);
     }
 
-    observe(screen: ScreenState, confirmed: Readonly<Record<string, ControlSnapshot>>): void {
-        if (!this.running) return;
+    public observe(
+        screen: ScreenState,
+        confirmed: Readonly<Record<string, ControlSnapshot>>,
+    ): void {
+        if (!this.running) {
+            return;
+        }
+
         this.recordDepartingConfirmations(confirmed);
-        if (screen.status === ScreenStatus.Loading) return;
+
+        if (screen.status === ScreenStatus.Loading) {
+            return;
+        }
+
         if (screen.status !== ScreenStatus.Ready || !screen.key) {
             if (this.gap !== screen.reason) {
                 this.append({
@@ -49,19 +76,27 @@ export class StateRecorder {
                 this.complete = false;
                 this.gap = screen.reason;
             }
+
             return;
         }
+
         this.gap = '';
+
         if (this.key !== screen.key) {
             this.key = screen.key;
             this.visit++;
             this.immediateValues.clear();
-            this.append({ kind: RecordingEventKind.Screen, screenKey: this.key, visit: this.visit });
+            this.append({
+                kind: RecordingEventKind.Screen,
+                screenKey: this.key,
+                visit: this.visit,
+            });
         }
+
         this.recordCurrentControls(screen.controls, confirmed);
     }
 
-    snapshot(): StateRecording {
+    public snapshot(): StateRecording {
         return structuredClone({
             kind: 'training-state-recording',
             version: 1,
@@ -70,16 +105,23 @@ export class StateRecorder {
         });
     }
 
-    stop(): StateRecording {
+    public stop(): StateRecording {
         this.running = false;
+
         return this.snapshot();
     }
 
-    private recordDepartingConfirmations(confirmed: Readonly<Record<string, ControlSnapshot>>): void {
+    private recordDepartingConfirmations(
+        confirmed: Readonly<Record<string, ControlSnapshot>>,
+    ): void {
         // Подтверждения могут принадлежать уходящему экрану, DOM-узлы которого уже удалены.
         for (const [id, control] of Object.entries(confirmed)) {
-            if (this.seen.get(id) === control) continue;
+            if (this.seen.get(id) === control) {
+                continue;
+            }
+
             const owner = this.owners.get(id);
+
             if (owner) {
                 this.seen.set(id, control);
                 this.recordValue(control, owner);
@@ -92,29 +134,45 @@ export class StateRecorder {
         confirmed: Readonly<Record<string, ControlSnapshot>>,
     ): void {
         for (const control of controls) {
-            this.owners.set(control.id, { key: this.key, visit: this.visit });
+            this.owners.set(control.id, {key: this.key, visit: this.visit});
             const confirmation = confirmed[control.id];
+
             if (confirmation && this.seen.get(control.id) !== confirmation) {
                 this.seen.set(control.id, confirmation);
-                this.recordValue(confirmation, { key: this.key, visit: this.visit });
+                this.recordValue(confirmation, {key: this.key, visit: this.visit});
             }
-            if (control.kind === ControlType.Button || requiresBlur(control)) continue;
+
+            if (control.kind === ControlType.Button || requiresBlur(control)) {
+                continue;
+            }
+
             const value = JSON.stringify([
                 control.state.checked,
                 control.state.indeterminate,
                 control.state.value,
             ]);
+
             const previous = this.immediateValues.get(control.id);
+
             this.immediateValues.set(control.id, value);
             const captureInitial = recordsInitialState(control);
-            if (previous !== value && (previous !== undefined || captureInitial))
-                this.recordValue(control, { key: this.key, visit: this.visit });
+
+            if (previous !== value && (previous !== undefined || captureInitial)) {
+                this.recordValue(control, {key: this.key, visit: this.visit});
+            }
         }
     }
 
-    private recordValue(control: ControlSnapshot, owner: { key: string; visit: number }): void {
-        if (control.state.redacted) return;
+    private recordValue(
+        control: ControlSnapshot,
+        owner: {key: string; visit: number},
+    ): void {
+        if (control.state.redacted) {
+            return;
+        }
+
         const value = readControlValue(control);
+
         if (value === undefined) {
             this.complete = false;
             this.append({
@@ -124,8 +182,10 @@ export class StateRecorder {
                 field: structuredClone(control.locatorHints),
                 reason: 'Значение не подтверждено наблюдением',
             });
+
             return;
         }
+
         this.append({
             kind: RecordingEventKind.Value,
             screenKey: owner.key,
@@ -136,6 +196,6 @@ export class StateRecorder {
     }
 
     private append(event: Omit<RecordedEvent, 'sequence'>): void {
-        this.events.push({ ...event, sequence: this.events.length + 1 });
+        this.events.push({...event, sequence: this.events.length + 1});
     }
 }

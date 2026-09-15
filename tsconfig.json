@@ -1,0 +1,33 @@
+{
+    "extends": "@taiga-ui/tsconfig",
+    "exclude": ["projects/**/*.spec.ts"],
+    "angularCompilerOptions": {
+        "strictTemplates": true,
+        "extendedDiagnostics": {
+            "checks": {
+                "unusedStandaloneImports": "suppress"
+            }
+        }
+    },
+    "compilerOptions": {
+        "baseUrl": "./",
+        "outDir": "./dist/out-tsc",
+        "typeRoots": [
+            "node_modules/@types",
+            "node_modules/@taiga-ui/tsconfig/@types",
+            "node_modules/@taiga-ui/tsconfig"
+        ],
+        "sourceMap": true,
+        "checkJs": false,
+        "paths": {
+            "@demo/constants": ["projects/demo/src/app/constants/index.ts"],
+            "@training-observer/core": ["libs/training-observer/src/index.ts"],
+            "@training-observer/core/models": ["libs/training-observer/models/src/index.ts"],
+            "@training-observer/contracts": ["libs/training-contracts/src/index.ts"],
+            "@training-observer/recording": ["libs/training-recording/src/index.ts"],
+            "@training-observer/runtime": ["libs/training-runtime/src/index.ts"]
+        },
+        "types": ["node", "ng-dev-mode"],
+        "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    }
+}
