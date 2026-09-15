@@ -15,7 +15,11 @@ import {
     FieldEvaluator,
     requiredFieldCount,
 } from './field-evaluator';
-import {type TrainingProgress} from './training-progress';
+import {
+    FeedbackKind,
+    type TrainingFeedback,
+    type TrainingProgress,
+} from './training-progress';
 
 export type {TrainingProgress} from './training-progress';
 
@@ -32,7 +36,7 @@ export class ScenarioRuntime {
     }
 
     public update(screen: ScreenState, confirmed: ConfirmedControls): TrainingProgress {
-        const messages: string[] = [];
+        const messages: TrainingFeedback[] = [];
 
         if (screen.status !== ScreenStatus.Ready) {
             return this.progress(
@@ -67,7 +71,7 @@ export class ScenarioRuntime {
             true,
         );
 
-        this.feedback.reconcile(evaluation.errors, messages);
+        this.feedback.reconcile(evaluation.feedback, messages);
 
         if (evaluation.blocked) {
             return this.progress(
@@ -101,7 +105,7 @@ export class ScenarioRuntime {
     private tryTransition(
         screen: ScreenState,
         confirmed: ConfirmedControls,
-        messages: string[],
+        messages: TrainingFeedback[],
     ): TrainingProgress | undefined {
         // Последний blur может прийти после удаления старого DOM; проверяем его до перехода.
         const previous = this.previousScreen
@@ -116,6 +120,8 @@ export class ScenarioRuntime {
         const expectedScreen = this.scenario.steps[this.stepIndex + 1]?.key;
 
         if (this.entered && previous?.allComplete && screen.key === expectedScreen) {
+            // Последний blur мог подтвердиться одновременно с переходом: доставляем его сообщение до смены шага.
+            this.feedback.reconcile(previous.feedback, messages);
             this.stepIndex++;
             this.entered = false;
             this.feedback.clear();
@@ -128,7 +134,11 @@ export class ScenarioRuntime {
             : this.currentStep.transitionMessage;
 
         if (!previous?.blocked) {
-            this.feedback.report('transition', String(screen.key), issue, messages);
+            this.feedback.report(
+                'transition',
+                {value: String(screen.key), message: issue, kind: FeedbackKind.Error},
+                messages,
+            );
         }
 
         return this.progress(
@@ -141,7 +151,7 @@ export class ScenarioRuntime {
 
     private progress(
         status: TrainingStatus,
-        feedback: readonly string[],
+        feedback: readonly TrainingFeedback[],
         completedFields = 0,
         issue = '',
     ): TrainingProgress {

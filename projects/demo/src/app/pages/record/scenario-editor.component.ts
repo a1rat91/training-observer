@@ -11,7 +11,6 @@ import {
 import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
-import {TuiCheckbox} from '@taiga-ui/kit';
 import {
     type FieldExpectation,
     type StateRecording,
@@ -20,10 +19,11 @@ import {
 import {compileScenario} from '@training-observer/recording';
 
 import {ScenarioStore} from '../../shared/scenarios/scenario-store';
+import {ExpectationCardComponent} from './expectation-card.component';
 
 @Component({
     selector: 'app-scenario-editor',
-    imports: [FormsModule, RouterLink, TuiButton, TuiCheckbox, TuiTextfield],
+    imports: [ExpectationCardComponent, FormsModule, RouterLink, TuiButton, TuiTextfield],
     templateUrl: './scenario-editor.component.html',
     styleUrl: './scenario-editor.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -158,35 +158,6 @@ export class ScenarioEditorComponent {
                 },
         );
         this.published.set(false);
-    }
-
-    protected isBoolean(f: FieldExpectation): boolean {
-        return typeof f.expected === 'boolean';
-    }
-
-    protected isArray(f: FieldExpectation): boolean {
-        return f.descriptor.kind !== 'combobox' && Array.isArray(f.expected);
-    }
-
-    protected textValue(f: FieldExpectation): string {
-        return Array.isArray(f.expected) ? f.expected.join('; ') : String(f.expected);
-    }
-
-    protected setValue(
-        si: number,
-        fi: number,
-        field: FieldExpectation,
-        value: string,
-    ): void {
-        let expected: FieldExpectation['expected'] = value;
-
-        if (field.descriptor.kind === 'combobox') {
-            expected = value ? [value] : [];
-        } else if (Array.isArray(field.expected)) {
-            expected = value ? value.split(';').map((item) => item.trim()) : [];
-        }
-
-        this.edit(si, fi, {expected});
     }
 
     protected publish(): void {

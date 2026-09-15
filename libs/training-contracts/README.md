@@ -49,3 +49,10 @@ Checkbox/radio/switch — boolean. Redacted, indeterminate и неизвестн
 `npx nx build training-contracts`; unit tests `tests/unit/state-recorder.test.mjs`, `scenario.test.mjs`. Дополнительно
 `npm run lint` запрещает импорт recording/runtime/core-фасада. Документы JSON v1 совместимы с состоянием проекта до
 разделения пакетов; action-формат ветки new не поддерживается.
+
+## Сообщения поля
+
+`FieldExpectation.message` задаёт текст ошибки, `successMessage?: string` — текст успеха. Пустые строки отключают
+соответствующее уведомление, но не проверку значения; `optional` исключает поле из проверки. JSON v1 без
+`successMessage` по-прежнему читается без изменения структуры. Если свойство задано, кодек принимает только строку.
+Отображение и момент выдачи сообщений относятся к runtime и UI, а не к contracts.

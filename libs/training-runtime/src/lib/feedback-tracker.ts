@@ -1,24 +1,36 @@
-/** Память уже сообщённых ошибок. Повторный снимок не повторяет сообщение; исправление разрешает новую ошибку. */
-import {type FieldError} from './field-evaluator';
+/** Память обратной связи. Повторный подтверждённый ответ не повторяет сообщение; изменение ответа разрешает новое.
+ * Пустые тексты не выводятся, но их состояние учитывается. Оформлением уведомлений занимается потребитель.
+ */
+import {type FieldFeedback} from './field-evaluator';
+import {type TrainingFeedback} from './training-progress';
 
 export class FeedbackTracker {
     private readonly reported = new Map<string, string>();
 
-    public report(key: string, value: string, message: string, output: string[]): void {
-        if (this.reported.get(key) !== value) {
-            output.push(message);
+    public report(
+        key: string,
+        feedback: FieldFeedback,
+        output: TrainingFeedback[],
+    ): void {
+        const signature = JSON.stringify([feedback.kind, feedback.value]);
+
+        if (this.reported.get(key) !== signature && feedback.message.trim()) {
+            output.push({kind: feedback.kind, message: feedback.message});
         }
 
-        this.reported.set(key, value);
+        this.reported.set(key, signature);
     }
 
-    public reconcile(errors: ReadonlyMap<string, FieldError>, output: string[]): void {
-        for (const [key, error] of errors) {
-            this.report(key, error.value, error.message, output);
+    public reconcile(
+        feedback: ReadonlyMap<string, FieldFeedback>,
+        output: TrainingFeedback[],
+    ): void {
+        for (const [key, item] of feedback) {
+            this.report(key, item, output);
         }
 
         for (const key of this.reported.keys()) {
-            if (!errors.has(key)) {
+            if (!feedback.has(key)) {
                 this.reported.delete(key);
             }
         }

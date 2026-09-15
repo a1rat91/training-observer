@@ -101,7 +101,9 @@ test('learner accepts reverse field order, requires blur, deduplicates feedback 
         r.update(screen('A', [{...a, state: {value: 'Анна'}}, b]), {}).completedFields,
     ).toBe(0);
     const wrong = {b: control('b', 'Город', 'Москва')};
-    expect(r.update(screen('A', [a, b]), wrong).feedback).toEqual(['Ошибка Город']);
+    expect(r.update(screen('A', [a, b]), wrong).feedback).toEqual([
+        {kind: 'error', message: 'Ошибка Город'},
+    ]);
     expect(r.update(screen('A', [a, b]), wrong).feedback).toEqual([]);
     const correct = {b: control('b', 'Город', 'Казань'), a: control('a', 'Имя', 'Анна')};
     expect(r.update(screen('A', [a, b]), correct).completedFields).toBe(2);
@@ -112,7 +114,9 @@ test('wrong transition cannot bypass missing fields; return, correction and last
         a = control('a', 'Имя', ''),
         b = control('b', 'Город', '');
     r.update(screen('A', [a, b]), {});
-    expect(r.update(screen('B'), {}).feedback).toEqual(['Неверный переход']);
+    expect(r.update(screen('B'), {}).feedback).toEqual([
+        {kind: 'error', message: 'Неверный переход'},
+    ]);
     expect(r.update(screen('B'), {}).step).toBe(1);
     r.update(screen('A', [a, b]), {});
     expect(
@@ -186,7 +190,7 @@ test('ComboBox compares displayed text only after confirmation, including cleari
     expect(r.update(screen('A', [c]), {c: combo('Анна')}).status).toBe('complete');
     const wrong = r.update(screen('A', [c]), {c: combo('')});
     expect(wrong.status).toBe('active');
-    expect(wrong.feedback).toEqual(['Ошибка Сотрудник']);
+    expect(wrong.feedback).toEqual([{kind: 'error', message: 'Ошибка Сотрудник'}]);
     expect(r.update(screen('A', [c]), {c: combo('Анна')}).status).toBe('complete');
     expect(
         r.update(screen('A', [c]), {c: {...combo('Анна'), state: {redacted: true}}})
@@ -224,7 +228,7 @@ test('new screen checkbox defaults stay quiet; changes report errors and unmet f
     expect(r.update(screen('C'), {}).step).toBe(2);
     r.update(screen('B', [box('c', true)]), {});
     expect(r.update(screen('B', [box('c', false)]), {}).feedback).toEqual([
-        'Ошибка Согласие',
+        {kind: 'error', message: 'Ошибка Согласие'},
     ]);
     expect(r.update(screen('B', [box('c', false)]), {}).feedback).toEqual([]);
     expect(r.update(screen('B', [box('remounted', false)]), {}).feedback).toEqual([]);
@@ -260,7 +264,9 @@ test('prefilled answers are accepted on entry and after returning from a wrong s
     const first = r.update(screen('A', [a, b]), {});
     expect(first.completedFields).toBe(2);
     expect(first.feedback).toEqual([]);
-    expect(r.update(screen('WRONG'), {}).feedback).toEqual(['Неверный переход']);
+    expect(r.update(screen('WRONG'), {}).feedback).toEqual([
+        {kind: 'error', message: 'Неверный переход'},
+    ]);
     const returned = r.update(
         screen('A', [
             control('new-a', 'Имя', 'Анна'),
@@ -293,7 +299,7 @@ test('wrong prefilled text stays quiet and cannot advance; later edits require b
     expect(r.update(screen('A', [edited]), {}).completedFields).toBe(1);
     const blurred = r.update(screen('A', [edited]), {new: edited});
     expect(blurred.completedFields).toBe(0);
-    expect(blurred.feedback).toEqual(['Ошибка Имя']);
+    expect(blurred.feedback).toEqual([{kind: 'error', message: 'Ошибка Имя'}]);
     expect(r.update(screen('B'), {new: edited}).step).toBe(1);
 });
 
@@ -331,7 +337,7 @@ test('a prefilled amount on a later screen is evaluated immediately; edits wait 
             amount: amount('3000'),
         });
         expect(committed.completedFields).toBe(0);
-        expect(committed.feedback).toEqual(['Ошибка Сумма']);
+        expect(committed.feedback).toEqual([{kind: 'error', message: 'Ошибка Сумма'}]);
     }
 });
 
@@ -361,4 +367,96 @@ test('recorded checkbox/radio picture compiles last states and false remains a r
     );
     expect(wrong.completedFields).toBe(2);
     expect(wrong.feedback.length).toBe(1);
+});
+
+test('success message is optional in v1 JSON and strictly validated when present', () => {
+    expect(parseScenario(JSON.stringify(scenario))).toEqual(scenario);
+    const document = structuredClone(scenario);
+    document.steps[0].fields[0].successMessage = 'Верно';
+    expect(parseScenario(JSON.stringify(document))).toEqual(document);
+    for (const invalid of [null, 42, {}, []]) {
+        document.steps[0].fields[0].successMessage = invalid;
+        expect(() => parseScenario(JSON.stringify(document))).toThrow();
+    }
+});
+
+test('success waits for blur, follows correction and does not repeat on snapshots', () => {
+    const document = structuredClone(scenario);
+    document.steps[0].fields[0].successMessage = 'Имя верно';
+    const runtime = new ScenarioRuntime(document);
+    const empty = control('a', 'Имя', '');
+    const right = control('a', 'Имя', 'Анна');
+    const wrong = control('a', 'Имя', 'Нет');
+    const city = control('b', 'Город', 'Казань');
+    const state = (name) => screen('A', [name, city]);
+    expect(runtime.update(state(empty), {}).feedback).toEqual([]);
+    expect(runtime.update(state(right), {}).completedFields).toBe(1);
+    expect(runtime.update(state(right), {}).feedback).toEqual([]);
+    expect(runtime.update(state(wrong), {a: wrong}).feedback).toEqual([
+        {kind: 'error', message: 'Ошибка Имя'},
+    ]);
+    expect(runtime.update(state(right), {a: right}).feedback).toEqual([
+        {kind: 'success', message: 'Имя верно'},
+    ]);
+    expect(runtime.update(state(right), {a: right}).feedback).toEqual([]);
+    expect(runtime.update(state(right), {a: {...right}}).feedback).toEqual([]);
+    expect(runtime.update(state(wrong), {a: wrong}).feedback).toHaveLength(1);
+    expect(runtime.update(state(right), {a: right}).feedback).toHaveLength(1);
+});
+
+test('prefilled success is silent and the final blur can deliver success with navigation', () => {
+    const document = structuredClone(scenario);
+    document.steps[0].fields[0].successMessage = 'Имя верно';
+    const runtime = new ScenarioRuntime(document);
+    const name = control('a', 'Имя', '');
+    const city = control('b', 'Город', 'Казань');
+    expect(runtime.update(screen('A', [name, city]), {}).feedback).toEqual([]);
+    const result = runtime.update(screen('B'), {a: control('a', 'Имя', 'Анна')});
+    expect(result.status).toBe('complete');
+    expect(result.feedback).toEqual([{kind: 'success', message: 'Имя верно'}]);
+    expect(runtime.update(screen('B'), {}).feedback).toEqual([]);
+    const prefilled = new ScenarioRuntime(document);
+    expect(
+        prefilled.update(screen('A', [control('a', 'Имя', 'Анна'), city]), {}).feedback,
+    ).toEqual([]);
+});
+
+test('empty feedback does not accept a wrong answer and ignored fields never notify', () => {
+    const document = structuredClone(scenario);
+    document.steps[0].fields[0].message = '   ';
+    document.steps[0].fields[0].successMessage = '';
+    document.steps[0].fields[1].optional = true;
+    document.steps[0].fields[1].successMessage = 'Не показывать';
+    const runtime = new ScenarioRuntime(document);
+    const name = control('a', 'Имя', '');
+    const city = control('b', 'Город', 'Казань');
+    runtime.update(screen('A', [name, city]), {});
+    const wrong = runtime.update(screen('A', [name, city]), {a: name, b: city});
+    expect(wrong.feedback).toEqual([]);
+    expect(wrong.completedFields).toBe(0);
+    expect(runtime.update(screen('B'), {a: name}).step).toBe(1);
+});
+
+test('checkbox success occurs on change, not entry, repetition or remount', () => {
+    const box = (id, checked) =>
+        control(id, 'Согласие', '', {
+            kind: 'checkbox',
+            locatorHints: {...descriptor('Согласие'), kind: 'checkbox'},
+            state: {checked},
+        });
+    const document = structuredClone(scenario);
+    document.steps[0].fields = [
+        {
+            ...field('Согласие', true),
+            descriptor: box('c', false).locatorHints,
+            successMessage: 'Согласие верно',
+        },
+    ];
+    const runtime = new ScenarioRuntime(document);
+    expect(runtime.update(screen('A', [box('c', false)]), {}).feedback).toEqual([]);
+    expect(runtime.update(screen('A', [box('c', true)]), {}).feedback).toEqual([
+        {kind: 'success', message: 'Согласие верно'},
+    ]);
+    expect(runtime.update(screen('A', [box('c', true)]), {}).feedback).toEqual([]);
+    expect(runtime.update(screen('A', [box('new', true)]), {}).feedback).toEqual([]);
 });

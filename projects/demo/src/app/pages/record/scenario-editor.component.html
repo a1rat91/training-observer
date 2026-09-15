@@ -48,51 +48,10 @@
                     />
                 </tui-textfield>
                 @for (field of step.fields; track $index; let fi = $index) {
-                    <div class="expectation">
-                        <h3>{{ field.descriptor.label }}</h3>
-                        @if (isBoolean(field)) {
-                            <label>
-                                <input
-                                    tuiCheckbox
-                                    type="checkbox"
-                                    [ngModel]="field.expected"
-                                    (ngModelChange)="edit(si, fi, {expected: $event})"
-                                />
-                                Ожидаемая отметка
-                            </label>
-                        } @else {
-                            <tui-textfield>
-                                <label tuiLabel>Ожидание: {{ field.descriptor.label }}</label>
-                                <input
-                                    tuiTextfield
-                                    [attr.aria-label]="'Ожидание: ' + field.descriptor.label"
-                                    [ngModel]="textValue(field)"
-                                    (ngModelChange)="setValue(si, fi, field, $event)"
-                                />
-                            </tui-textfield>
-                            @if (isArray(field)) {
-                                <small>Названия выбранных вариантов разделяются точкой с запятой.</small>
-                            }
-                        }
-                        <tui-textfield>
-                            <label tuiLabel>Ошибка: {{ field.descriptor.label }}</label>
-                            <input
-                                tuiTextfield
-                                [attr.aria-label]="'Ошибка: ' + field.descriptor.label"
-                                [ngModel]="field.message"
-                                (ngModelChange)="edit(si, fi, {message: $event})"
-                            />
-                        </tui-textfield>
-                        <label>
-                            <input
-                                tuiCheckbox
-                                type="checkbox"
-                                [ngModel]="field.optional"
-                                (ngModelChange)="edit(si, fi, {optional: $event})"
-                            />
-                            Не проверять это поле
-                        </label>
-                    </div>
+                    <app-expectation-card
+                        [field]="field"
+                        (changed)="edit(si, fi, $event)"
+                    />
                 }
             </fieldset>
         }

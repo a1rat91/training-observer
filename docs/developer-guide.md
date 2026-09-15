@@ -162,8 +162,8 @@ import {ScenarioRuntime} from '@training-observer/runtime';
 const scenario = parseScenario(savedJson);
 const runtime = new ScenarioRuntime(scenario);
 const progress = runtime.update(screen, observer.confirmedControls());
-for (const message of progress.feedback) {
-  // UI integration displays message through its notification service.
+for (const feedback of progress.feedback) {
+  // Передайте feedback.message сервису уведомлений; feedback.kind выбирает оформление.
 }
 ```
 
@@ -171,6 +171,12 @@ for (const message of progress.feedback) {
 Вызывайте update на изменениях ScreenState и confirmedControls. `progress.feedback` — только новые сообщения; не
 повторяйте последнюю порцию на каждом рендере. Обработка `waiting/blocked` относится к состоянию наблюдения, а не к
 ошибке ученика. Пример реальной интеграции — `pages/learn/learn.component.ts`.
+
+Обратная связь теперь типизирована: `TrainingFeedback {kind: FeedbackKind; message: string}`. При обновлении собственной
+UI-интеграции замените обработку массива строк на чтение `.message` и `.kind`. `FeedbackKind.Success` означает
+положительное уведомление, `FeedbackKind.Error` — ошибку. Сценарий JSON v1 остаётся совместимым: новое поле
+`successMessage?: string` необязательно. Пустые сообщения не отображаются; исходные значения при входе на экран не
+вызывают уведомлений.
 
 ## Контракты, совместимость, enum
 

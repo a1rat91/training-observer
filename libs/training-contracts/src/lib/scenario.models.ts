@@ -7,6 +7,8 @@ export interface FieldExpectation {
     readonly descriptor: ControlLocatorHints;
     readonly expected: RecordedValue;
     readonly message: string;
+    /** Необязательное сообщение после правильного подтверждённого действия. Пустое значение отключает уведомление. */
+    readonly successMessage?: string;
     readonly optional: boolean;
 }
 export interface ScenarioStep {

@@ -12,17 +12,17 @@ import {
 import {type ControlSnapshot, type ScreenState} from '@training-observer/core/models';
 
 import {matchControl} from './control-matcher';
+import {FeedbackKind, type TrainingFeedback} from './training-progress';
 
 export type ConfirmedControls = Readonly<Record<string, ControlSnapshot>>;
-export interface FieldError {
+export interface FieldFeedback extends TrainingFeedback {
     readonly value: string;
-    readonly message: string;
 }
 export interface FieldEvaluation {
     readonly completed: number;
     readonly blocked: boolean;
     readonly allComplete: boolean;
-    readonly errors: ReadonlyMap<string, FieldError>;
+    readonly feedback: ReadonlyMap<string, FieldFeedback>;
 }
 
 interface ValueSource {
@@ -49,7 +49,7 @@ export class FieldEvaluator {
     ): FieldEvaluation {
         let completed = 0;
         let blocked = false;
-        const errors = new Map<string, FieldError>();
+        const feedback = new Map<string, FieldFeedback>();
         const matches = step.fields.map((field) =>
             matchControl(field.descriptor, screen.controls),
         );
@@ -110,17 +110,25 @@ export class FieldEvaluator {
                       observeChanges,
                   );
 
-            if (fingerprint === valueFingerprint(field.expected)) {
+            const correct = fingerprint === valueFingerprint(field.expected);
+
+            if (correct) {
                 completed++;
-            } else if (notify) {
-                errors.set(String(index), {value: fingerprint, message: field.message});
+            }
+
+            if (notify) {
+                feedback.set(String(index), {
+                    value: fingerprint,
+                    kind: correct ? FeedbackKind.Success : FeedbackKind.Error,
+                    message: correct ? (field.successMessage ?? '') : field.message,
+                });
             }
         });
 
         return {
             completed,
             blocked,
-            errors,
+            feedback,
             allComplete: !blocked && completed === requiredFieldCount(step),
         };
     }

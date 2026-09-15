@@ -65,6 +65,9 @@ test('delete and undo rebuild source values while preserving authored feedback a
 
     await expect(expected).toHaveValue('Второе');
     await message.fill('Моё сообщение');
+    await page
+        .getByRole('textbox', {name: 'Успех: Фамилия', exact: true})
+        .fill('Всё верно');
     await publish.click();
     const published = await page.evaluate(() =>
         localStorage.getItem('training-observer.scenario.v1'),
@@ -77,6 +80,9 @@ test('delete and undo rebuild source values while preserving authored feedback a
         .click();
     await expect(expected).toHaveValue('Первое');
     await expect(message).toHaveValue('Моё сообщение');
+    await expect(
+        page.getByRole('textbox', {name: 'Успех: Фамилия', exact: true}),
+    ).toHaveValue('Всё верно');
     expect(
         await page.evaluate(() => localStorage.getItem('training-observer.scenario.v1')),
     ).toBe(published);
@@ -88,6 +94,9 @@ test('delete and undo rebuild source values while preserving authored feedback a
         .click();
     await expect(expected).toHaveValue('Авторское ожидание');
     await expect(message).toHaveValue('Моё сообщение');
+    await expect(
+        page.getByRole('textbox', {name: 'Успех: Фамилия', exact: true}),
+    ).toHaveValue('Всё верно');
     await expect(
         page.getByRole('region', {name: 'Журнал записи'}).getByRole('listitem'),
     ).toHaveCount(4);
@@ -143,4 +152,52 @@ test('reload cannot publish a scenario linked to an older journal', async ({page
     await expect(
         page.getByRole('button', {name: 'Сохранить сценарий для ученика', exact: true}),
     ).toBeEnabled();
+});
+
+test('expectation card previews, persists and delivers authored success after blur only', async ({
+    page,
+}) => {
+    await seed(page);
+    const card = page.getByRole('article', {name: 'Ожидание для поля Фамилия'});
+
+    await expect(card).toContainText('Input');
+    await card
+        .getByRole('textbox', {name: 'Ошибка: Фамилия', exact: true})
+        .fill('Исправьте фамилию');
+    await card
+        .getByRole('textbox', {name: 'Успех: Фамилия', exact: true})
+        .fill('Фамилия указана верно');
+    await card.getByText('Предпросмотр сообщений', {exact: true}).click();
+    await expect(
+        card.getByText('Фамилия указана верно', {exact: false}).last(),
+    ).toBeVisible();
+    await page
+        .getByRole('button', {name: 'Сохранить сценарий для ученика', exact: true})
+        .click();
+    await page.reload();
+    await page.getByText('Настроить тренировку', {exact: true}).click();
+    await expect(
+        card.getByRole('textbox', {name: 'Успех: Фамилия', exact: true}),
+    ).toHaveValue('Фамилия указана верно');
+    await card.getByText('Предпросмотр сообщений', {exact: true}).click();
+    await card.screenshot({path: test.info().outputPath('expectation-card.png')});
+    await page.goto('/learn');
+    await expect(page.locator('#surname')).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await page.locator('#surname').fill('Неверно');
+    await page.locator('#employee').click();
+    await expect(
+        page.getByRole('alert').filter({hasText: 'Исправьте фамилию'}),
+    ).toHaveCount(1);
+    await page.locator('#surname').fill('Второе');
+    await expect(
+        page.getByRole('alert').filter({hasText: 'Фамилия указана верно'}),
+    ).toHaveCount(0);
+    await page.locator('#employee').click();
+    const success = page.getByRole('alert').filter({hasText: 'Фамилия указана верно'});
+
+    await expect(success).toHaveCount(1);
+    await expect(success).toContainText('Верно');
+    await page.waitForTimeout(600);
+    await expect(success).toHaveCount(1);
 });

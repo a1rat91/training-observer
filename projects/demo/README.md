@@ -19,7 +19,8 @@
 RecordPageComponent наблюдает document.body, исключает собственный UI и передаёт ScreenState/ confirmedControls в
 StateRecorder только при включённой записи. После Stop редактор создаёт ожидания, даёт их изменить и явно публикует в
 ScenarioStore. LearnComponent читает публикацию, создаёт новый runtime и observer для новой попытки, передаёт обновления
-и отображает только новые строки feedback. Сама форма не знает, записывает ли администратор или проходит ученик.
+и отображает только новые сообщения feedback с оформлением по kind. Сама форма не знает, записывает ли администратор или
+проходит ученик.
 
 Компоненты standalone/OnPush. DOM запускается через afterNextRender, значения выводятся signals, сервисы хранения
 публикуют readonly signals. Шаблоны и стили вынесены в соседние файлы. Подписки/наблюдатели освобождаются по DestroyRef.
@@ -43,3 +44,8 @@ Select/ComboBox используют `*tuiTextfieldDropdown` и `<tui-data-list-
 Сборка использует custom-webpack, `main.browser.ts`, настройки SSR и окружения из main. `npm test` — Jest,
 `npm run test:pw` — браузерные сценарии. Полные проверки описаны в
 [руководстве разработчика](../../docs/developer-guide.md).
+
+Карточка `pages/record/expectation-card.component.ts` получает одно ожидание и выдаёт изменения через Angular output.
+Она показывает тип и контекст, редактирует ожидаемое значение, тексты ошибки/успеха и локальный предпросмотр.
+`ScenarioEditorComponent` объединяет изменения в черновик и явно публикует его. Карточка не читает наблюдаемый DOM. На
+странице ученика `FeedbackKind` определяет positive/negative оформление Taiga Alerts.

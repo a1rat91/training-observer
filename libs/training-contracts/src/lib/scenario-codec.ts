@@ -56,8 +56,16 @@ function parseStep(step: unknown): ScenarioStep {
 function parseField(field: unknown): FieldExpectation {
     if (
         !isObject(field) ||
-        !hasOnlyKeys(field, ['descriptor', 'expected', 'message', 'optional']) ||
+        !hasOnlyKeys(field, [
+            'descriptor',
+            'expected',
+            'message',
+            'successMessage',
+            'optional',
+        ]) ||
         typeof field['message'] !== 'string' ||
+        (field['successMessage'] !== undefined &&
+            typeof field['successMessage'] !== 'string') ||
         typeof field['optional'] !== 'boolean' ||
         !isControlDescriptor(field['descriptor']) ||
         !isRecordedValue(field['expected'])
@@ -69,6 +77,9 @@ function parseField(field: unknown): FieldExpectation {
         descriptor: field['descriptor'],
         expected: field['expected'],
         message: field['message'],
+        ...(field['successMessage'] === undefined
+            ? {}
+            : {successMessage: field['successMessage']}),
         optional: field['optional'],
     };
 }

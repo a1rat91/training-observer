@@ -15,7 +15,11 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {RouterLink} from '@angular/router';
 import {TuiAlertService} from '@taiga-ui/core';
 import {readScreenState, TrainingObserver} from '@training-observer/core';
-import {ScenarioRuntime, type TrainingProgress} from '@training-observer/runtime';
+import {
+    FeedbackKind,
+    ScenarioRuntime,
+    type TrainingProgress,
+} from '@training-observer/runtime';
 
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
 import {ScenarioStore} from '../../shared/scenarios/scenario-store';
@@ -68,11 +72,17 @@ export class LearnComponent {
 
                     this.progress.set(progress);
 
-                    for (const message of progress.feedback) {
+                    for (const feedback of progress.feedback) {
                         this.alerts
-                            .open(message, {
-                                appearance: 'negative',
-                                label: 'Проверьте действие',
+                            .open(feedback.message, {
+                                appearance:
+                                    feedback.kind === FeedbackKind.Success
+                                        ? 'positive'
+                                        : 'negative',
+                                label:
+                                    feedback.kind === FeedbackKind.Success
+                                        ? 'Верно'
+                                        : 'Проверьте действие',
                                 autoClose: 5000,
                             })
                             .pipe(takeUntilDestroyed(this.destroy))
