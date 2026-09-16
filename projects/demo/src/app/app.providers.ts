@@ -6,6 +6,7 @@ import {
     TUI_DOC_PAGES,
     TUI_DOC_TITLE,
 } from '@taiga-ui/addon-doc';
+import {tuiAssetsPathProvider} from '@taiga-ui/core';
 import {PolymorpheusComponent} from '@taiga-ui/polymorpheus';
 import {HIGHLIGHT_OPTIONS} from 'ngx-highlightjs';
 
@@ -33,6 +34,7 @@ export const APP_PROVIDERS: Provider[] = [
         provide: TUI_DOC_PAGES,
         useValue: DEMO_PAGES,
     },
+    tuiAssetsPathProvider('assets/taiga-ui/icons'),
     {
         provide: HIGHLIGHT_OPTIONS,
         useFactory: () => {
