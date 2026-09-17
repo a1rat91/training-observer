@@ -4,4 +4,5 @@ export const DEMO_PAGES: TuiDocRoutePages = [
     {section: 'Примеры', title: 'Запись', route: 'record'},
     {section: 'Примеры', title: 'Контролы', route: 'controls'},
     {section: 'Примеры', title: 'Тренировка', route: 'learn'},
+    {section: 'Примеры', title: 'Разбор input', route: 'input-inspector'},
 ];

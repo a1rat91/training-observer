@@ -26,6 +26,14 @@ export const routes: Routes = [
                 (module) => module.LearnComponent,
             ),
     },
+    {
+        path: 'input-inspector',
+        title: 'Training Observer · Разбор input',
+        loadComponent: async () =>
+            import('./pages/input-inspector/input-inspector.component').then(
+                (module) => module.InputInspectorComponent,
+            ),
+    },
     {path: 'controls-example', redirectTo: 'controls?fixture=selectors'},
     {path: '**', redirectTo: 'record'},
 ];

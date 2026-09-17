@@ -1,0 +1,20 @@
+<h1>Разбор одного input</h1>
+<p>
+    Откройте консоль браузера и включите уровень Warnings. Введите текст, затем нажмите Tab или кликните по заголовку.
+</p>
+<p>1 — DOM поля; 2 — логический контрол; 3 — изменения при вводе; 4 — подтверждённое значение после blur.</p>
+<div #observed>
+    <tui-textfield>
+        <label
+            for="inspected-name"
+            tuiLabel
+        >
+            Имя
+        </label>
+        <input
+            id="inspected-name"
+            tuiTextfield
+            [(ngModel)]="value"
+        />
+    </tui-textfield>
+</div>

@@ -1,8 +1,8 @@
 # Demo: Angular-интеграция
 
-Приложение показывает три независимые зоны: запись `/record`, диагностику `/controls`, прохождение `/learn`. Оно
-использует Angular 19.2 и Taiga UI 4.98. К бизнес-алгоритмам библиотек относится только передача снимков и обработка
-результатов; формы, HTTP и localStorage остаются здесь.
+Приложение показывает запись `/record`, диагностику `/controls`, прохождение `/learn` и разбор одного input
+`/input-inspector`. Оно использует Angular 19.2 и Taiga UI 4.98. К бизнес-алгоритмам библиотек относится только передача
+снимков и обработка результатов; формы, HTTP и localStorage остаются здесь.
 
 ## Структура
 
@@ -35,9 +35,9 @@ ScenarioStore. LearnComponent читает публикацию, создаёт 
 
 ## Обновление из main
 
-Оболочка TuiDocMain содержит те же три раздела: запись, контролы, тренировка. `/controls?fixture=selectors` открывает
-перенесённый инспектор областей по селекторам; старый адрес `/controls-example` перенаправляет на этот пример. Формы
-используют API Taiga UI 4: TuiTextfield из core, TuiCheckbox/TuiRadio из kit, уведомления — TuiAlertService.
+Оболочка TuiDocMain содержит четыре раздела: запись, контролы, тренировка и разбор input. `/controls?fixture=selectors`
+открывает перенесённый инспектор областей по селекторам; старый адрес `/controls-example` перенаправляет на этот пример.
+Формы используют API Taiga UI 4: TuiTextfield из core, TuiCheckbox/TuiRadio из kit, уведомления — TuiAlertService.
 Select/ComboBox используют `*tuiTextfieldDropdown` и `<tui-data-list-wrapper new>`: это API новых контролов внутри v4.
 Справка: [Taiga UI v4](https://taiga-ui.dev/v4/getting-started). Повторы providers из исходной конфигурации устранены.
 
