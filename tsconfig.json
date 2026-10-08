@@ -25,7 +25,8 @@
             "@training-observer/core/models": ["libs/training-observer/models/src/index.ts"],
             "@training-observer/contracts": ["libs/training-contracts/src/index.ts"],
             "@training-observer/recording": ["libs/training-recording/src/index.ts"],
-            "@training-observer/runtime": ["libs/training-runtime/src/index.ts"]
+            "@training-observer/runtime": ["libs/training-runtime/src/index.ts"],
+            "@training-observer/angular": ["libs/training-angular/src/index.ts"]
         },
         "types": ["node", "ng-dev-mode"],
         "lib": ["ES2022", "DOM", "DOM.Iterable"]

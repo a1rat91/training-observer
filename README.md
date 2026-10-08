@@ -22,6 +22,14 @@ DAP не используются.
 | `@training-observer/recording`   | Запись администратора, удаление строк, компиляция сценария       | [src/index.ts](libs/training-recording/src/index.ts)              |
 | `@training-observer/runtime`     | Сопоставление ожиданий, переходы, прогресс и сообщения           | [src/index.ts](libs/training-runtime/src/index.ts)                |
 
+| `@training-observer/angular` | Автоматическое наблюдение, запись и прохождение в Angular |
+[src/index.ts](libs/training-angular/src/index.ts) |
+
+Angular-интеграция — [@training-observer/angular](libs/training-angular/README.md): `provideRecordingSession()` и
+`provideTrainingSession()` автоматически управляют наблюдением, доставкой состояний и очисткой ресурсов. Модели остаются
+в core/models; Angular/RxJS peers core необязательны для чистых consumers этой точки входа. Основной core и
+Angular-пакет используют framework-зависимости приложения.
+
 Core не импортирует и не экспортирует запись, сценарии или проверку ответов. Recording и runtime не зависят друг от
 друга. Taiga UI, localStorage и тестовый HTTP backend принадлежат demo.
 
@@ -45,7 +53,7 @@ npm run format                # применить единое оформлен
 npm run test:load              # отдельные измерения, production сервер 4302
 ```
 
-Каждая библиотека собирается отдельно. `npm run build` собирает все четыре библиотеки и demo в `dist/`. `npx nx graph`
+Каждая библиотека собирается отдельно. `npm run build` собирает все пять библиотек и demo в `dist/`. `npx nx graph`
 открывает граф Nx-проектов — это средство разработки, не часть обучения.
 
 ## Главные правила

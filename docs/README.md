@@ -15,7 +15,7 @@
 В каждом пакете также есть README: [core](../libs/training-observer/README.md),
 [модели](../libs/training-observer/models/README.md), [contracts](../libs/training-contracts/README.md),
 [recording](../libs/training-recording/README.md), [runtime](../libs/training-runtime/README.md),
-[demo](../projects/demo/README.md).
+[Angular-интеграция](../libs/training-angular/README.md), [demo](../projects/demo/README.md).
 
 ## Справочник
 

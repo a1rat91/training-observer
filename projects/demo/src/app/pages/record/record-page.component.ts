@@ -1,36 +1,28 @@
 /**
  * Админка записи состояний: запускает наблюдение document.body и показывает экран/карточки только из публичных снимков.
- * Не читает состояние demo-формы через Angular. UI инспектора исключён; посещения и подсветка живут до DestroyRef.
+ * UI владеет редактированием и хранением документа; Angular-пакет — наблюдением, записью и подсветкой.
  */
-import {DOCUMENT, JsonPipe} from '@angular/common';
+import {JsonPipe} from '@angular/common';
 import {
     afterNextRender,
     ChangeDetectionStrategy,
     Component,
     computed,
-    effect,
     inject,
-    Injector,
     signal,
-    untracked,
 } from '@angular/core';
 import {TuiButton} from '@taiga-ui/core';
-import {type RecordedEvent, type StateRecording} from '@training-observer/contracts';
+import {provideRecordingSession, RecordingSession} from '@training-observer/angular';
 import {
-    type ControlSnapshot,
-    DomHighlighter,
-    provideDomObservation,
-    readScreenState,
-    ScreenVisitTracker,
-    TrainingObserver,
-} from '@training-observer/core';
-import {
-    recordingProblem,
-    removeRecordedEvent,
-    StateRecorder,
-} from '@training-observer/recording';
+    type RecordedEvent,
+    requiresBlur,
+    type StateRecording,
+} from '@training-observer/contracts';
+import {type ControlSnapshot} from '@training-observer/core/models';
+import {recordingProblem, removeRecordedEvent} from '@training-observer/recording';
 
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
+import {PROCEDURE_SCREEN} from '../../shared/demo-form/procedure-screen';
 import {RecordingStore} from './recording-store';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
@@ -40,19 +32,19 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [provideDomObservation(), DomHighlighter],
+    providers: [provideRecordingSession({screen: PROCEDURE_SCREEN})],
 })
 export class RecordPageComponent {
-    private readonly recorder = new StateRecorder();
-    private readonly injector = inject(Injector);
-    private readonly document = inject(DOCUMENT);
-    private readonly highlighter = inject(DomHighlighter);
-    private readonly visits = new ScreenVisitTracker();
+    private readonly session = inject(RecordingSession);
+    private readonly editedDraft = signal<StateRecording | null>(null);
 
     protected readonly store = inject(RecordingStore);
-    protected readonly recording = signal(false);
-    protected readonly stopping = signal(false);
-    protected readonly draft = signal<StateRecording | null>(null);
+    protected readonly recording = this.session.recording;
+    protected readonly stopping = this.session.stopping;
+    protected readonly draft = computed(() =>
+        this.recording() ? this.session.draft() : this.editedDraft(),
+    );
+
     protected readonly undoHistory = signal<readonly StateRecording[]>([]);
     protected readonly editProblem = computed(() => {
         const draft = this.draft();
@@ -60,19 +52,10 @@ export class RecordPageComponent {
         return draft ? recordingProblem(draft) : '';
     });
 
-    protected readonly observer = inject(TrainingObserver);
-    protected readonly visit = signal<ReturnType<ScreenVisitTracker['update']>>(null);
+    protected readonly observer = this.session;
+    protected readonly visit = this.session.visit;
     protected readonly selected = signal<string | null>(null);
-    protected readonly screen = computed(() =>
-        readScreenState(this.observer.snapshot(), this.observer.logicalControls(), {
-            root: {
-                tagName: 'section',
-                attribute: {name: 'aria-label', value: 'Экран процедуры'},
-            },
-            identity: {kind: 'attribute', name: 'id'},
-            loading: {name: 'aria-busy', value: 'true'},
-        }),
-    );
+    protected readonly screen = this.session.screen;
 
     protected readonly statuses = {
         ready: 'Экран распознан',
@@ -95,49 +78,20 @@ export class RecordPageComponent {
     constructor() {
         afterNextRender(() => {
             this.store.load();
-            this.draft.set(this.store.saved());
-            this.observer.start(this.document.body);
+            this.editedDraft.set(this.store.saved());
         });
-        effect(() => {
-            const screen = this.screen();
-            const confirmed = this.observer.confirmedControls();
+    }
 
-            if (this.recording()) {
-                untracked(() => {
-                    this.recorder.observe(screen, confirmed);
-                    this.draft.set(this.recorder.snapshot());
-                });
-            }
-        });
-        effect(() => this.visit.set(this.visits.update(this.screen())));
-        effect(() => {
-            const snapshot = this.observer.snapshot();
-            const selected = this.selected();
+    protected toggleHighlight(nodeId: string): void {
+        const selected = this.selected() === nodeId ? null : nodeId;
 
-            if (
-                snapshot &&
-                selected &&
-                this.screen().controls.some(
-                    (control) => control.targetNodeId === selected,
-                )
-            ) {
-                this.highlighter.show(
-                    snapshot,
-                    this.screen().controls.map((control) => control.targetNodeId),
-                    selected,
-                );
-            } else {
-                this.highlighter.clear();
-            }
-        });
+        this.selected.set(selected);
+        this.session.highlight(selected);
     }
 
     protected startRecording(): void {
         this.undoHistory.set([]);
-        this.observer.flush();
-        this.recorder.start(this.screen(), this.observer.confirmedControls());
-        this.draft.set(this.recorder.snapshot());
-        this.recording.set(true);
+        this.session.start();
     }
 
     protected deleteEvent(sequence: number): void {
@@ -150,7 +104,7 @@ export class RecordPageComponent {
         const edited = removeRecordedEvent(recording, sequence);
 
         this.undoHistory.update((history) => [...history, recording]);
-        this.draft.set(edited);
+        this.editedDraft.set(edited);
         this.store.save(edited);
     }
 
@@ -167,25 +121,15 @@ export class RecordPageComponent {
         }
 
         this.undoHistory.update((history) => history.slice(0, -1));
-        this.draft.set(previous);
+        this.editedDraft.set(previous);
         this.store.save(previous);
     }
 
-    protected stopRecording(): void {
-        this.stopping.set(true);
-        afterNextRender(
-            () => {
-                this.observer.flush();
-                this.recorder.observe(this.screen(), this.observer.confirmedControls());
-                const recording = this.recorder.stop();
+    protected async stopRecording(): Promise<void> {
+        const recording = await this.session.stop();
 
-                this.recording.set(false);
-                this.stopping.set(false);
-                this.draft.set(recording);
-                this.store.save(recording);
-            },
-            {injector: this.injector},
-        );
+        this.editedDraft.set(recording);
+        this.store.save(recording);
     }
 
     protected eventText(event: RecordedEvent): string {
@@ -220,7 +164,7 @@ export class RecordPageComponent {
     }
 
     protected needsBlur(control: ControlSnapshot): boolean {
-        return ['combobox', 'number', 'select', 'textbox'].includes(control.kind);
+        return requiresBlur(control);
     }
 
     protected confirmedValue(control: ControlSnapshot): string {

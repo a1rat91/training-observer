@@ -8,7 +8,7 @@ const COLORS = ['#d7263d', '#1769aa', '#15803d', '#9333ea', '#b45309', '#087f8c'
 
 export interface HighlightTarget {
     readonly nodeId: DomNodeId;
-    readonly element: WeakRef<Element>;
+    readonly element: {deref(): Element | undefined};
     readonly number: number;
 }
 

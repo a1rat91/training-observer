@@ -25,7 +25,7 @@ export function matchesScreenElement(
         node.visible &&
         (!tagName || node.tagName === tagName.toLowerCase()) &&
         (!attribute ||
-            (Object.hasOwn(node.attributes, attribute.name) &&
+            (Object.prototype.hasOwnProperty.call(node.attributes, attribute.name) &&
                 (attribute.value === undefined ||
                     node.attributes[attribute.name] === attribute.value)))
     );

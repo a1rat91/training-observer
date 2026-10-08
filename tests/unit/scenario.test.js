@@ -2,6 +2,7 @@ import {expect, test} from '@jest/globals';
 import {matchControl} from '../../libs/training-runtime/src/lib/control-matcher';
 import {compileScenario} from '../../libs/training-recording/src/lib/scenario-compiler';
 import {parseScenario} from '../../libs/training-contracts/src/lib/scenario-codec';
+import {parseStateRecording} from '../../libs/training-contracts/src/lib/recording-codec';
 import {StateRecorder} from '../../libs/training-recording/src/lib/state-recorder';
 import {ScenarioRuntime} from '../../libs/training-runtime/src/lib/scenario-runtime';
 const descriptor = (label, id) => ({
@@ -91,6 +92,152 @@ test('compile keeps last value per field; malformed/incomplete documents are rej
     );
     expect(() => parseScenario(JSON.stringify({...scenario, version: 2}))).toThrow();
     expect(() => parseScenario(JSON.stringify({...scenario, steps: []}))).toThrow();
+});
+test.each(['A', 'B'])(
+    'compile rejects a repeated visit boundary for %s instead of losing the earlier fields',
+    (repeatedKey) => {
+        const recording = parseStateRecording(
+            JSON.stringify({
+                kind: 'training-state-recording',
+                version: 1,
+                complete: true,
+                events: [
+                    {sequence: 1, kind: 'screen', visit: 1, screenKey: 'A'},
+                    {
+                        sequence: 2,
+                        kind: 'value',
+                        visit: 1,
+                        screenKey: 'A',
+                        field: descriptor('Имя'),
+                        value: 'Анна',
+                    },
+                    {sequence: 3, kind: 'screen', visit: 1, screenKey: repeatedKey},
+                    {
+                        sequence: 4,
+                        kind: 'value',
+                        visit: 1,
+                        screenKey: repeatedKey,
+                        field: descriptor('Город'),
+                        value: 'Казань',
+                    },
+                ],
+            }),
+        );
+        const original = structuredClone(recording);
+
+        expect(() => compileScenario(recording)).toThrow(/повторяется граница/);
+        expect(recording).toEqual(original);
+    },
+);
+test('compile rejects a value recorded before its visit boundary', () => {
+    const recording = parseStateRecording(
+        JSON.stringify({
+            kind: 'training-state-recording',
+            version: 1,
+            complete: true,
+            events: [
+                {
+                    sequence: 1,
+                    kind: 'value',
+                    visit: 1,
+                    screenKey: 'A',
+                    field: descriptor('Имя'),
+                    value: 'Анна',
+                },
+                {sequence: 2, kind: 'screen', visit: 1, screenKey: 'A'},
+            ],
+        }),
+    );
+
+    expect(() => compileScenario(recording)).toThrow(/отсутствует граница экрана/);
+});
+test('compile preserves separate return visits to the same screen and gaps in visit numbers', () => {
+    const recording = parseStateRecording(
+        JSON.stringify({
+            kind: 'training-state-recording',
+            version: 1,
+            complete: true,
+            events: [
+                {sequence: 1, kind: 'screen', visit: 1, screenKey: 'A'},
+                {
+                    sequence: 2,
+                    kind: 'value',
+                    visit: 1,
+                    screenKey: 'A',
+                    field: descriptor('Имя'),
+                    value: 'Анна',
+                },
+                {sequence: 3, kind: 'screen', visit: 3, screenKey: 'B'},
+                {
+                    sequence: 4,
+                    kind: 'value',
+                    visit: 3,
+                    screenKey: 'B',
+                    field: descriptor('Город'),
+                    value: 'Казань',
+                },
+                {sequence: 5, kind: 'screen', visit: 5, screenKey: 'A'},
+                {
+                    sequence: 6,
+                    kind: 'value',
+                    visit: 5,
+                    screenKey: 'A',
+                    field: descriptor('Имя'),
+                    value: 'Борис',
+                },
+            ],
+        }),
+    );
+    const compiled = compileScenario(recording);
+
+    expect(compiled.steps.map((step) => step.key)).toEqual(['A', 'B', 'A']);
+    expect(compiled.steps.map((step) => step.fields[0].expected)).toEqual([
+        'Анна',
+        'Казань',
+        'Борис',
+    ]);
+});
+test('compile isolates descriptors and array values without a structuredClone global', () => {
+    const recording = {
+        kind: 'training-state-recording',
+        version: 1,
+        complete: true,
+        events: [
+            {sequence: 1, kind: 'screen', visit: 1, screenKey: 'A'},
+            {
+                sequence: 2,
+                kind: 'value',
+                visit: 1,
+                screenKey: 'A',
+                field: {
+                    ...descriptor('Отдел'),
+                    kind: 'select',
+                    context: [{tagName: 'fieldset', label: 'Сведения'}],
+                },
+                value: ['Разработка'],
+            },
+        ],
+    };
+    const clone = globalThis.structuredClone;
+
+    try {
+        globalThis.structuredClone = undefined;
+        const compiled = compileScenario(recording);
+        const expectation = compiled.steps[0].fields[0];
+
+        expect(Object.hasOwn(expectation.descriptor, 'id')).toBe(true);
+        expect(expectation.descriptor.id).toBeUndefined();
+        expectation.descriptor.context[0].label = 'Изменённая группа';
+        expectation.expected.push('Поддержка');
+        expect(recording.events[1].field.context[0].label).toBe('Сведения');
+        expect(recording.events[1].value).toEqual(['Разработка']);
+        recording.events[1].field.label = 'Изменённое поле';
+        recording.events[1].value.push('Продажи');
+        expect(expectation.descriptor.label).toBe('Отдел');
+        expect(expectation.expected).toEqual(['Разработка', 'Поддержка']);
+    } finally {
+        globalThis.structuredClone = clone;
+    }
 });
 test('learner accepts reverse field order, requires blur, deduplicates feedback and completes at the next screen', () => {
     const r = new ScenarioRuntime(scenario),

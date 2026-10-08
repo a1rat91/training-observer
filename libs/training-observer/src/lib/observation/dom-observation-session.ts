@@ -105,8 +105,6 @@ export class DomObservationSession {
 
         const result = this.project(snapshot);
 
-        this.acceptSnapshot(snapshot);
-
         if (this.context.mode === SessionSourceMode.Standalone) {
             this.connectOwnSources();
         }
@@ -124,6 +122,7 @@ export class DomObservationSession {
         );
 
         this.current = {snapshot, controls, confirmedControls};
+        this.acceptSnapshot(snapshot);
 
         return this.current;
     }
@@ -340,8 +339,6 @@ export class DomObservationSession {
             const snapshot = this.builder.build(this.root, this.options);
 
             this.snapshots.next(this.project(snapshot));
-
-            this.acceptSnapshot(snapshot);
         } catch (error: unknown) {
             this.failures.next(error);
         }

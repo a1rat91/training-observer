@@ -73,7 +73,10 @@ export class MicrofrontendObserver {
         const options = {
             ...this.defaults,
             ...overrides,
-            boundarySelector: overrides.boundarySelector ?? MICROFRONTEND_SELECTOR,
+            boundarySelector:
+                overrides.boundarySelector ??
+                this.defaults.boundarySelector ??
+                MICROFRONTEND_SELECTOR,
         };
 
         if (!options.boundarySelector.trim()) {

@@ -103,7 +103,7 @@ export function buildPopupSnapshot(
         )
         .map((node) => ({
             nodeId: node.id,
-            label: node.label || text(node.id).replaceAll(/\s+/g, ' ').trim(),
+            label: node.label || text(node.id).replace(/\s+/g, ' ').trim(),
             // HTML value доступен; скрытый Angular-объект или backend ID не восстанавливаем.
             value: node.attributes['value'],
             selected: node.state.selected ?? null,
@@ -139,7 +139,7 @@ export function buildPopupSnapshot(
         text: roots
             .map((root) => text(root.id))
             .join(' ')
-            .replaceAll(/\s+/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim(),
         options,
     };

@@ -17,10 +17,11 @@ flowchart TD
     Recording --> Models
     Runtime[runtime: проверка и прогресс] --> Contracts
     Runtime --> Models
-    Admin[Angular-админка] --> Core
-    Admin --> Recording
-    Learner[Angular-зона ученика] --> Core
-    Learner --> Runtime
+    Angular[angular: владельцы сеансов] --> Core
+    Angular --> Recording
+    Angular --> Runtime
+    Admin[Angular-админка] --> Angular
+    Learner[Angular-зона ученика] --> Angular
 ```
 
 Стрелка означает **зависимость кода**. В core нет обратной стрелки на contracts, recording или runtime. `npm run lint`
@@ -32,6 +33,13 @@ flowchart TD
 `core/models` — отдельная entry point того же npm-пакета: её можно импортировать без загрузки Angular-фасада. Recording,
 contracts и runtime не импортируют Angular, Taiga, DOM-сервисы или приложение. Общие contracts содержат правила чтения
 учебного значения; core читает наблюдаемое состояние и не применяет эти правила.
+
+Пакет `angular` предоставляет RecordingSession/TrainingSession и provider helpers. Он сам запускает core после рендера,
+подписывается на атомарные
+updates$, доставляет состояния чистым движкам и освобождает ресурсы по DestroyRef.
+UI задаёт признаки экрана, вызывает start/stop, читает readonly signals и оформляет feedback$.
+Селектор области отслеживает поздний mount и замену корня. У фасадов независимые наблюдатели, даже при общем
+DI-владельце.
 
 ## 2. Как читать исходники
 

@@ -6,7 +6,7 @@ import {
 } from '@training-observer/core/models';
 
 export function normalizeText(value: string): string {
-    return value.replaceAll(/\s+/g, ' ').trim();
+    return value.replace(/\s+/g, ' ').trim();
 }
 
 /** Чтение одного сохранённого графа. Ссылки не разрешаются через живой document. */

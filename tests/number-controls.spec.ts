@@ -46,7 +46,7 @@ test('Taiga numbers preserve formatting and native large integers retain exact d
     );
     await expectObservedValue(page, 'large-number');
     expect(
-        String((await control(page, 'large-number'))?.state.value).replaceAll(/\D/g, ''),
+        String((await control(page, 'large-number'))?.state.value).replace(/\D/g, ''),
     ).toBe('900719925474099312345');
     expect(await control(page, 'native-quantity')).toMatchObject({
         kind: 'number',

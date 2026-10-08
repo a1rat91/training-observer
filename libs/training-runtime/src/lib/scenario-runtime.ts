@@ -15,6 +15,7 @@ import {
     FieldEvaluator,
     requiredFieldCount,
 } from './field-evaluator';
+import {copyTrainingScenario} from './scenario-copy';
 import {
     FeedbackKind,
     type TrainingFeedback,
@@ -32,7 +33,7 @@ export class ScenarioRuntime {
     private readonly scenario: TrainingScenario;
 
     constructor(scenario: TrainingScenario) {
-        this.scenario = structuredClone(scenario);
+        this.scenario = copyTrainingScenario(scenario);
     }
 
     public update(screen: ScreenState, confirmed: ConfirmedControls): TrainingProgress {

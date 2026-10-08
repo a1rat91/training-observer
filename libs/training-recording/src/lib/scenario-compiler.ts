@@ -9,19 +9,25 @@ import {
     type TrainingScenario,
 } from '@training-observer/contracts';
 
+import {copyControlLocatorHints, copyRecordedValue} from './recording-copy';
+import {recordingProblem} from './recording-edit';
+
 interface RecordedScreen {
     readonly key: string;
     readonly fields: Map<string, FieldExpectation>;
 }
 
 export function compileScenario(recording: StateRecording): TrainingScenario {
-    if (
-        !recording.complete ||
-        recording.events.some((event) => event.kind === RecordingEventKind.Unavailable)
-    ) {
+    if (!recording.complete) {
         throw new Error(
             'В записи есть неподтверждённые значения или пропуски. Запишите пример без них.',
         );
+    }
+
+    const problem = recordingProblem(recording);
+
+    if (problem) {
+        throw new Error(problem);
     }
 
     const visits = new Map<number, RecordedScreen>();
@@ -39,22 +45,14 @@ export function compileScenario(recording: StateRecording): TrainingScenario {
             continue;
         }
 
-        const screen = visits.get(event.visit);
-
-        if (screen?.key !== event.screenKey) {
-            throw new Error('Нарушен порядок экранов записи.');
-        }
+        const screen = visits.get(event.visit)!;
 
         screen.fields.set(JSON.stringify(event.field), {
-            descriptor: structuredClone(event.field),
-            expected: structuredClone(event.value),
+            descriptor: copyControlLocatorHints(event.field),
+            expected: copyRecordedValue(event.value),
             message: `Проверьте поле «${event.field.label}».`,
             optional: false,
         });
-    }
-
-    if (!visits.size) {
-        throw new Error('Запись не содержит экранов.');
     }
 
     return {

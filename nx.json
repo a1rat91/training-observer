@@ -20,8 +20,7 @@
             "publishable": true,
             "compilationMode": "partial",
             "strict": true,
-            "skipModule": true,
-            "standaloneConfig": true
+            "skipModule": true
         },
         "@nx/angular:application": {
             "style": "less",

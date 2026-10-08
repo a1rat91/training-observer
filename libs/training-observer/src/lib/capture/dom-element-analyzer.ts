@@ -244,6 +244,6 @@ export class DomElementAnalyzer {
     }
 
     private normalize(value: string): string {
-        return value.replaceAll(/\s+/g, ' ').trim();
+        return value.replace(/\s+/g, ' ').trim();
     }
 }

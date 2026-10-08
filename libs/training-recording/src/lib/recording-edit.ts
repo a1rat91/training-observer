@@ -1,6 +1,7 @@
 /** Неизменяемое преобразование журнала. Сохраняет visit при удалении строки: поле не должно незаметно попасть на другой экран. Пересчитывает известные проблемы качества, сохраняя необъяснённую неполноту. Undo и хранение принадлежат редактору. */
 import {RecordingEventKind} from '@training-observer/contracts';
 
+import {copyStateRecording} from './recording-copy';
 import {type StateRecording} from './state-recorder';
 
 export function recordingProblem(recording: StateRecording): string {
@@ -57,7 +58,7 @@ export function removeRecordedEvent(
         events,
     };
 
-    return structuredClone({
+    return copyStateRecording({
         ...result,
         complete: !unexplainedIncomplete && !recordingProblem(result),
     });

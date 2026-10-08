@@ -18,6 +18,10 @@ Jest-проекты, `npm run test:pw` — отдельный набор Playwri
 core → обучение или recording ↔ runtime. `npm run test:load` — отдельный benchmark; численные улучшения
 производительности этим рефакторингом не заявляются.
 
+После production-сборки `node scripts/verify-packages.mjs` проверяет собранные артефакты в независимых Node ESM и
+Angular CLI consumers без source aliases. Чистый consumer не содержит Angular/RxJS. Это офлайн-проверка артефактов, не
+установка из npm registry; `--keep` сохраняет временные проекты для диагностики.
+
 ## Где внести изменение
 
 - Новый DOM-тип или обёртка: `core/controls/control-adapters.ts`, затем projection и браузерные fixtures.
@@ -30,6 +34,38 @@ core → обучение или recording ↔ runtime. `npm run test:load` — 
 - Сопоставление целей: `runtime/control-matcher.ts`; оценка полей — `field-evaluator.ts`.
 - Переходы шагов: `runtime/scenario-runtime.ts`; повторные сообщения — `feedback-tracker.ts`.
 - Текст/вид Taiga Alerts: `projects/demo/src/app/pages/learn`, не runtime/core.
+
+## Запись и прохождение в Angular
+
+Готовая интеграция находится в `@training-observer/angular`:
+
+```ts
+import {inject} from '@angular/core';
+import {
+  provideRecordingSession,
+  RecordingSession,
+  provideTrainingSession,
+  TrainingSession,
+} from '@training-observer/angular';
+
+// providers: [provideRecordingSession({root: 'main', screen: screenOptions})]
+const recording = inject(RecordingSession);
+recording.start();
+const document = await recording.stop();
+
+// providers: [provideTrainingSession({root: 'main', screen: screenOptions})]
+const training = inject(TrainingSession);
+training.feedback$.subscribe((feedback) => showMessage(feedback.message, feedback.kind));
+training.start(validatedScenario);
+```
+
+Provider подключает core-сервисы, запускает наблюдение после рендера, доставляет атомарные обновления движку и
+освобождает ресурсы через DestroyRef. Потребитель задаёт признаки существующего экрана, вызывает бизнес-действия и
+читает readonly signals. CSS-селектор `root` отслеживает позднее появление и замену области. Запись и прохождение
+изолированы даже в одном владельце. Примеры и lifecycle — [README Angular-пакета](../libs/training-angular/README.md).
+UI приложения хранит/редактирует документы и оформляет уведомления.
+
+Ниже описан низкоуровневый API для собственной интеграции.
 
 ## Подключение наблюдения к Angular
 
@@ -145,9 +181,9 @@ const validated = parseStateRecording(JSON.stringify(recording));
 const scenario = compileScenario(validated);
 ```
 
-`latestScreen` нужно заново получить из snapshot после flush. В Angular Stop demo делает это в `afterNextRender`, чтобы
-обработчики поля успели завершиться. Start тоже делает flush до начала новой записи. Вызовы observe выполняются из
-эффекта интеграции; `StateRecorder` не запускает subscriptions самостоятельно.
+`latestScreen` нужно заново получить из snapshot после flush. Angular-фасад RecordingSession выполняет это внутри
+`stop()`, чтобы обработчики поля успели завершиться. Start тоже делает flush до начала новой записи. Собственная
+интеграция может подписаться на `observer.updates$`; `StateRecorder` не запускает subscriptions самостоятельно.
 
 Компиляция не публикует сценарий. Отредактируйте копию ожиданий и сохраните явным действием. Хранилище можно заменить
 серверным API, не меняя core/recording/runtime. Не сохраняйте живые DOM references или полный диагностический граф
@@ -183,7 +219,7 @@ UI-интеграции замените обработку массива ст�
 `provideDomObservation()` подключается в `providers` компонента-владельца. Он предоставляет оба фасада
 (`TrainingObserver` и `MicrofrontendObserver`) и `ObservationSessionFactory`. Фасады больше не регистрируются
 автоматически в root: замените прежние `providers: [TrainingObserver]` или `[MicrofrontendObserver]` на
-`[provideDomObservation()]`. Подсветка остаётся отдельным provider.
+`[provideDomObservation()]`. DomSnapshotBuilder и DomHighlighter тоже предоставляются локально этим helper.
 
 Каждый start создаёт дочерний EnvironmentInjector, который владеет `DomObservationSession` и `BlurConfirmation`.
 Остановка уничтожает injector; DestroyRef освобождает listeners, таймеры, подписки и ожидающее подтверждение blur. Для
@@ -192,8 +228,10 @@ DOCUMENT и сервисов capture/projection передаются из inject
 
 Сеанс синхронно выполняет capture → projection → settle blur, затем выдаёт результат через RxJS Observable. Здесь нет
 effect или scheduler: фасад получает готовое состояние в том же вызове. Потоки завершаются при уничтожении сеанса.
-Signals фасада остаются публичным способом чтения состояния. DomCapture, DomGeometry и SnapshotReader остаются
-короткоживущими объектами конкретного обхода/снимка.
+`TrainingObserver.updates$` синхронно отдаёт атомарный tuple snapshot/controls/confirmedControls, включая текущее
+состояние новому подписчику и очистку. Он завершается по DestroyRef. Signals остаются публичным способом чтения
+состояния. Разовый `capture(B)` во время наблюдения A сохраняет состояние A; переключение — `start(B)`. DomCapture,
+DomGeometry и SnapshotReader остаются короткоживущими объектами конкретного обхода/снимка.
 
 `npm test` включает чистые Jest-тесты и Angular DI-проверки в demo. Последние используют TestBed,
 createEnvironmentInjector и fakeAsync: изоляция владельцев, stop/start, уничтожение с ожидающим blur. Для них настроен
@@ -247,10 +285,10 @@ JSON-границе это явно допускают.
 через `getElementById` без интерпретации как CSS. Проверки типов не ослаблены: `noUncheckedIndexedAccess` выявляет
 отсутствующие элементы массивов и словарей.
 
-В demo `polyfills.ts` подключает `structuredClone`, `Object.hasOwn` и `String.prototype.replaceAll` через core-js для
-browserslist из main. При подключении библиотеки к другому приложению эти API должны быть доступны нативно или через его
-polyfills. Если WeakRef отсутствует, привязки к DOM удерживаются пока жив оригинальный снимок; после освобождения снимка
-их WeakMap не удерживает. Не сохраняйте диагностические снимки без ограничения срока жизни.
+Библиотеки сами копируют документы записи и сценария, включая вложенные массивы и контексты. Для работы пакетов не нужны
+полифиллы `structuredClone`, `Object.hasOwn` и `String.prototype.replaceAll`. Если WeakRef отсутствует, привязки к DOM
+удерживаются пока жив оригинальный снимок, а подсветка — до очистки слоя; после освобождения снимка его WeakMap не
+удерживает узлы. Не сохраняйте диагностические снимки без ограничения срока жизни.
 
 Demo использует оболочку TuiDocMain и custom-webpack из main. Команды `nx run demo:server:production` и
 `nx run demo:prerender` относятся к серверной сборке и prerender; core по-прежнему начинает наблюдение только в

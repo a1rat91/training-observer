@@ -14,6 +14,12 @@ import {
     ScreenStatus,
 } from '@training-observer/core/models';
 
+import {
+    copyControlLocatorHints,
+    copyRecordedValue,
+    copyStateRecording,
+} from './recording-copy';
+
 export type {
     RecordedEvent,
     RecordedValue,
@@ -97,7 +103,7 @@ export class StateRecorder {
     }
 
     public snapshot(): StateRecording {
-        return structuredClone({
+        return copyStateRecording({
             kind: 'training-state-recording',
             version: 1,
             complete: this.complete,
@@ -179,7 +185,7 @@ export class StateRecorder {
                 kind: RecordingEventKind.Unavailable,
                 screenKey: owner.key,
                 visit: owner.visit,
-                field: structuredClone(control.locatorHints),
+                field: copyControlLocatorHints(control.locatorHints),
                 reason: 'Значение не подтверждено наблюдением',
             });
 
@@ -190,8 +196,8 @@ export class StateRecorder {
             kind: RecordingEventKind.Value,
             screenKey: owner.key,
             visit: owner.visit,
-            field: structuredClone(control.locatorHints),
-            value: structuredClone(value),
+            field: copyControlLocatorHints(control.locatorHints),
+            value: copyRecordedValue(value),
         });
     }
 

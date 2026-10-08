@@ -12,20 +12,14 @@ const pureLayerConstraints = ['contracts', 'recording', 'runtime'].map((layer) =
 export default [
     ...taiga.configs.recommended,
     {
-        // Эти API подключены в demo/polyfills.ts; интеграция библиотеки обязана предоставить их.
-        settings: {
-            polyfills: [
-                'structuredClone',
-                'Object.hasOwn',
-                'String.prototype.replaceAll',
-                'String.replaceAll',
-            ],
-        },
-    },
-    {
         files: ['libs/**/*.ts'],
         // JSON-контракты принимают строковые литералы и enum с теми же значениями.
         rules: {'@typescript-eslint/no-unsafe-enum-comparison': 'off'},
+    },
+    {
+        files: ['libs/training-observer/**/*.ts', 'tests/number-controls.spec.ts'],
+        // Глобальные RegExp с replace сохраняют поддержку браузеров без внешнего replaceAll-полифилла.
+        rules: {'unicorn/prefer-string-replace-all': 'off'},
     },
 
     {
@@ -42,6 +36,16 @@ export default [
                             sourceTag: 'layer:core',
                             onlyDependOnLibsWithTags: ['layer:core'],
                         },
+                        {
+                            sourceTag: 'layer:angular',
+                            onlyDependOnLibsWithTags: [
+                                'layer:core',
+                                'layer:contracts',
+                                'layer:recording',
+                                'layer:runtime',
+                            ],
+                            bannedExternalImports: ['@taiga-ui/*'],
+                        },
                         ...pureLayerConstraints,
                         {
                             sourceTag: 'layer:app',
@@ -50,6 +54,7 @@ export default [
                                 'layer:contracts',
                                 'layer:recording',
                                 'layer:runtime',
+                                'layer:angular',
                             ],
                         },
                     ],
@@ -60,7 +65,7 @@ export default [
     {
         files: ['libs/training-{contracts,recording,runtime}/**/*.ts'],
         rules: {
-            // Core и core/models — один Nx-проект: уточняем допустимую точку входа обычным правилом ESLint.
+            // Чистые пакеты используют только модели, не Angular API core.
             'no-restricted-imports': [
                 'error',
                 {
@@ -68,7 +73,7 @@ export default [
                         {
                             regex: '^@training-observer/core(?:$|/(?!models$))',
                             message:
-                                'Используйте чистые модели @training-observer/core/models.',
+                                'Используйте чистую точку входа @training-observer/core/models.',
                         },
                     ],
                 },

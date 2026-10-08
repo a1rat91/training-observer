@@ -35,7 +35,13 @@ export class DomHighlighter {
             const element = this.builder.resolveElement(snapshot, nodeId);
 
             if (element) {
-                targets.push({nodeId, element: new WeakRef(element), number: index + 1});
+                // Без WeakRef цель удерживается только до clear() или уничтожения владельца.
+                const reference =
+                    typeof WeakRef === 'undefined'
+                        ? {deref: () => element}
+                        : new WeakRef(element);
+
+                targets.push({nodeId, element: reference, number: index + 1});
             }
         });
 

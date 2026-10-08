@@ -148,7 +148,7 @@
                         size="s"
                         tuiButton
                         type="button"
-                        (click)="selected.set(selected() === control.targetNodeId ? null : control.targetNodeId)"
+                        (click)="toggleHighlight(control.targetNodeId)"
                     >
                         {{ selected() === control.targetNodeId ? 'Убрать подсветку' : 'Показать в форме' }}
                     </button>
