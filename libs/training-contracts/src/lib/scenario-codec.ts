@@ -4,7 +4,7 @@ import {
     type ScenarioStep,
     type TrainingScenario,
 } from './scenario.models';
-import {hasOnlyKeys, isControlDescriptor, isObject, isRecordedValue} from './validation';
+import {hasOnlyKeys, isControlDescriptor, isControlValue, isObject} from './validation';
 
 export function parseScenario(json: string): TrainingScenario {
     if (json.length > 1_000_000) {
@@ -25,10 +25,16 @@ export function parseScenario(json: string): TrainingScenario {
         throw new Error('Некорректный сценарий.');
     }
 
+    const steps = data['steps'].map(parseStep);
+
+    if (steps.some((step, index) => steps[index - 1]?.key === step.key)) {
+        throw new Error('Соседние шаги сценария не могут иметь одинаковый ключ экрана.');
+    }
+
     return {
         kind: 'training-state-scenario',
         version: 1,
-        steps: data['steps'].map(parseStep),
+        steps,
     };
 }
 
@@ -68,7 +74,7 @@ function parseField(field: unknown): FieldExpectation {
             typeof field['successMessage'] !== 'string') ||
         typeof field['optional'] !== 'boolean' ||
         !isControlDescriptor(field['descriptor']) ||
-        !isRecordedValue(field['expected'])
+        !isControlValue(field['expected'], field['descriptor'].kind)
     ) {
         throw new Error('Некорректное ожидание.');
     }

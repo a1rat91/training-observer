@@ -23,10 +23,13 @@
             "@demo/constants": ["projects/demo/src/app/constants/index.ts"],
             "@training-observer/core": ["libs/training-observer/src/index.ts"],
             "@training-observer/core/models": ["libs/training-observer/models/src/index.ts"],
+            "@training-observer/core/adapters": ["libs/training-observer/adapters/src/index.ts"],
             "@training-observer/contracts": ["libs/training-contracts/src/index.ts"],
             "@training-observer/recording": ["libs/training-recording/src/index.ts"],
             "@training-observer/runtime": ["libs/training-runtime/src/index.ts"],
-            "@training-observer/angular": ["libs/training-angular/src/index.ts"]
+            "@training-observer/angular": ["libs/training-angular/src/index.ts"],
+            "@training-observer/taiga-ui": ["libs/training-taiga-ui/src/index.ts"],
+            "@training-observer/taiga-ui/angular": ["libs/training-taiga-ui/angular/src/index.ts"]
         },
         "types": ["node", "ng-dev-mode"],
         "lib": ["ES2022", "DOM", "DOM.Iterable"]

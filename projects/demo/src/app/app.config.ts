@@ -11,6 +11,7 @@ import {
     withInMemoryScrolling,
 } from '@angular/router';
 import {provideEventPlugins} from '@taiga-ui/event-plugins';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
 import {MarkdownModule} from 'ngx-markdown';
 
 import {APP_PROVIDERS} from './app.providers';
@@ -18,6 +19,7 @@ import {routes} from './app.routes';
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        provideTaigaUiAdapter(),
         provideAnimations(),
         provideRouter(
             routes,

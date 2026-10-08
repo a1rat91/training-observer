@@ -53,12 +53,21 @@ export class DomObservationScope {
             }
         }
 
-        this.dependencies = [...this.referenceIds].flatMap((id) => {
-            const element = document.getElementById(id);
-
-            return element ? [element] : [];
-        });
         this.portals = resolveRelatedRoots(snapshot, document);
+        this.dependencies = [
+            ...new Set([
+                ...[...this.referenceIds].flatMap((id) => {
+                    const element = document.getElementById(id);
+
+                    return element ? [element] : [];
+                }),
+                ...this.ownedElements(
+                    'button,input,meter,output,progress,select,textarea',
+                ).flatMap((element) =>
+                    Array.from((element as HTMLInputElement).labels ?? []),
+                ),
+            ]),
+        ];
     }
 
     public owns(node: Node): boolean {
@@ -114,6 +123,7 @@ export class DomObservationScope {
             (record.type === 'attributes' && this.isAncestorElement(target)) ||
             target.closest(STYLESHEET_SELECTOR) ||
             this.isInsideDependency(target) ||
+            this.isOwnedLabel(target) ||
             this.changesReferencedId(record, target)
         ) {
             return true;
@@ -165,7 +175,23 @@ export class DomObservationScope {
     }
 
     private isAncestorElement(node: Node): boolean {
-        return node.nodeType === 1 && (node as Element).contains(this.root);
+        return (
+            node.nodeType === 1 &&
+            [this.root, ...this.portals, ...this.dependencies].some((element) =>
+                node.contains(element),
+            )
+        );
+    }
+
+    private isOwnedLabel(element: Element): boolean {
+        const control =
+            element.localName === 'label' ? (element as HTMLLabelElement).control : null;
+
+        return Boolean(
+            control &&
+            this.owns(control) &&
+            (!this.ignoreSelector || !control.closest(this.ignoreSelector)),
+        );
     }
 
     private isInsideDependency(node: Node): boolean {
@@ -187,7 +213,11 @@ export class DomObservationScope {
         const element = node as Element;
 
         return element.matches(STYLESHEET_SELECTOR) ||
-            element.querySelector(STYLESHEET_SELECTOR)
+            element.querySelector(STYLESHEET_SELECTOR) ||
+            this.isOwnedLabel(element) ||
+            Array.from(element.querySelectorAll('label')).some((label) =>
+                this.isOwnedLabel(label),
+            )
             ? true
             : this.referenceIds.has(element.id) ||
                   Array.from(element.querySelectorAll('[id]')).some((child) =>
@@ -226,15 +256,18 @@ export class DomObservationScope {
     }
 
     private ownedFormControls(): FormControlElement[] {
-        const selector = 'input,select,textarea';
-        const controls: FormControlElement[] = [];
+        return this.ownedElements('input,select,textarea') as FormControlElement[];
+    }
+
+    private ownedElements(selector: string): Element[] {
+        const controls: Element[] = [];
 
         for (const root of [this.root, ...this.portals]) {
             if (root.matches(selector)) {
-                controls.push(root as FormControlElement);
+                controls.push(root);
             }
 
-            root.querySelectorAll<FormControlElement>(selector).forEach((control) => {
+            root.querySelectorAll(selector).forEach((control) => {
                 controls.push(control);
             });
         }

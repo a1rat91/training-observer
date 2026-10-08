@@ -350,6 +350,113 @@ test('external labels and common ancestor styles invalidate dependent areas', as
         .toBe(true);
 });
 
+test('external native labels follow text, association, insertion and removal without scanning siblings', async ({
+    page,
+}) => {
+    await page.evaluate(() => {
+        document
+            .querySelector('#mf-profile')!
+            .insertAdjacentHTML('beforeend', '<input id="native-label-profile">');
+        document
+            .querySelector('#mf-employment')!
+            .insertAdjacentHTML('beforeend', '<input id="native-label-employment">');
+    });
+    await expect
+        .poll(async () =>
+            (await area(page, 'employment')).logicalControls.some(
+                (control) => control.locatorHints.id === 'native-label-employment',
+            ),
+        )
+        .toBe(true);
+    await settle(page);
+    const before = await scans(page);
+    const label = async (name: string, id: string): Promise<string | undefined> =>
+        (await area(page, name)).logicalControls.find(
+            (control) => control.locatorHints.id === id,
+        )?.label;
+
+    await page.evaluate(() =>
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<label id="external-native-label" for="native-label-profile">Before label</label>',
+        ),
+    );
+    await expect
+        .poll(async () => label('profile', 'native-label-profile'))
+        .toBe('Before label');
+    await page.locator('#external-native-label').evaluate((element) => {
+        element.firstChild!.textContent = 'After label';
+    });
+    await expect
+        .poll(async () => label('profile', 'native-label-profile'))
+        .toBe('After label');
+    expect((await area(page, 'employment')).scanCount).toBe(
+        before[(await area(page, 'employment')).id],
+    );
+    await page.locator('#external-native-label').evaluate((element) => {
+        element.setAttribute('for', 'native-label-employment');
+    });
+    await expect.poll(async () => label('profile', 'native-label-profile')).toBe('');
+    await expect
+        .poll(async () => label('employment', 'native-label-employment'))
+        .toBe('After label');
+    await page.locator('#external-native-label').evaluate((element) => element.remove());
+    await expect
+        .poll(async () => label('employment', 'native-label-employment'))
+        .toBe('');
+    expect((await area(page, 'address')).scanCount).toBe(
+        before[(await area(page, 'address')).id],
+    );
+});
+
+test('a new boundary around an external popup transfers ownership and removing it returns the popup', async ({
+    page,
+}) => {
+    await page.locator('#mf-profile').evaluate((root) => {
+        root.insertAdjacentHTML(
+            'beforeend',
+            '<input id="boundary-popup-trigger" tuiInput role="combobox" aria-expanded="true" aria-haspopup="dialog" aria-controls="boundary-popup">',
+        );
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="boundary-popup-wrapper"><div id="boundary-popup" role="dialog"><button id="boundary-popup-action">Popup action</button></div></div>',
+        );
+    });
+    const ownsAction = async (name: string): Promise<boolean> =>
+        (await area(page, name)).logicalControls.some(
+            (control) => control.locatorHints.id === 'boundary-popup-action',
+        );
+
+    const popupStatus = async (): Promise<string | undefined> =>
+        (await area(page, 'profile')).logicalControls.find(
+            (control) => control.locatorHints.id === 'boundary-popup-trigger',
+        )?.popup?.status;
+
+    await expect.poll(async () => ownsAction('profile')).toBe(true);
+    await settle(page);
+    const before = await scans(page);
+
+    await page.locator('#boundary-popup-wrapper').evaluate((wrapper) => {
+        wrapper.setAttribute('data-mf', 'popup-owner');
+    });
+    await expect(page.getByTestId('mf-count')).toHaveText('4');
+    await expect.poll(async () => ownsAction('popup-owner')).toBe(true);
+    await expect.poll(async () => ownsAction('profile')).toBe(false);
+    await expect.poll(popupStatus).toBe('unresolved');
+    await page.locator('#boundary-popup-wrapper').evaluate((wrapper) => {
+        wrapper.removeAttribute('data-mf');
+    });
+    await expect(page.getByTestId('mf-count')).toHaveText('3');
+    await expect.poll(async () => ownsAction('profile')).toBe(true);
+    await expect.poll(popupStatus).toBe('open');
+
+    for (const name of ['address', 'employment']) {
+        const sibling = await area(page, name);
+
+        expect(sibling.scanCount).toBe(before[sibling.id]);
+    }
+});
+
 test('shared stylesheet insertion and delayed load refresh all areas', async ({page}) => {
     let releaseStyles!: () => void;
     const ready = new Promise<void>((resolve) => {

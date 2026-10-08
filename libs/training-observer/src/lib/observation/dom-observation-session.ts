@@ -3,17 +3,19 @@ import {DestroyRef, inject, Injectable} from '@angular/core';
 import {type ControlSnapshot, type DomSnapshot} from '@training-observer/core/models';
 import {Subject} from 'rxjs';
 
-import {DomElementAnalyzer} from '../capture/dom-element-analyzer';
 import {
-    isScrollDecoration,
-    SCROLL_DECORATION_SELECTOR,
-} from '../capture/dom-scroll-decoration';
+    isAdapterExcluded,
+    isAdapterExcludedRemoval,
+    isCaptureExcludedMutation,
+} from '../capture/dom-adapter-exclusions';
+import {DomElementAnalyzer} from '../capture/dom-element-analyzer';
 import {DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
 import {resolveRelatedRoots} from '../capture/snapshot-references';
 import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
+import {CONTROL_ADAPTER_EXCLUSIONS} from '../tokens/control-adapters';
 import {BlurConfirmation} from './blur-confirmation';
 import {DomObservationScope} from './dom-observation-scope';
-import {isObserverUi, isObserverUiMutation} from './dom-observer-ui';
+import {isObserverUi} from './dom-observer-ui';
 import {SESSION_CONTEXT, SessionSourceMode} from './session-context';
 
 const PROPERTY_CONTROLS = 'input,textarea,select,option';
@@ -69,6 +71,7 @@ export class DomObservationSession {
     private readonly analyzer = inject(DomElementAnalyzer);
     private readonly builder = inject(DomSnapshotBuilder);
     private readonly controlBuilder = inject(ControlSnapshotBuilder);
+    private readonly excludedSelector = inject(CONTROL_ADAPTER_EXCLUSIONS).join(',');
     private readonly confirmations = inject(BlurConfirmation);
     private readonly snapshots = new Subject<SessionSnapshot>();
     private readonly failures = new Subject<unknown>();
@@ -81,6 +84,8 @@ export class DomObservationSession {
     private propertyTimer: number | null = null;
     private propertyStates = new Map<Element, string>();
     private relatedRoots: Element[] = [];
+    private capturedElements = new WeakSet<Element>();
+    private capturedRoots: Element[] = [];
     private disposed = false;
     private readonly scope: DomObservationScope | undefined;
 
@@ -158,12 +163,20 @@ export class DomObservationSession {
         }
 
         const target = event.target as Node | null;
+        // Внешнее перекрытие учитывается в standalone capture; завершение его движения
+        // должно обновить геометрию даже без следующей DOM mutation.
+        const externalVisualEvent =
+            this.context.mode === SessionSourceMode.Standalone &&
+            (event.type === 'transitionend' || event.type === 'animationend');
 
         if (
-            (target && this.scope && !this.scope.acceptsEvent(target, event.type)) ||
+            (target &&
+                this.scope &&
+                !externalVisualEvent &&
+                !this.scope.acceptsEvent(target, event.type)) ||
             (target &&
                 (isObserverUi(target) ||
-                    isScrollDecoration(target) ||
+                    isAdapterExcluded(target, this.excludedSelector) ||
                     this.excludedAncestor(target))) ||
             this.disposed
         ) {
@@ -201,6 +214,29 @@ export class DomObservationSession {
 
     public invalidate(): void {
         this.schedule();
+    }
+
+    /** Предыдущее включение сохраняется до следующего capture, включая отсоединённые узлы. */
+    public wasCaptured(element: Element): boolean {
+        return (
+            this.capturedElements.has(element) ||
+            this.capturedRoots.some((root) => element.contains(root))
+        );
+    }
+
+    /** Завершает захваченные blur перед продолжением наблюдения на новом экземпляре корня. */
+    public confirmDepartures(): Readonly<Record<string, ControlSnapshot>> {
+        if (!this.current) {
+            return {};
+        }
+
+        const confirmedControls = this.confirmations.settleDepartures(
+            this.current.confirmedControls,
+        );
+
+        this.current = {...this.current, confirmedControls};
+
+        return confirmedControls;
     }
 
     /** Явная граница после рендера действия Stop; root и options сеанса сохраняются. */
@@ -265,6 +301,8 @@ export class DomObservationSession {
 
         this.propertyStates.clear();
         this.relatedRoots = [];
+        this.capturedElements = new WeakSet<Element>();
+        this.capturedRoots = [];
         this.current = null;
         this.confirmations.reset();
         this.snapshots.complete();
@@ -302,6 +340,27 @@ export class DomObservationSession {
     /** Зависимости должны обновляться даже при отключённой проверке native-свойств. */
     private acceptSnapshot(snapshot: DomSnapshot): void {
         this.scope?.update(snapshot);
+
+        if (this.excludedSelector) {
+            this.capturedElements = new WeakSet(
+                Object.values(snapshot.nodes).flatMap((node) => {
+                    const element =
+                        node.kind === 'element'
+                            ? this.builder.resolveElement(snapshot, node.id)
+                            : null;
+
+                    return element ? [element] : [];
+                }),
+            );
+            this.capturedRoots = [
+                snapshot.rootId,
+                ...(snapshot.relatedRootIds ?? []),
+            ].flatMap((id) => {
+                const element = id ? this.builder.resolveElement(snapshot, id) : null;
+
+                return element ? [element] : [];
+            });
+        }
 
         if (this.disposed || this.options.propertyCheckIntervalMs === 0) {
             return;
@@ -350,9 +409,18 @@ export class DomObservationSession {
     }
 
     private isRelevantMutation(record: MutationRecord): boolean {
-        // Положение ползунка, hover и жизненный цикл трека относятся только к представлению.
-        if (isObserverUiMutation(record) || isScrollDecoration(record.target)) {
+        if (
+            isCaptureExcludedMutation(record, this.excludedSelector, (element) =>
+                this.wasCaptured(element),
+            )
+        ) {
             return false;
+        }
+
+        // Новый matching-предок исключил ранее захваченное содержимое. Его childList
+        // (:has) должен обновить снимок даже если добавленные узлы уже исключены.
+        if (isAdapterExcluded(record.target, this.excludedSelector)) {
+            return true;
         }
 
         const excluded = this.excludedAncestor(record.target);
@@ -367,7 +435,7 @@ export class DomObservationSession {
             const added = Array.from(record.addedNodes).some(
                 (node) =>
                     !isObserverUi(node) &&
-                    !isScrollDecoration(node) &&
+                    !isAdapterExcluded(node, this.excludedSelector) &&
                     !this.excludedAncestor(node),
             );
             // К моменту callback удалённый узел уже может находиться в исключённом поддереве.
@@ -383,7 +451,8 @@ export class DomObservationSession {
 
                 const element = node as Element;
 
-                return element.matches(SCROLL_DECORATION_SELECTOR)
+                return isAdapterExcludedRemoval(node, this.excludedSelector) &&
+                    !this.wasCaptured(element)
                     ? false
                     : !this.options.ignoreSelector ||
                           !element.matches(this.options.ignoreSelector);
@@ -425,7 +494,7 @@ export class DomObservationSession {
             if (
                 (!this.scope || this.scope.owns(element)) &&
                 !isObserverUi(element) &&
-                !isScrollDecoration(element) &&
+                !isAdapterExcluded(element, this.excludedSelector) &&
                 !this.excludedAncestor(element)
             ) {
                 result.set(element, JSON.stringify(this.analyzer.state(element)));

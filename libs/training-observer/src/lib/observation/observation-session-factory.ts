@@ -14,6 +14,7 @@ import {
 import {DomElementAnalyzer} from '../capture/dom-element-analyzer';
 import {DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
 import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
+import {CONTROL_ADAPTER_EXCLUSIONS, CONTROL_ADAPTERS} from '../tokens/control-adapters';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {BlurConfirmation} from './blur-confirmation';
 import {DomObservationSession} from './dom-observation-session';
@@ -33,6 +34,11 @@ export class ObservationSessionFactory {
         {provide: DomSnapshotBuilder, useValue: inject(DomSnapshotBuilder)},
         {provide: DomElementAnalyzer, useValue: inject(DomElementAnalyzer)},
         {provide: ControlSnapshotBuilder, useValue: inject(ControlSnapshotBuilder)},
+        {provide: CONTROL_ADAPTERS, useValue: inject(CONTROL_ADAPTERS)},
+        {
+            provide: CONTROL_ADAPTER_EXCLUSIONS,
+            useValue: inject(CONTROL_ADAPTER_EXCLUSIONS),
+        },
     ];
 
     private readonly sessions = new Set<ObservationSessionRef>();

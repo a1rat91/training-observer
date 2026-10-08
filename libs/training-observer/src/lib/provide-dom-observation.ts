@@ -5,9 +5,14 @@
 import {inject, type Provider} from '@angular/core';
 
 import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
+import {ControlSnapshotBuilder} from './controls/control-snapshot-builder';
 import {DomHighlighter} from './highlight/dom-highlighter';
 import {MicrofrontendObserver} from './microfrontend-observer';
 import {ObservationSessionFactory} from './observation/observation-session-factory';
+import {
+    CONTROL_ADAPTER_EXCLUSIONS,
+    controlAdapterExclusions,
+} from './tokens/control-adapters';
 import {
     DOM_OBSERVATION_OPTIONS,
     type DomObservationOptions,
@@ -19,7 +24,12 @@ import {TrainingObserver} from './training-observer';
 export function provideDomObservation(): Provider[] {
     return [
         DomSnapshotBuilder,
+        ControlSnapshotBuilder,
         DomHighlighter,
+        {
+            provide: CONTROL_ADAPTER_EXCLUSIONS,
+            useFactory: controlAdapterExclusions,
+        },
         {
             provide: DOM_OBSERVATION_SNAPSHOT_BASELINE,
             useFactory: () => inject(DOM_SNAPSHOT_OPTIONS),

@@ -3,6 +3,7 @@ import {DOCUMENT} from '@angular/common';
 import {inject, Injectable} from '@angular/core';
 import {type DomNodeId, type DomSnapshot} from '@training-observer/core/models';
 
+import {CONTROL_ADAPTER_EXCLUSIONS} from '../tokens/control-adapters';
 import {
     DOM_SNAPSHOT_OPTIONS,
     type DomSnapshotOptions,
@@ -15,6 +16,7 @@ export class DomSnapshotBuilder {
     private readonly document = inject(DOCUMENT);
     private readonly defaults = inject(DOM_SNAPSHOT_OPTIONS);
     private readonly analyzer = inject(DomElementAnalyzer);
+    private readonly excludedSelector = inject(CONTROL_ADAPTER_EXCLUSIONS).join(',');
     private readonly ids = new WeakMap<Node, DomNodeId>();
     private readonly bindings = new WeakMap<
         DomSnapshot,
@@ -41,19 +43,27 @@ export class DomSnapshotBuilder {
         this.validateOptions(options);
 
         const bindings = new Map<DomNodeId, {deref(): Node | undefined}>();
-        const snapshot = new DomCapture(root, options, this.analyzer, (node) => {
-            const id = this.idFor(node);
+        const snapshot = new DomCapture(
+            root,
+            options,
+            this.analyzer,
+            (node) => {
+                const id = this.idFor(node);
 
-            // Старые браузеры удерживают узел только пока жив сам снимок в WeakMap.
+                // Старые браузеры удерживают узел только пока жив сам снимок в WeakMap.
 
-            const reference =
-                // eslint-disable-next-line compat/compat -- Ветка защищена проверкой typeof; ниже есть запасной вариант.
-                typeof WeakRef === 'undefined' ? {deref: () => node} : new WeakRef(node);
+                const reference =
+                    typeof WeakRef === 'undefined'
+                        ? {deref: () => node}
+                        : // eslint-disable-next-line compat/compat -- Проверка typeof выше сохраняет запасной вариант для старых браузеров.
+                          new WeakRef(node);
 
-            bindings.set(id, reference);
+                bindings.set(id, reference);
 
-            return id;
-        }).capture();
+                return id;
+            },
+            this.excludedSelector,
+        ).capture();
 
         this.bindings.set(snapshot, bindings);
 
@@ -90,6 +100,10 @@ export class DomSnapshotBuilder {
 
         if (options.boundarySelector) {
             this.document.documentElement.matches(options.boundarySelector);
+        }
+
+        if (this.excludedSelector) {
+            this.document.documentElement.matches(this.excludedSelector);
         }
     }
 

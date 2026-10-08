@@ -1,5 +1,9 @@
 /** Общие проверки JSON-границы. Принимают unknown, ничего не преобразуют и не исполняют. */
-import {type ControlLocatorHints, ControlType} from '@training-observer/core/models';
+import {
+    type ControlKind,
+    type ControlLocatorHints,
+    ControlType,
+} from '@training-observer/core/models';
 
 import {type RecordedValue} from './control-value';
 
@@ -12,12 +16,30 @@ export function hasOnlyKeys(
 ): boolean {
     return Object.keys(value).every((key) => keys.includes(key));
 }
-export function isRecordedValue(value: unknown): value is RecordedValue {
-    return (
-        typeof value === 'string' ||
-        typeof value === 'boolean' ||
-        (Array.isArray(value) && value.every((item) => typeof item === 'string'))
-    );
+export function isControlValue(
+    value: unknown,
+    kind: ControlKind,
+): value is RecordedValue {
+    switch (kind) {
+        case ControlType.Checkbox:
+        case ControlType.Radio:
+        case ControlType.Switch:
+            return typeof value === 'boolean';
+        case ControlType.ComboBox:
+        case ControlType.Select:
+            return (
+                Array.isArray(value) &&
+                value.every((item) => typeof item === 'string') &&
+                (kind !== ControlType.ComboBox ||
+                    !value.length ||
+                    (value.length === 1 && value[0] !== ''))
+            );
+        case ControlType.Number:
+        case ControlType.Textbox:
+            return typeof value === 'string';
+        default:
+            return false;
+    }
 }
 export function isControlDescriptor(value: unknown): value is ControlLocatorHints {
     return !isObject(value) ||

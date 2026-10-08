@@ -19,12 +19,14 @@ core → обучение или recording ↔ runtime. `npm run test:load` — 
 производительности этим рефакторингом не заявляются.
 
 После production-сборки `node scripts/verify-packages.mjs` проверяет собранные артефакты в независимых Node ESM и
-Angular CLI consumers без source aliases. Чистый consumer не содержит Angular/RxJS. Это офлайн-проверка артефактов, не
-установка из npm registry; `--keep` сохраняет временные проекты для диагностики.
+Angular CLI consumers без source aliases. Чистый consumer импортирует `core/models`, `core/adapters` и `taiga-ui`,
+проецирует сохранённый JSON и не содержит Angular, Taiga UI или RxJS. Это офлайн-проверка артефактов, не установка из
+npm registry; `--keep` сохраняет временные проекты для диагностики.
 
 ## Где внести изменение
 
-- Новый DOM-тип или обёртка: `core/controls/control-adapters.ts`, затем projection и браузерные fixtures.
+- Новая обёртка известного типа: собственный `ControlAdapter` из `core/adapters`, затем registration и fixtures.
+- DOM-правило Taiga UI: `libs/training-taiga-ui/src/`, затем чистая projection и browser fixtures.
 - Чтение свойства: `core/capture/dom-element-analyzer.ts`.
 - Новая причина переснять DOM: `core/observation/dom-observation-session.ts`.
 - Граница фокуса: `core/observation/blur-confirmation.ts`.
@@ -66,6 +68,93 @@ Provider подключает core-сервисы, запускает наблю
 UI приложения хранит/редактирует документы и оформляет уведомления.
 
 Ниже описан низкоуровневый API для собственной интеграции.
+
+## Адаптеры DOM-контролов
+
+Native/ARIA-контролы работают без регистрации. Поддержка Taiga UI подключается явно один раз на уровне приложения:
+
+```ts
+import {type ApplicationConfig} from '@angular/core';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideTaigaUiAdapter()],
+};
+```
+
+Для другого компонента создайте адаптер к существующей разметке. Пример предполагает, что приложение уже использует
+`data-demo-control="textbox"` на contenteditable-редакторе; добавлять этот атрибут ради наблюдателя не требуется, можно
+выбрать другой устойчивый признак компонента.
+
+```ts
+import {provideControlAdapters, provideDomObservation} from '@training-observer/core';
+import {type ControlAdapter} from '@training-observer/core/adapters';
+import {ControlType} from '@training-observer/core/models';
+
+export const appTextAdapter: ControlAdapter = {
+  id: 'app-contenteditable',
+  match: ({target}) =>
+    target.attributes['data-demo-control'] === 'textbox' && target.attributes['contenteditable'] === 'true'
+      ? {status: 'match', kind: ControlType.Textbox}
+      : null,
+};
+
+// В providers компонента-владельца:
+// [provideDomObservation(), provideControlAdapters(appTextAdapter)]
+// С provideRecordingSession/provideTrainingSession оставьте ту же локальную регистрацию.
+```
+
+Этот адаптер выбирает уже существующий вид `textbox`; значение читает capture из contenteditable DOM. Адаптер работает с
+`SnapshotReader` и сохранёнными узлами, не с живым Element или внутренним состоянием Angular-компонента. Он не меняет
+контракт учебного значения. Неподдержанная разметка, которая не совпала с адаптером или native fallback, не становится
+логическим контролом.
+
+`match({reader, target, ancestors, nativeKind, baseCandidate})` возвращает
+`{status: 'match', kind, hostId?, label?, popup?}`, `{status: 'exclude'}` или `null`. `hostId` ссылается на существующий
+узел снимка. `priority` по умолчанию равен нулю; более высокий приоритет выигрывает, одинаковые приоритеты двух
+совпавших адаптеров вызывают ошибку. `baseCandidate` содержит результат native fallback и адаптеров меньшего приоритета.
+`null` сохраняет результат предыдущих слоёв, явное исключение блокирует native fallback. Дополнительные hooks —
+`excludeCandidate({reader, candidate, candidates})` для декорации и `resolveLabel({reader, candidate, members})` для
+подписи. Селекторы `excludedSubtreeSelectors` учитываются при capture служебных поддеревьев.
+
+Локальные `provideControlAdapters()` дополняют родительскую регистрацию. Повторная регистрация того же экземпляра не
+создаёт дубликат; разные экземпляры с одним `id` вызывают ошибку. Выберите устойчивый уникальный ID для каждого
+адаптера. Регистрация владельца доступна обоим Angular-фасадам и сохраняется при создании/замене их сеансов наблюдения.
+
+Для бизнес-компонента, который содержит обычный Taiga textbox, используйте композицию. Здесь `data-address` —
+существующий признак обёртки, Taiga-адаптер имеет приоритет 100, а бизнес-адаптер — 200:
+
+```ts
+export const addressAdapter: ControlAdapter = {
+  id: 'address-field',
+  priority: 200,
+  match: ({ancestors, baseCandidate}) => {
+    const address = ancestors.find((node) => 'data-address' in node.attributes);
+    return address && baseCandidate?.kind === ControlType.Textbox
+      ? {status: 'match', kind: baseCandidate.kind, hostId: address.id, label: 'Адрес'}
+      : null;
+  },
+};
+```
+
+Бизнес-адаптер меняет host и подпись, сохраняя popup, состояние и fallback `data-testid` внутреннего поля через
+`baseCandidate`. Taiga cleaner остаётся частью поля, а независимая кнопка сохраняется отдельным контролом. Регистрируйте
+оба адаптера: глобальный `provideTaigaUiAdapter()` и локальный `provideControlAdapters(addressAdapter)` дополняют друг
+друга.
+
+Для сохранённого снимка Angular и DI не нужны:
+
+```ts
+import {projectControls} from '@training-observer/core/adapters';
+import {type DomSnapshot} from '@training-observer/core/models';
+import {taigaUiAdapter} from '@training-observer/taiga-ui';
+
+const snapshot: DomSnapshot = savedSnapshot;
+const controls = projectControls(snapshot, [taigaUiAdapter, appTextAdapter]);
+```
+
+`projectControls()` не изменяет входной граф. Импорты `core/adapters` и основной `taiga-ui` не загружают Angular, RxJS
+или компоненты Taiga UI; Angular helper находится отдельно в `taiga-ui/angular`.
 
 ## Подключение наблюдения к Angular
 

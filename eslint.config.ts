@@ -48,6 +48,11 @@ export default [
                         },
                         ...pureLayerConstraints,
                         {
+                            sourceTag: 'layer:taiga-ui',
+                            onlyDependOnLibsWithTags: ['layer:core'],
+                            bannedExternalImports: ['@taiga-ui/*'],
+                        },
+                        {
                             sourceTag: 'layer:app',
                             onlyDependOnLibsWithTags: [
                                 'layer:core',
@@ -55,6 +60,7 @@ export default [
                                 'layer:recording',
                                 'layer:runtime',
                                 'layer:angular',
+                                'layer:taiga-ui',
                             ],
                         },
                     ],
@@ -74,6 +80,40 @@ export default [
                             regex: '^@training-observer/core(?:$|/(?!models$))',
                             message:
                                 'Используйте чистую точку входа @training-observer/core/models.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        files: ['libs/training-observer/adapters/**/*.ts'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: '^(?!@training-observer/core/models$)[^.]',
+                            message:
+                                'Чистый SDK использует только core/models и локальные файлы.',
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        files: ['libs/training-taiga-ui/src/**/*.ts'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            regex: '^(?!@training-observer/core/(?:models|adapters)$)[^.]',
+                            message:
+                                'Taiga adapter использует только чистые core/models, core/adapters и локальные файлы.',
                         },
                     ],
                 },

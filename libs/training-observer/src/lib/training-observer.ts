@@ -59,6 +59,7 @@ export class TrainingObserver {
     } | null = null;
 
     private fingerprint: string | null = null;
+    private continuationOptions: DomObservationOptions | null = null;
     private destroyed = false;
 
     /** Последнее значение при выходе из логического поля. Сырые снимки обновляются независимо; отсутствие означает, что подтверждения нет. */
@@ -109,26 +110,54 @@ export class TrainingObserver {
         this.stop();
         this.confirmed.set({});
         this.failure.set(null);
+        this.continuationOptions = options;
+        this.startSession(root, options, initial);
 
-        this.zone.runOutsideAngular(() => {
-            const ref = this.sessions.create(root, options);
+        return initial;
+    }
 
-            this.sessionRef = ref;
-            this.sessionContext = {root, options};
-            // Потоки синхронные; при уничтожении сеанса они завершаются вместе с подписками.
-            ref.session.snapshots$.subscribe((result) => this.publish(result, true));
-            ref.session.errors$.subscribe((error) => this.fail(error));
+    /** Продолжить наблюдение на другом root, сохранив подтверждённые ответы уходящей области.
+     * Вызывайте после microtasks focusout; null обозначает промежуток без подключённого корня.
+     */
+    public reconnect(
+        root: Element | null,
+        overrides: Partial<DomObservationOptions> = {},
+    ): DomSnapshot | null {
+        this.assertAlive();
+        const options = {...(this.continuationOptions ?? this.defaults), ...overrides};
 
-            try {
-                const result = ref.session.start(initial);
+        validateObservationTiming(options);
+        this.builder.validateOptions(options);
 
-                this.zone.run(() => this.observing.set(true));
-                this.publish(result, false);
-            } catch (error: unknown) {
-                this.stop();
-                throw error;
-            }
-        });
+        // Неверная новая конфигурация не должна разрушить работающий сеанс.
+        const initial = root
+            ? this.zone.runOutsideAngular(() => this.builder.build(root, options))
+            : null;
+
+        const departures = this.zone.runOutsideAngular(() =>
+            this.session?.confirmDepartures(),
+        );
+
+        if (departures) {
+            this.confirmed.set(this.mergeConfirmations(departures));
+        }
+
+        this.stop();
+        this.failure.set(null);
+        this.continuationOptions = options;
+
+        if (root && initial) {
+            this.startSession(root, options, initial);
+        } else {
+            this.fingerprint = null;
+            this.current.set(null);
+            this.projection.set([]);
+            this.updates.next({
+                snapshot: null,
+                controls: this.projection(),
+                confirmedControls: this.confirmed(),
+            });
+        }
 
         return initial;
     }
@@ -181,6 +210,7 @@ export class TrainingObserver {
     public clear(): void {
         this.stop();
         this.fingerprint = null;
+        this.continuationOptions = null;
         this.failure.set(null);
         this.current.set(null);
         this.projection.set([]);
@@ -196,6 +226,32 @@ export class TrainingObserver {
         return this.sessionRef?.session ?? null;
     }
 
+    private startSession(
+        root: Element,
+        options: DomObservationOptions,
+        initial: DomSnapshot,
+    ): void {
+        this.zone.runOutsideAngular(() => {
+            const ref = this.sessions.create(root, options);
+
+            this.sessionRef = ref;
+            this.sessionContext = {root, options};
+            // Потоки синхронные; при уничтожении сеанса они завершаются вместе с подписками.
+            ref.session.snapshots$.subscribe((result) => this.publish(result, true));
+            ref.session.errors$.subscribe((error) => this.fail(error));
+
+            try {
+                const result = ref.session.start(initial);
+
+                this.zone.run(() => this.observing.set(true));
+                this.publish(result, false);
+            } catch (error: unknown) {
+                this.stop();
+                throw error;
+            }
+        });
+    }
+
     private fail(error: unknown): void {
         this.zone.run(() => {
             this.stop();
@@ -204,7 +260,8 @@ export class TrainingObserver {
     }
 
     private publish(result: SessionSnapshot, onlyIfChanged: boolean): void {
-        const {snapshot, controls, confirmedControls} = result;
+        const {snapshot, controls} = result;
+        const confirmedControls = this.mergeConfirmations(result.confirmedControls);
         const fingerprint = snapshotFingerprint(snapshot);
 
         this.zone.run(() => {
@@ -222,9 +279,19 @@ export class TrainingObserver {
                 this.current.set(snapshot);
                 this.projection.set(controls);
                 this.publications.update((count) => count + 1);
-                this.updates.next(result);
+                this.updates.next({snapshot, controls, confirmedControls});
             }
         });
+    }
+
+    private mergeConfirmations(
+        incoming: Readonly<Record<string, ControlSnapshot>>,
+    ): Readonly<Record<string, ControlSnapshot>> {
+        const current = this.confirmed();
+
+        return Object.entries(incoming).some(([id, control]) => current[id] !== control)
+            ? {...current, ...incoming}
+            : current;
     }
 
     private assertAlive(): void {

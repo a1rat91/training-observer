@@ -12,24 +12,26 @@ observer.controls(); // прежний список потенциально и�
 observer.logicalControls(); // новый список ControlSnapshot
 ```
 
-Новый список — computed signal от опубликованного снимка. Нормализация не устанавливает слушатели, не читает живой DOM и
-не вызывает повторный пересчёт. Можно отдельно вызвать `inject(ControlSnapshotBuilder).build(snapshot)` для ранее
-сохранённого DOM-снимка. Результат содержит только JSON-совместимые данные.
+Список публикуется вместе со снимком и подтверждениями. Нормализация не устанавливает слушатели и не читает живой DOM.
+Можно отдельно вызвать `inject(ControlSnapshotBuilder).build(snapshot)` с зарегистрированными Angular-адаптерами или
+чистую функцию `projectControls(snapshot, adapters)` из `@training-observer/core/adapters`. Результат содержит только
+JSON-совместимые данные.
 
 Сборка разбита на три шага. `ControlSnapshotBuilder` остаётся Angular-сервисом и публичной точкой входа; его `build()`
 только связывает эти шаги:
 
 1. `snapshot-reader.ts` — чтение сохранённого графа: элементы, предки, текст, связанные labels и состав узлов контрола.
    Экземпляр создаётся на один снимок.
-2. `control-adapters.ts` — распознавание и правила Taiga/native: приоритеты, исключение option contents, filler,
-   multi-editor и объединение cleaner. Здесь же находятся правила floating label и generic popup Taiga.
+2. `control-adapters.ts` — native/ARIA fallback и послойное распознавание подключёнными адаптерами. Правила Taiga
+   (filler, multi-editor, cleaner, floating label и generic popup) находятся в отдельном `@training-observer/taiga-ui`.
 3. `control-projection.ts` — сборка `ControlSnapshot`: подпись, состояние, признаки поиска, контекст и вызов
    существующего builder выбора/popup.
 
-Внутренние адаптеры и проекция — обычные функции, которым не нужны Angular DI или живой DOM. Они не экспортируются из
-публичной точки входа библиотеки. Порядок контролов и `memberNodeIds`, правила labels, значения и схема JSON сохранены.
-Чтение графа намеренно сохраняет прежний выбор последнего HTML id для контекста; popup по-прежнему требует единственного
-совпадения. Унификация этих двух политик не входит в рефакторинг.
+Модули чистой проекции находятся в `libs/training-observer/adapters/src/`. Публичный SDK экспортирует интерфейс
+`ControlAdapter`, `SnapshotReader` и `projectControls()`; ему не нужны Angular DI или живой DOM. При подключённом
+Taiga-адаптере порядок контролов и `memberNodeIds`, правила labels, значения и схема JSON сохранены. Чтение графа
+намеренно сохраняет прежний выбор последнего HTML id для контекста; popup по-прежнему требует единственного совпадения.
+Унификация этих двух политик не входит в рефакторинг.
 
 ## Поддержка
 
@@ -44,9 +46,14 @@ observer.logicalControls(); // новый список ControlSnapshot
 | `select`   | select / option                                    | input с `tuiSelect`, связанный dropdown                               |
 | `combobox` | —                                                  | input с `tuiComboBox`, поиск и связанный dropdown                     |
 
-Адаптер Taiga UI проверяется первым, затем native-адаптер. Сведения берутся из DOM-тегов и атрибутов, без обращения к
-Angular injector, экземплярам компонентов или приватным полям Taiga UI. Стенд содержит настоящие TuiTextfield, TuiButton
-и TuiCheckbox с привязкой к форме для проверки пользовательского взаимодействия.
+Native fallback уточняется адаптером Taiga UI с приоритетом 100. Сведения берутся из DOM-тегов и атрибутов, без
+обращения к Angular injector, экземплярам компонентов или приватным полям Taiga UI. Стенд содержит настоящие
+TuiTextfield, TuiButton и TuiCheckbox с привязкой к форме для проверки пользовательского взаимодействия.
+
+Для Angular подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui/angular`. Core по умолчанию содержит
+только общие правила. Собственный адаптер регистрируется через `provideControlAdapters(...adapters)`;
+[контракт SDK](../../libs/training-observer/adapters/README.md) описывает приоритеты, исключения и композицию внешних
+компонентов с внутренними Taiga-полями.
 
 Slider/Range, календарные контролы, contenteditable, ARIA-контролы без native-элемента и редактор `tui-textfield[multi]`
 не входят в этот набор. Их DOM остаётся в исходном снимке. Вложенный простой контрол сложного виджета может быть

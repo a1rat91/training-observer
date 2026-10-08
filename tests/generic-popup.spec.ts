@@ -95,6 +95,75 @@ test('real dialog popup is captured outside the scope and reconciles silent inpu
         .toBe('После открытия');
 });
 
+test('an independent textbox confirms inside a popup while its trigger waits for departure', async ({
+    page,
+}) => {
+    const confirmations: ControlSnapshot[][] = [];
+    const changes: string[] = [];
+    let initialControl: ControlSnapshot | undefined;
+
+    page.on('console', (message) => {
+        const text = message.text();
+
+        if (text.startsWith('[Input inspector] 4.')) {
+            confirmations.push(JSON.parse(text.split('\n').slice(1).join('\n')));
+        } else if (text.startsWith('[Input inspector] 3.')) {
+            changes.push(text);
+        } else if (text.startsWith('[Input inspector] 2.')) {
+            initialControl = JSON.parse(text.split('\n').slice(1).join('\n'));
+        }
+    });
+    // This fixture exposes the public confirmedControls signal through its existing logger.
+    await page.goto('/input-inspector');
+    await expect.poll(() => initialControl?.locatorHints.id).toBe('inspected-name');
+    await page.locator('#inspected-name').evaluate((input) => {
+        input
+            .closest('tui-textfield')!
+            .parentElement!.insertAdjacentHTML(
+                'afterbegin',
+                '<input id="independent-popup-trigger" tuiInput role="combobox" aria-expanded="true" aria-haspopup="dialog" aria-controls="independent-popup" value="Outer value">',
+            );
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<div id="independent-popup" role="dialog"><input id="independent-popup-field" aria-label="Popup field"><button id="independent-popup-action">Popup action</button></div><button id="independent-popup-outside">Outside</button>',
+        );
+    });
+    await expect
+        .poll(() =>
+            changes.some(
+                (message) =>
+                    JSON.parse(message.split('\n').slice(1).join('\n')).logical.after
+                        .popup?.status === 'open',
+            ),
+        )
+        .toBe(true);
+    await page.locator('#independent-popup-field').fill('Inner answer');
+    await page.locator('#independent-popup-action').focus();
+    await expect
+        .poll(() =>
+            confirmations[confirmations.length - 1]?.map((item) => ({
+                id: item.locatorHints.id,
+                value: item.state.value,
+            })),
+        )
+        .toEqual([{id: 'independent-popup-field', value: 'Inner answer'}]);
+    await page.locator('#independent-popup-field').fill('Final inner answer');
+    await page.locator('#independent-popup-outside').focus();
+    await expect
+        .poll(
+            () =>
+                confirmations[confirmations.length - 1]?.find(
+                    (item) => item.locatorHints.id === 'independent-popup-field',
+                )?.state.value,
+        )
+        .toBe('Final inner answer');
+    expect(
+        confirmations[confirmations.length - 1]?.some(
+            (item) => item.locatorHints.id === 'independent-popup-trigger',
+        ),
+    ).toBe(true);
+});
+
 test('an explicit link on the textfield host resolves a non-list popup', async ({
     page,
 }) => {

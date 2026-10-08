@@ -11,10 +11,10 @@ import {
 export function buildChoiceSnapshot(
     snapshot: DomSnapshot,
     target: DomElementSnapshot,
-    host: DomElementSnapshot,
+    hosts: readonly DomElementSnapshot[],
     kind: 'combobox' | 'select',
 ): ChoiceSnapshot {
-    const popup = buildPopupSnapshot(snapshot, target, host);
+    const popup = buildPopupSnapshot(snapshot, target, hosts);
     const selectedLabels = popup.options
         .filter((option) => option.selected === true)
         .map((option) => option.label);
@@ -41,18 +41,21 @@ export function buildChoiceSnapshot(
 export function buildPopupSnapshot(
     snapshot: DomSnapshot,
     target: DomElementSnapshot,
-    host: DomElementSnapshot,
+    hosts: readonly DomElementSnapshot[],
 ): PopupSnapshot {
     const native = target.tagName === 'select';
-    const expanded = target.state.expanded ?? host.state.expanded;
-    const referencedIds = [
-        ...new Set(
-            (target.attributes['aria-controls'] ?? host.attributes['aria-controls'] ?? '')
-                .trim()
-                .split(/\s+/)
-                .filter(Boolean),
-        ),
-    ];
+    const expanded =
+        target.state.expanded ??
+        hosts.find((host) => host.state.expanded !== undefined)?.state.expanded;
+
+    const controls =
+        target.attributes['aria-controls'] ??
+        hosts.find((host) => host.attributes['aria-controls'] !== undefined)?.attributes[
+            'aria-controls'
+        ] ??
+        '';
+
+    const referencedIds = [...new Set(controls.trim().split(/\s+/).filter(Boolean))];
 
     const elements = Object.values(snapshot.nodes).filter(
         (node): node is DomElementSnapshot => node.kind === 'element',

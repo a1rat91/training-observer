@@ -258,6 +258,59 @@ test('refreshes geometry for window resize and external overlays', async ({page}
         .toBe('hit');
 });
 
+for (const motion of ['transition', 'animation'] as const) {
+    test(`refreshes standalone geometry when an external ${motion} finishes`, async ({
+        page,
+    }) => {
+        await settings(page, 0, 20);
+        await page.getByTestId('observed-page').evaluate((root) => {
+            root.insertAdjacentHTML(
+                'beforeend',
+                '<button id="animated-cover-target" style="position:fixed;left:600px;top:300px;width:100px;height:40px;z-index:100">Target</button>',
+            );
+        });
+        await page.evaluate(() => {
+            const stylesheet = document.createElement('style');
+            const cover = document.createElement('div');
+
+            stylesheet.textContent =
+                '@keyframes observer-cover-exit { to { transform: translateX(2000px); } }';
+            document.head.append(stylesheet);
+            cover.id = 'animated-external-cover';
+            cover.style.cssText =
+                'position:fixed;left:0;top:300px;width:1100px;height:40px;z-index:101;background:red;transition:transform 1s linear';
+            document.body.append(cover);
+        });
+        await expect
+            .poll(async () => (await element(page, 'animated-cover-target'))?.hitTest)
+            .toBe('covered');
+        // The only DOM mutation starts the motion. Completion changes computed geometry,
+        // so observing the final state depends on the external browser event.
+        await page.locator('#animated-external-cover').evaluate(
+            async (cover: HTMLElement, kind) =>
+                new Promise<void>((resolve) => {
+                    cover.addEventListener(`${kind}end`, () => resolve(), {once: true});
+
+                    if (kind === 'transition') {
+                        cover.style.transform = 'translateX(2000px)';
+                    } else {
+                        cover.style.animation = 'observer-cover-exit 1s linear forwards';
+                    }
+                }),
+            motion,
+        );
+        expect(await page.evaluate(() => document.elementFromPoint(650, 320)?.id)).toBe(
+            'animated-cover-target',
+        );
+        await expect
+            .poll(async () => (await element(page, 'animated-cover-target'))?.hitTest)
+            .toBe('hit');
+        expect((await element(page, 'animated-cover-target'))?.pointerActionable).toBe(
+            true,
+        );
+    });
+}
+
 test('whole-document capture ignores inspector mutations, events and property polling', async ({
     page,
 }) => {

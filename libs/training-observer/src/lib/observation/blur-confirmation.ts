@@ -77,45 +77,77 @@ export class BlurConfirmation {
         const contains = (control: ControlSnapshot, node: EventTarget | null): boolean =>
             this.contains(snapshot, control, node);
 
-        const control = controls.find(
+        // Popup может содержать самостоятельные поля: одно событие завершает все покинутые
+        // логические области, но не trigger, если фокус остаётся внутри его popup.
+        const departing = controls.filter(
             (candidate) =>
-                this.requiresBlur(candidate) && contains(candidate, event.target),
+                this.requiresBlur(candidate) &&
+                contains(candidate, event.target) &&
+                !contains(candidate, event.relatedTarget),
         );
 
-        if (!control || contains(control, event.relatedTarget)) {
+        if (!departing.length) {
             return;
         }
 
         const departureSnapshot = this.snapshots.build(root, options);
 
         if (departureSnapshot.stats.truncated) {
-            this.evidence.invalidate(control.id);
+            departing.forEach((control) => this.evidence.invalidate(control.id));
 
             return;
         }
 
-        const captured = this.controls
-            .build(departureSnapshot)
-            .find((candidate) => candidate.id === control.id);
+        const captured = new Map(
+            this.controls
+                .build(departureSnapshot)
+                .map((control) => [control.id, control]),
+        );
 
-        if (captured) {
-            this.evidence.remember(captured);
-        }
+        const departures = departing.flatMap((control) => {
+            const departure = captured.get(control.id);
 
-        const departure = captured && this.evidence.confirm(captured);
+            if (!departure) {
+                return [];
+            }
+
+            this.evidence.remember(departure);
+
+            return [{control, departure: this.evidence.confirm(departure)}];
+        });
 
         queueMicrotask(() => {
-            if (
-                generation !== this.generation ||
-                contains(control, this.document.activeElement)
-            ) {
+            if (generation !== this.generation) {
                 return;
             }
 
-            if (departure) {
-                this.pending.set(control.id, departure);
+            for (const {control, departure} of departures) {
+                if (!contains(control, this.document.activeElement)) {
+                    this.pending.set(control.id, departure);
+                }
             }
         });
+    }
+
+    /** Использует уже захваченные значения при замене корня, когда новый capture старого DOM невозможен. */
+    public settleDepartures(
+        previous: Readonly<Record<string, ControlSnapshot>>,
+    ): Readonly<Record<string, ControlSnapshot>> {
+        if (!this.pending.size) {
+            return previous;
+        }
+
+        const next = {...previous};
+
+        for (const [id, departure] of this.pending) {
+            if (!departure.state.redacted) {
+                next[id] = departure;
+            }
+        }
+
+        this.pending.clear();
+
+        return next;
     }
 
     public settle(

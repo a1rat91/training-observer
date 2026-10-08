@@ -8,6 +8,7 @@ export type {ObservationUpdate} from './lib/observation-update';
 export {provideDomObservation} from './lib/provide-dom-observation';
 export {readScreenState} from './lib/screen/screen-state-reader';
 export {ScreenVisitTracker} from './lib/screen/screen-visit-tracker';
+export {CONTROL_ADAPTERS, provideControlAdapters} from './lib/tokens/control-adapters';
 export {
     DOM_OBSERVATION_OPTIONS,
     type DomObservationOptions,
@@ -17,6 +18,12 @@ export {
     type DomSnapshotOptions,
 } from './lib/tokens/dom-snapshot-options';
 export {TrainingObserver} from './lib/training-observer';
+export type {
+    ControlAdapter,
+    ControlAdapterContext,
+    ControlAdapterResult,
+    ControlCandidate,
+} from '@training-observer/core/adapters';
 export type {MicrofrontendSnapshot} from '@training-observer/core/models';
 export type {
     ChoiceSnapshot,

@@ -33,6 +33,16 @@ export class ScenarioRuntime {
     private readonly scenario: TrainingScenario;
 
     constructor(scenario: TrainingScenario) {
+        if (
+            scenario.steps.some(
+                (step, index) => scenario.steps[index - 1]?.key === step.key,
+            )
+        ) {
+            throw new Error(
+                'Соседние шаги сценария не могут иметь одинаковый ключ экрана.',
+            );
+        }
+
         this.scenario = copyTrainingScenario(scenario);
     }
 
@@ -72,7 +82,11 @@ export class ScenarioRuntime {
             true,
         );
 
-        this.feedback.reconcile(evaluation.feedback, messages);
+        this.feedback.reconcile(
+            evaluation.feedback,
+            messages,
+            evaluation.evaluatedFields,
+        );
 
         if (evaluation.blocked) {
             return this.progress(
@@ -122,7 +136,11 @@ export class ScenarioRuntime {
 
         if (this.entered && previous?.allComplete && screen.key === expectedScreen) {
             // Последний blur мог подтвердиться одновременно с переходом: доставляем его сообщение до смены шага.
-            this.feedback.reconcile(previous.feedback, messages);
+            this.feedback.reconcile(
+                previous.feedback,
+                messages,
+                previous.evaluatedFields,
+            );
             this.stepIndex++;
             this.entered = false;
             this.feedback.clear();

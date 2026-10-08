@@ -9,11 +9,7 @@ import {
 } from '@training-observer/core/models';
 
 import {buildChoiceSnapshot, buildPopupSnapshot} from './choice-snapshot-builder';
-import {
-    type ControlCandidate,
-    hasTaigaInputPopup,
-    taigaFloatingLabel,
-} from './control-adapters';
+import {type ControlCandidate} from './control-adapter';
 import {normalizeText, type SnapshotReader} from './snapshot-reader';
 
 export function projectControl(
@@ -29,8 +25,9 @@ export function projectControl(
         targets,
     );
 
-    const label = controlLabel(reader, control, members);
-    const state = controlState(control);
+    const label = controlLabel(reader, control, targets);
+    const hosts = controlHosts(control);
+    const state = controlState(control, hosts);
 
     return {
         schemaVersion: 1,
@@ -49,28 +46,60 @@ export function projectControl(
         rects: target.rects,
         choice:
             kind === 'select' || kind === 'combobox'
-                ? buildChoiceSnapshot(reader.snapshot, target, host, kind)
+                ? buildChoiceSnapshot(reader.snapshot, target, hosts, kind)
                 : undefined,
-        popup: hasTaigaInputPopup(control)
-            ? buildPopupSnapshot(reader.snapshot, target, host)
-            : undefined,
-        locatorHints: locatorHints(reader, control, label),
+        popup:
+            control.popup && (kind === 'textbox' || kind === 'number')
+                ? buildPopupSnapshot(reader.snapshot, target, hosts)
+                : undefined,
+        locatorHints: locatorHints(reader, control, label, hosts),
     };
 }
 
 function controlLabel(
     reader: SnapshotReader,
     control: ControlCandidate,
-    members: ReadonlySet<DomNodeId>,
+    targets: ReadonlySet<DomNodeId>,
 ): string {
+    if (control.label !== undefined) {
+        return normalizeText(control.label);
+    }
+
     if (control.target.label) {
         return control.target.label;
     }
 
-    const floatingLabel = taigaFloatingLabel(reader, control, members);
+    let layer: ControlCandidate | undefined = control;
 
-    if (floatingLabel) {
-        return floatingLabel;
+    while (layer) {
+        if (layer.label !== undefined) {
+            return normalizeText(layer.label);
+        }
+
+        if (layer.adapter?.resolveLabel) {
+            // Inner labels are resolved in their own host, even if the outer
+            // business component groups several independent fields.
+            const labels = reader.relatedLabels(layer.target, layer.ancestors);
+            const members = reader.members(
+                [layer.host.id, ...labels.map((label) => label.id)],
+                layer.target.id,
+                targets,
+            );
+
+            const label = layer.adapter.resolveLabel({reader, candidate: layer, members});
+
+            if (label !== undefined && typeof label !== 'string') {
+                throw new Error(
+                    `Invalid label returned by control adapter ${layer.adapter.id}.`,
+                );
+            }
+
+            if (label) {
+                return normalizeText(label);
+            }
+        }
+
+        layer = layer.base;
     }
 
     return control.kind === 'button' && typeof control.target.state.value === 'string'
@@ -78,7 +107,24 @@ function controlLabel(
         : '';
 }
 
-function controlState({target, host, kind}: ControlCandidate): DomControlState {
+function controlHosts(control: ControlCandidate): readonly DomElementSnapshot[] {
+    const hosts: DomElementSnapshot[] = [];
+    let layer: ControlCandidate | undefined = control;
+
+    while (layer) {
+        hosts.push(layer.host);
+        layer = layer.base;
+    }
+
+    return hosts;
+}
+
+function controlState(
+    control: ControlCandidate,
+    hosts: readonly DomElementSnapshot[],
+): DomControlState {
+    const {target, kind} = control;
+
     // Значения остаются DOM-строками. У radio value описывает вариант, checked — его выбор.
     const carriesValue = ['combobox', 'number', 'radio', 'select', 'textbox'].includes(
         kind,
@@ -88,12 +134,14 @@ function controlState({target, host, kind}: ControlCandidate): DomControlState {
         ...target.state,
         value: carriesValue && !target.state.redacted ? target.state.value : undefined,
         indeterminate: kind === 'switch' ? undefined : target.state.indeterminate,
-        expanded: target.state.expanded ?? host.state.expanded,
-        disabled: target.state.disabled || host.state.disabled,
-        readOnly: target.state.readOnly || host.state.readOnly,
-        inert: target.state.inert || host.state.inert,
-        required: target.state.required || host.state.required,
-        invalid: target.state.invalid || host.state.invalid,
+        expanded:
+            target.state.expanded ??
+            hosts.find((host) => host.state.expanded !== undefined)?.state.expanded,
+        disabled: target.state.disabled || hosts.some((host) => host.state.disabled),
+        readOnly: target.state.readOnly || hosts.some((host) => host.state.readOnly),
+        inert: target.state.inert || hosts.some((host) => host.state.inert),
+        required: target.state.required || hosts.some((host) => host.state.required),
+        invalid: target.state.invalid || hosts.some((host) => host.state.invalid),
     };
 }
 
@@ -101,8 +149,9 @@ function locatorHints(
     reader: SnapshotReader,
     control: ControlCandidate,
     label: string,
+    hosts: readonly DomElementSnapshot[],
 ): ControlLocatorHints {
-    const {target, host, kind, ancestors} = control;
+    const {target, kind, ancestors} = control;
 
     return {
         kind,
@@ -115,7 +164,11 @@ function locatorHints(
                 : undefined,
         id: target.attributes['id'],
         name: target.attributes['name'],
-        testId: target.attributes['data-testid'] || host.attributes['data-testid'],
+        testId:
+            target.attributes['data-testid'] ||
+            hosts.find((host) => !!host.attributes['data-testid'])?.attributes[
+                'data-testid'
+            ],
         placeholder: target.attributes['placeholder'],
         context: ancestors
             .filter(isContextElement)
@@ -137,7 +190,7 @@ function controlRole(target: DomElementSnapshot, kind: ControlKind): string {
         return 'multiple' in target.attributes ? 'listbox' : 'combobox';
     }
 
-    // Числовое поле Taiga с маской всё ещё имеет неявную роль textbox.
+    // Masked numeric inputs with type=text still have the implicit textbox role.
     if (kind === 'number') {
         return target.attributes['type']?.toLowerCase() === 'number'
             ? 'spinbutton'

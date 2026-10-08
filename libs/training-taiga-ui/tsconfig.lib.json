@@ -1,0 +1,15 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "outDir": "../../dist/out-tsc/training-taiga-ui",
+        "declaration": true,
+        "declarationMap": true,
+        "inlineSources": true,
+        "types": []
+    },
+    "exclude": ["src/**/*.spec.ts", "jest.config.ts", "src/**/*.test.ts"],
+    "include": ["src/**/*.ts", "angular/src/**/*.ts"],
+    "angularCompilerOptions": {
+        "compilationMode": "partial"
+    }
+}

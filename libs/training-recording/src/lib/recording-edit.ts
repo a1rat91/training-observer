@@ -10,6 +10,7 @@ export function recordingProblem(recording: StateRecording): string {
     }
 
     const screens = new Map<number, string>();
+    let previousScreenKey: string | undefined;
 
     for (const event of recording.events) {
         if (event.kind === RecordingEventKind.Screen) {
@@ -17,7 +18,12 @@ export function recordingProblem(recording: StateRecording): string {
                 return 'В записи повторяется граница одного посещения экрана.';
             }
 
+            if (previousScreenKey === event.screenKey) {
+                return 'В записи соседние посещения имеют одинаковый ключ экрана. Отмените удаление или запишите пример заново.';
+            }
+
             screens.set(event.visit, event.screenKey);
+            previousScreenKey = event.screenKey;
         } else if (screens.get(event.visit) !== event.screenKey) {
             return `Для строки ${event.sequence} отсутствует граница экрана. Удалите связанные строки или отмените удаление.`;
         }

@@ -1,7 +1,7 @@
 /** Проверка записи на границе хранения. Неизвестные поля/версии отклоняются, JSON v1 не мигрируется неявно. */
 import {type RecordedEvent, type StateRecording} from './recording.models';
 import {RecordingEventKind} from './training-enums';
-import {hasOnlyKeys, isControlDescriptor, isObject, isRecordedValue} from './validation';
+import {hasOnlyKeys, isControlDescriptor, isControlValue, isObject} from './validation';
 
 const MAX_DOCUMENT_LENGTH = 1_000_000;
 const MAX_EVENTS = 10_000;
@@ -82,7 +82,10 @@ function isRecordedEvent(
                 typeof event['reason'] === 'string'
             );
         case RecordingEventKind.Value:
-            return isControlDescriptor(event['field']) && isRecordedValue(event['value']);
+            return (
+                isControlDescriptor(event['field']) &&
+                isControlValue(event['value'], event['field'].kind)
+            );
         default:
             return false;
     }

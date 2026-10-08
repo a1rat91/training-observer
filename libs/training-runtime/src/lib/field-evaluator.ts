@@ -23,6 +23,7 @@ export interface FieldEvaluation {
     readonly blocked: boolean;
     readonly allComplete: boolean;
     readonly feedback: ReadonlyMap<string, FieldFeedback>;
+    readonly evaluatedFields: ReadonlySet<string>;
 }
 
 interface ValueSource {
@@ -50,6 +51,7 @@ export class FieldEvaluator {
         let completed = 0;
         let blocked = false;
         const feedback = new Map<string, FieldFeedback>();
+        const evaluatedFields = new Set<string>();
         const matches = step.fields.map((field) =>
             matchControl(field.descriptor, screen.controls),
         );
@@ -100,6 +102,8 @@ export class FieldEvaluator {
                 return;
             }
 
+            evaluatedFields.add(String(index));
+
             const fingerprint = valueFingerprint(value);
             const notify = requiresBlur(match.control)
                 ? source.confirmed
@@ -129,6 +133,7 @@ export class FieldEvaluator {
             completed,
             blocked,
             feedback,
+            evaluatedFields,
             allComplete: !blocked && completed === requiredFieldCount(step),
         };
     }

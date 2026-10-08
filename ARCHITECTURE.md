@@ -11,7 +11,13 @@ Core — средство наблюдения существующей стра
 ```mermaid
 flowchart TD
     Models[core/models: сериализуемые DOM-модели]
+    Adapters[core/adapters: чистый SDK и проекция] --> Models
     Core[core: наблюдение DOM] --> Models
+    Core --> Adapters
+    Taiga[taiga-ui: DOM-адаптер] --> Adapters
+    Taiga --> Models
+    TaigaAngular[taiga-ui/angular: регистрация] --> Taiga
+    TaigaAngular --> Core
     Contracts[contracts: документы и правила значения] --> Models
     Recording[recording: журнал и компилятор] --> Contracts
     Recording --> Models
@@ -22,6 +28,7 @@ flowchart TD
     Angular --> Runtime
     Admin[Angular-админка] --> Angular
     Learner[Angular-зона ученика] --> Angular
+    Demo[demo: глобальная регистрация Taiga] --> TaigaAngular
 ```
 
 Стрелка означает **зависимость кода**. В core нет обратной стрелки на contracts, recording или runtime. `npm run lint`
@@ -30,9 +37,12 @@ flowchart TD
 допустимую точку входа `core/models`, поскольку основной core и его модели принадлежат одному Nx-проекту.
 [Документация правила Nx](https://nx.dev/docs/kb/enforce-module-boundaries).
 
-`core/models` — отдельная entry point того же npm-пакета: её можно импортировать без загрузки Angular-фасада. Recording,
-contracts и runtime не импортируют Angular, Taiga, DOM-сервисы или приложение. Общие contracts содержат правила чтения
-учебного значения; core читает наблюдаемое состояние и не применяет эти правила.
+`core/models` и `core/adapters` — отдельные entry points того же npm-пакета: их можно импортировать без загрузки
+Angular-фасада. Recording, contracts и runtime не импортируют Angular, Taiga, DOM-сервисы или приложение. Общие
+contracts содержат правила чтения учебного значения; core читает наблюдаемое состояние и не применяет эти правила.
+`core/adapters` экспортирует `ControlAdapter`, `SnapshotReader`, `nativeControlKind()` и
+`projectControls(snapshot, adapters)`; сериализуемые модели остаются в `core/models`. Основная точка `taiga-ui` содержит
+только DOM-правила и не загружает Angular или Taiga UI.
 
 Пакет `angular` предоставляет RecordingSession/TrainingSession и provider helpers. Он сам запускает core после рендера,
 подписывается на атомарные
@@ -48,7 +58,8 @@ DI-владельце.
 | Что умеет наблюдатель?                        | `libs/training-observer/src/index.ts`, затем `lib/training-observer.ts`    |
 | Какие данные он возвращает?                   | `libs/training-observer/models/src/`                                       |
 | Как обходится DOM?                            | `lib/capture/dom-snapshot-builder.ts` → `dom-capture.ts`                   |
-| Как много DOM-узлов превращаются в одно поле? | `lib/controls/control-adapters.ts` → `control-projection.ts`               |
+| Как много DOM-узлов превращаются в одно поле? | `core/adapters` → `adapters/src/control-projection.ts`                     |
+| Как распознаётся Taiga UI?                    | `libs/training-taiga-ui/src/`                                              |
 | Когда создаётся новый снимок?                 | `lib/observation/dom-observation-session.ts`                               |
 | Как работает blur?                            | `lib/observation/blur-confirmation.ts`                                     |
 | Как определяется экран?                       | `lib/screen/screen-state-reader.ts`                                        |
@@ -71,13 +82,35 @@ DI-владельце.
    текст, native/ARIA свойства и связанные popup.
 2. `DomElementAnalyzer` читает значения **свойств**, а не только атрибуты. Поэтому изменение `input.value` или `checked`
    может быть замечено даже без изменения HTML-атрибута.
-3. `ControlSnapshotBuilder` строит логические контролы из графа. `control-adapters` распознаёт native/ARIA и
-   поддержанные Taiga-обёртки. `control-projection` собирает target, host, members и locator hints.
+3. `ControlSnapshotBuilder` передаёт граф и зарегистрированные адаптеры чистой функции `projectControls()`. Native/ARIA
+   fallback встроен в SDK. Адаптеры сопоставляют target с известным видом контрола и host; общая проекция собирает
+   members, состояние, popup и locator hints.
 4. `snapshotFingerprint` исключает служебное время/стоимость capture из проверки одинаковости публикаций.
 5. Фасад публикует readonly signals. Сырые DOM-снимки остаются актуальными во время ввода.
 
 DOM ID вроде `n17` и control ID сессионные. Они предназначены для связи снимка с живым экземпляром, не сохраняются как
 единственный устойчивый локатор. Реальные `Element` хранятся вне JSON.
+
+### Адаптеры и регистрация
+
+`ControlAdapter` читает только `SnapshotReader` и сериализованные узлы. `match()` возвращает совпадение, явное
+исключение или `null`; `null` оставляет возможность native fallback. Адаптеры применяются от меньшего `priority` к
+большему: `baseCandidate` позволяет бизнес-обёртке дополнить native/Taiga-распознавание. Предыдущий кандидат сохраняется
+в `base`, а host и popup наследуются, если новый адаптер их явно не заменяет. Два совпадения одинакового приоритета
+вызывают ошибку вместо выбора по порядку регистрации. `excludeCandidate()` может убрать декорацию после сопоставления
+целей, `resolveLabel()` уточняет подпись, `excludedSubtreeSelectors` исключает служебные поддеревья при capture. Адаптер
+не вводит новые виды учебного значения.
+
+`provideControlAdapters(...adapters)` регистрирует адаптеры в Angular injector. Локальная регистрация дополняет
+родительскую; повторный экземпляр не дублируется, а разные адаптеры с одним `id` вызывают ошибку. Регистрация проходит
+через локальный `provideDomObservation()`, дочерний injector сеанса и обёртки RecordingSession/TrainingSession. Поэтому
+отдельный микрофронт может предоставить свой адаптер у владельца, сохранив глобальный набор приложения.
+
+Taiga UI требует явного `provideTaigaUiAdapter()` из `@training-observer/taiga-ui/angular`; demo подключает его один раз
+в `app.config.ts`. Сохранённый граф можно проецировать без Angular: `projectControls(snapshot, [taigaUiAdapter])`, где
+`taigaUiAdapter` импортируется из `@training-observer/taiga-ui`. Core без этой регистрации не применяет Taiga-правила.
+При бизнес-обёртке поверх Taiga принадлежность inner field и cleaner сохраняется через цепочку `base`; независимая
+кнопка внутри обёртки остаётся отдельным контролом.
 
 ### Когда запускается capture
 

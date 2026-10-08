@@ -24,13 +24,15 @@ export class FeedbackTracker {
     public reconcile(
         feedback: ReadonlyMap<string, FieldFeedback>,
         output: TrainingFeedback[],
+        evaluatedFields: ReadonlySet<string>,
     ): void {
         for (const [key, item] of feedback) {
             this.report(key, item, output);
         }
 
         for (const key of this.reported.keys()) {
-            if (!feedback.has(key)) {
+            // Недоступное поле не означает исправление или новое действие.
+            if (evaluatedFields.has(key) && !feedback.has(key)) {
                 this.reported.delete(key);
             }
         }

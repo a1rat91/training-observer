@@ -8,10 +8,10 @@ import {
 
 import {isObserverUi} from '../observation/dom-observer-ui';
 import {type DomSnapshotOptions} from '../tokens/dom-snapshot-options';
+import {isAdapterExcluded} from './dom-adapter-exclusions';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
 import {DomGeometry} from './dom-geometry';
 import {findPopupRoots} from './dom-popup-roots';
-import {isScrollDecoration} from './dom-scroll-decoration';
 
 const SKIP_TAGS = new Set([
     'link',
@@ -42,6 +42,7 @@ export class DomCapture {
         private readonly options: DomSnapshotOptions,
         private readonly analyzer: DomElementAnalyzer,
         private readonly idFor: (node: Node) => DomNodeId,
+        private readonly excludedSelector: string,
     ) {
         this.view = root.ownerDocument.defaultView!;
         this.started = this.view.performance.now();
@@ -63,6 +64,7 @@ export class DomCapture {
             this.root,
             Object.values(this.nodes),
             this.options,
+            this.excludedSelector,
         )) {
             const id = this.visit(element, null, this.rootPath(element), 0);
 
@@ -150,7 +152,7 @@ export class DomCapture {
         return (element !== this.root &&
             this.options.boundarySelector &&
             element.matches(this.options.boundarySelector)) ||
-            isScrollDecoration(element) ||
+            isAdapterExcluded(element, this.excludedSelector) ||
             SKIP_TAGS.has(element.localName)
             ? true
             : Boolean(

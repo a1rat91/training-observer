@@ -8,6 +8,7 @@ import {
     type StateRecording,
     type TrainingScenario,
 } from '@training-observer/contracts';
+import {type ControlLocatorHints} from '@training-observer/core/models';
 
 import {copyControlLocatorHints, copyRecordedValue} from './recording-copy';
 import {recordingProblem} from './recording-edit';
@@ -47,7 +48,7 @@ export function compileScenario(recording: StateRecording): TrainingScenario {
 
         const screen = visits.get(event.visit)!;
 
-        screen.fields.set(JSON.stringify(event.field), {
+        screen.fields.set(descriptorFingerprint(event.field), {
             descriptor: copyControlLocatorHints(event.field),
             expected: copyRecordedValue(event.value),
             message: `Проверьте поле «${event.field.label}».`,
@@ -60,6 +61,26 @@ export function compileScenario(recording: StateRecording): TrainingScenario {
         version: 1,
         steps: [...visits.values()].map(createStep),
     };
+}
+
+/** Порядок JSON-свойств не меняет поле; порядок контекста сохраняет иерархию предков. */
+function descriptorFingerprint(descriptor: ControlLocatorHints): string {
+    return JSON.stringify({
+        kind: descriptor.kind,
+        label: descriptor.label,
+        tagName: descriptor.tagName,
+        role: descriptor.role,
+        inputType: descriptor.inputType,
+        id: descriptor.id,
+        name: descriptor.name,
+        testId: descriptor.testId,
+        placeholder: descriptor.placeholder,
+        context: descriptor.context.map((context) => ({
+            tagName: context.tagName,
+            label: context.label,
+            id: context.id,
+        })),
+    });
 }
 
 function createStep(screen: RecordedScreen): ScenarioStep {

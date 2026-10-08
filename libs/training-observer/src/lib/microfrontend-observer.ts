@@ -3,17 +3,21 @@ import {DOCUMENT} from '@angular/common';
 import {DestroyRef, inject, Injectable, NgZone, signal} from '@angular/core';
 import {type MicrofrontendSnapshot} from '@training-observer/core/models';
 
-import {isScrollDecoration} from './capture/dom-scroll-decoration';
+import {
+    isAdapterExcluded,
+    isCaptureExcludedMutation,
+} from './capture/dom-adapter-exclusions';
 import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
 import {MICROFRONTEND_SELECTOR} from './observation/dom-observation-scope';
 import {PAGE_EVENTS, type SessionSnapshot} from './observation/dom-observation-session';
-import {isObserverUi, isObserverUiMutation} from './observation/dom-observer-ui';
+import {isObserverUi} from './observation/dom-observer-ui';
 import {
     ObservationSessionFactory,
     type ObservationSessionRef,
 } from './observation/observation-session-factory';
 import {SessionSourceMode} from './observation/session-context';
 import {snapshotFingerprint} from './observation/snapshot-fingerprint';
+import {CONTROL_ADAPTER_EXCLUSIONS} from './tokens/control-adapters';
 import {
     DOM_OBSERVATION_OPTIONS,
     type DomObservationOptions,
@@ -36,6 +40,7 @@ export class MicrofrontendObserver {
     private readonly builder = inject(DomSnapshotBuilder);
     private readonly sessions = inject(ObservationSessionFactory);
     private readonly defaults = inject(DOM_OBSERVATION_OPTIONS);
+    private readonly excludedSelector = inject(CONTROL_ADAPTER_EXCLUSIONS).join(',');
     private readonly current = signal<readonly MicrofrontendSnapshot[]>([]);
     private readonly active = signal(false);
     private readonly entries = new Map<Element, Area>();
@@ -217,7 +222,7 @@ export class MicrofrontendObserver {
                   (element) =>
                       element.matches(options.boundarySelector!) &&
                       !isObserverUi(element) &&
-                      !isScrollDecoration(element) &&
+                      !isAdapterExcluded(element, this.excludedSelector) &&
                       (!options.ignoreSelector ||
                           !element.closest(options.ignoreSelector)),
               )
@@ -351,7 +356,15 @@ export class MicrofrontendObserver {
     }
 
     private discoveryRelevant(record: MutationRecord, ignoreSelector: string): boolean {
-        if (isObserverUiMutation(record) || isScrollDecoration(record.target)) {
+        if (
+            isCaptureExcludedMutation(record, this.excludedSelector, (element) =>
+                [...this.entries.values()].some(
+                    (area) =>
+                        element.contains(area.root) ||
+                        area.sessionRef.session.wasCaptured(element),
+                ),
+            )
+        ) {
             return false;
         }
 

@@ -63,7 +63,8 @@ export interface ControlSnapshot {
     /** Сессионная идентичность native-цели; меняется при замене DOM-узла. */
     readonly id: string;
     readonly kind: ControlKind;
-    readonly source: 'native' | 'taiga-ui';
+    /** 'native' or the ID of the adapter that supplied the outermost layer. */
+    readonly source: string;
     readonly label: string;
     readonly targetNodeId: DomNodeId;
     readonly hostNodeId: DomNodeId;
@@ -78,6 +79,6 @@ export interface ControlSnapshot {
     readonly rects: readonly DomRectSnapshot[];
     readonly locatorHints: ControlLocatorHints;
     readonly choice?: ChoiceSnapshot;
-    /** Произвольный dropdown Taiga input без утверждения о выбранном варианте. */
+    /** Произвольный dropdown поля без утверждения о выбранном варианте. */
     readonly popup?: PopupSnapshot;
 }

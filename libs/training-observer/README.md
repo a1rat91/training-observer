@@ -7,6 +7,7 @@
 
 - `@training-observer/core` — Angular-фасады и сервисы.
 - `@training-observer/core/models` — модели и enum без Angular; [отдельное описание](models/README.md).
+- `@training-observer/core/adapters` — чистый SDK и проекция сохранённого графа; [описание](adapters/README.md).
 
 `src/index.ts` — полный публичный API. Не импортируйте внутренние файлы из приложения. Пакет зависит от Angular
 common/core, RxJS и tslib. На contracts/recording/runtime зависимостей нет.
@@ -18,7 +19,8 @@ common/core, RxJS и tslib. На contracts/recording/runtime зависимос�
 | `src/lib/training-observer.ts`      | Facade одного сеанса, readonly signals и lifecycle     |
 | `src/lib/microfrontend-observer.ts` | независимые области с общими browser sources           |
 | `src/lib/capture/`                  | обход DOM, свойства, подписи, геометрия, связи popup   |
-| `src/lib/controls/`                 | адаптеры разметки, проекция в логические поля          |
+| `src/lib/controls/`                 | Angular-обёртка чистой проекции                        |
+| `adapters/src/`                     | native/ARIA проекция и SDK расширений без Angular      |
 | `src/lib/observation/`              | invalidation, batching, polling, blur, память выбора   |
 | `src/lib/screen/`                   | конфигурируемое чтение ID и учёт посещений             |
 | `src/lib/highlight/`                | необязательный overlay, не участвующий в распознавании |
@@ -43,6 +45,13 @@ Capture выполняется вне Angular zone, публикация signals
 lifecycle страницы. `start` на новом root заменяет сеанс, `capture` — ручное чтение, `flush` — завершение ожидающего
 capture. `stop` сохраняет результат; `clear` его очищает.
 
+`start(root)` создаёт новый сеанс и сбрасывает прежние подтверждения. Для продолжения при замене физической области
+используйте `reconnect(root)` после microtasks focusout: он сохраняет подтверждения и захваченные уходящие значения, не
+перечитывая удалённый DOM. `reconnect(null)` освобождает ресурсы и публикует отсутствие снимка с сохранёнными
+подтверждениями; следующий `reconnect(root)` наследует прежние настройки, если новые не переданы. Новая конфигурация
+проверяется до остановки рабочего сеанса. Отдельный `capture(otherRoot)` по-прежнему только возвращает снимок другой
+области, не меняя активный root или подтверждения.
+
 ## Что читать потребителю
 
 - `snapshot()` — сырой граф, в том числе ограничения обхода.
@@ -57,11 +66,12 @@ capture. `stop` сохраняет результат; `clear` его очища
 
 ## Ограничения
 
-Taiga-адаптеры используют DOM-признаки версии 4.98; native/ARIA fallback работает независимо от Taiga. Сессионные ID
-меняются при remount. Подписи — приближённый алгоритм, не полный accessible-name standard. Структурный path предназначен
-для диагностики. Core не гарантирует идентичность поля между документами. Password/file скрываются; произвольная
-политика конфиденциальных данных ещё требует отдельной настройки. Неизвестные popup, закрытые границы обхода и truncated
-явно отражаются в снимке.
+Taiga-правила находятся в отдельном `@training-observer/taiga-ui` и используют DOM-признаки версии 4.98. Для Angular
+подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui/angular`. Core по умолчанию использует native/ARIA
+правила. Сессионные ID меняются при remount. Подписи — приближённый алгоритм, не полный accessible-name standard.
+Структурный path предназначен для диагностики. Core не гарантирует идентичность поля между документами. Password/file
+скрываются; произвольная политика конфиденциальных данных ещё требует отдельной настройки. Неизвестные popup, закрытые
+границы обхода и truncated явно отражаются в снимке.
 
 Снимки не доказывают конкретный клик или происхождение изменения. MicrofrontendObserver обнаруживает области по
 `observe(selectors)`; по умолчанию `start()` ищет `[data-microfrontend]` и прежний `[data-mf]`. Имя читается из
@@ -70,9 +80,9 @@ Taiga-адаптеры используют DOM-признаки версии 4.
 
 ## Проверка и расширение
 
-`npx nx build training-observer` собирает primary и models entry points. `npm run lint` запрещает зависимости core от
-учебных пакетов. Browser tests в `tests/` проверяют capture, popup, focus, remount, lifecycle и multi-MF. Меняйте
-адаптер при новой разметке; не добавляйте правила правильных ответов в core.
+`npx nx build training-observer` собирает primary, models и adapters entry points. `npm run lint` запрещает зависимости
+core от учебных пакетов. Browser tests в `tests/` проверяют capture, popup, focus, remount, lifecycle и multi-MF.
+Меняйте адаптер при новой разметке; не добавляйте правила правильных ответов в core.
 
 При чтении текстовой подписи действия capture исключает aria-hidden-потомков (например, декоративные иконки). Явные
 aria-labelledby и aria-label по-прежнему имеют приоритет. Это не полное вычисление Accessible Name. Измерение на
@@ -82,7 +92,8 @@ aria-labelledby и aria-label по-прежнему имеют приорите�
 
 Подключение: `providers: [provideDomObservation()]` в компоненте-владельце. Helper предоставляет TrainingObserver,
 MicrofrontendObserver и фабрику сеансов. Он заменяет прежний одиночный provider фасада; providedIn root у фасадов убран.
-Сервисы построения снимков и проекции могут оставаться общими, а состояние blur всегда изолировано на сеанс.
+Сервисы построения снимков и проекции создаются для владельца, наследуя его адаптеры; состояние blur изолировано на
+сеанс.
 
 ObservationSessionFactory создаёт EnvironmentInjector на один start/stop и сохраняет локальные overrides DOCUMENT,
 DomSnapshotBuilder, DomElementAnalyzer и ControlSnapshotBuilder. Внутри DI создаёт DomObservationSession и

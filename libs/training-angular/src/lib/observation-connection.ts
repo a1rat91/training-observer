@@ -35,6 +35,7 @@ export class ObservationConnection {
     private root: Element | null = null;
     private enabled = false;
     private paused = false;
+    private continuing = false;
     private destroyed = false;
 
     public readonly observer = this.child.get(TrainingObserver);
@@ -84,13 +85,16 @@ export class ObservationConnection {
         this.enabled = true;
         this.paused = false;
         this.zone.runOutsideAngular(() => {
-            this.watcher ??= new view.MutationObserver(() => {
-                try {
-                    this.reconcile();
-                } catch (error: unknown) {
-                    this.fail(error);
-                }
-            });
+            this.watcher ??= new view.MutationObserver(() =>
+                // MutationObserver может быть поставлен в очередь раньше focusout microtask.
+                queueMicrotask(() => {
+                    try {
+                        this.reconcile();
+                    } catch (error: unknown) {
+                        this.fail(error);
+                    }
+                }),
+            );
             this.watcher.observe(this.document.body, {
                 childList: true,
                 subtree: true,
@@ -105,6 +109,7 @@ export class ObservationConnection {
         this.enabled = false;
         this.watcher?.disconnect();
         this.root = null;
+        this.continuing = false;
         this.observer.stop();
         this.highlighter.clear();
     }
@@ -134,7 +139,7 @@ export class ObservationConnection {
         });
     }
 
-    public async afterRender<T>(action: () => T): Promise<T> {
+    public async afterRender<T>(action: () => Promise<T> | T): Promise<T> {
         this.assertAlive();
 
         return new Promise<T>((resolve, reject) => {
@@ -175,8 +180,11 @@ export class ObservationConnection {
             return;
         }
 
-        if (connected) {
+        if (this.continuing) {
+            this.observer.reconnect(connected, this.options.observation);
+        } else if (connected) {
             this.observer.start(connected, this.options.observation);
+            this.continuing = true;
         } else {
             this.observer.clear();
         }

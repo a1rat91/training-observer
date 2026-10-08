@@ -73,7 +73,9 @@ export class RecordingSession {
 
         this.finishing.set(true);
         this.pendingStop = this.connection
-            .afterRender(() => {
+            .afterRender(async () => {
+                // Рендер может завершиться в том же turn, что и focusout перед Stop.
+                await Promise.resolve();
                 this.connection.flush();
                 this.recorder.observe(this.screen(), this.confirmedControls());
                 const result = this.recorder.stop();
