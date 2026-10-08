@@ -1,0 +1,213 @@
+<main>
+    <header data-training-observer-ignore>
+        <h1>Асинхронные микрофронты</h1>
+        <p>
+            Три приложения подключаются с разными задержками, затем получают данные. Измените поле, заблокируйте форму
+            или добавьте контрол: снимок его владельца обновится автоматически.
+        </p>
+        <p>
+            Граница приложения:
+            <code>div[data-microfrontend]</code>
+            . Имя:
+            <code>data-microfrontend-name</code>
+            . Два микрофронта содержат поле «Комментарий», чтобы проверить принадлежность одинаковых подписей.
+        </p>
+        <div class="actions">
+            <button
+                size="s"
+                tuiButton
+                type="button"
+                (click)="reloadAll()"
+            >
+                Повторить загрузку всех
+            </button>
+            @if (observer.isObserving()) {
+                <button
+                    appearance="secondary"
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="observer.stop()"
+                >
+                    Остановить наблюдение
+                </button>
+            } @else {
+                <button
+                    size="s"
+                    tuiButton
+                    type="button"
+                    (click)="start()"
+                >
+                    Начать наблюдение
+                </button>
+            }
+        </div>
+        <p
+            aria-live="polite"
+            data-testid="async-mf-status"
+        >
+            {{ observer.isObserving() ? 'Наблюдение включено' : 'Наблюдение остановлено' }}. Обнаружено:
+            <strong data-testid="async-mf-count">{{ observer.areas().length }}</strong>
+            . Готово по снимкам:
+            <strong data-testid="async-mf-ready-count">{{ readyCount() }}</strong>
+            . Контролов: {{ controlCount() }}.
+        </p>
+    </header>
+    <div class="workspace">
+        <div class="examples">
+            @for (definition of definitions; track definition.name) {
+                <article>
+                    <header data-training-observer-ignore>
+                        <h2>{{ definition.title }}</h2>
+                        <p class="muted">
+                            {{ definition.name }} · подключение через {{ definition.mountDelayMs }} мс, данные ещё через
+                            {{ definition.readyDelayMs }} мс
+                        </p>
+                        <div class="actions">
+                            <button
+                                appearance="secondary"
+                                size="s"
+                                tuiButton
+                                type="button"
+                                (click)="load(definition)"
+                            >
+                                {{ instances()[definition.name] ? 'Перезагрузить' : 'Загрузить' }} {{ definition.name }}
+                            </button>
+                            <button
+                                appearance="flat"
+                                size="s"
+                                tuiButton
+                                type="button"
+                                (click)="unmount(definition.name)"
+                            >
+                                Удалить {{ definition.name }}
+                            </button>
+                            @if (instances()[definition.name]; as instance) {
+                                <button
+                                    appearance="flat"
+                                    size="s"
+                                    tuiButton
+                                    type="button"
+                                    [disabled]="instance.phase !== 'ready'"
+                                    (click)="toggleDisabled(definition.name)"
+                                >
+                                    {{ instance.disabled ? 'Разблокировать' : 'Заблокировать' }} {{ definition.name }}
+                                </button>
+                                <button
+                                    appearance="flat"
+                                    size="s"
+                                    tuiButton
+                                    type="button"
+                                    [disabled]="instance.phase !== 'ready'"
+                                    (click)="toggleExtra(definition.name)"
+                                >
+                                    {{ instance.extra ? 'Убрать поле' : 'Добавить поле' }} {{ definition.name }}
+                                </button>
+                            }
+                        </div>
+                    </header>
+                    @if (instances()[definition.name]; as instance) {
+                        @for (generation of [instance.generation]; track generation) {
+                            <div
+                                data-microfrontend
+                                class="microfrontend"
+                                [attr.aria-busy]="instance.phase === 'loading'"
+                                [attr.data-load-state]="instance.phase"
+                                [attr.data-microfrontend-name]="definition.name"
+                                [attr.id]="'async-mf-' + definition.name"
+                            >
+                                @if (instance.phase === 'loading') {
+                                    <p role="status">{{ definition.name }}: загрузка данных…</p>
+                                } @else {
+                                    <fieldset [disabled]="instance.disabled">
+                                        <legend>{{ definition.title }}</legend>
+                                        <div class="fields">
+                                            @for (field of definition.fields; track field.id) {
+                                                <app-procedure-field
+                                                    [field]="field"
+                                                    [value]="instance.values[field.id] ?? null"
+                                                    (changed)="setValue(definition.name, field.id, $event)"
+                                                />
+                                            }
+                                            @if (instance.extra) {
+                                                <app-procedure-field
+                                                    [field]="definition.extraField"
+                                                    [value]="instance.values[definition.extraField.id] ?? null"
+                                                    (changed)="
+                                                        setValue(definition.name, definition.extraField.id, $event)
+                                                    "
+                                                />
+                                            }
+                                        </div>
+                                    </fieldset>
+                                }
+                            </div>
+                        }
+                    } @else {
+                        <p
+                            data-training-observer-ignore
+                            class="muted"
+                        >
+                            Микрофронт ещё не подключён. «Удалить» также отменяет ожидающую загрузку.
+                        </p>
+                    }
+                </article>
+            }
+        </div>
+        <aside data-training-observer-ignore>
+            <h2>Что распознал парсер</h2>
+            <p class="muted">Выберите область, чтобы посмотреть её контролы и текущий снимок.</p>
+            @for (area of observer.areas(); track area.id) {
+                <button
+                    type="button"
+                    class="area"
+                    [class.selected]="selected()?.id === area.id"
+                    (click)="selectedId.set(area.id)"
+                >
+                    <strong>{{ area.name || 'Без имени' }}</strong>
+                    · {{ area.id }}
+                    <small>
+                        {{ phaseNames[phase(area)] }} · контролов:
+                        {{ area.logicalControls.length }}
+                    </small>
+                    <small>Пересчётов: {{ area.scanCount }} · публикаций: {{ area.revision }}</small>
+                    @if (area.parentId) {
+                        <small>Родитель: {{ area.parentId }}</small>
+                    }
+                    @if (area.error) {
+                        <small role="alert">{{ area.error }}</small>
+                    }
+                </button>
+            } @empty {
+                <p>Ожидаем появления микрофронтов.</p>
+            }
+            @if (selected(); as area) {
+                <h3>Контролы {{ area.name }}</h3>
+                @if (area.snapshot?.stats?.truncated) {
+                    <p role="alert">Снимок неполный: достигнут лимит.</p>
+                }
+                <ul>
+                    @for (control of area.logicalControls; track control.id) {
+                        <li>
+                            <strong>{{ control.label || 'Без подписи' }}</strong>
+                            · {{ control.kind }}
+                            <small>Владелец: {{ area.name }} · {{ area.id }}</small>
+                            <small>Значение: {{ control.state.value ?? control.state.checked ?? '—' }}</small>
+                            <small>{{ control.state.disabled ? 'Заблокирован' : 'Доступен' }}</small>
+                        </li>
+                    } @empty {
+                        <li>Контролы ещё не появились.</li>
+                    }
+                </ul>
+                <details>
+                    <summary>Снимок {{ area.name }}</summary>
+                    <pre>{{ area.snapshot | json }}</pre>
+                </details>
+            }
+            <details>
+                <summary>Все области JSON</summary>
+                <pre data-testid="async-mf-json">{{ observer.areas() | json }}</pre>
+            </details>
+        </aside>
+    </div>
+</main>

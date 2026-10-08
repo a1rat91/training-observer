@@ -22,8 +22,25 @@ footer {
     margin-block-start: 1.5rem;
 }
 
-@media (max-width: 700px) {
+.rearranged {
     .fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    footer {
+        justify-content: flex-end;
+        margin-block: 0 1.5rem;
+    }
+
+    h2 {
+        margin-block: 1.5rem 0;
+        text-align: end;
+    }
+}
+
+@media (max-width: 700px) {
+    .fields,
+    .rearranged .fields {
         grid-template-columns: 1fr;
     }
 }

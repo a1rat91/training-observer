@@ -153,7 +153,7 @@ export class MicrofrontendObserver {
 
             const existing = new Set(this.entries.values());
 
-            // Изменение атрибутов влияет как на произвольный ignoreSelector, так и на data-mf.
+            // Изменение атрибутов влияет на ignoreSelector, маркеры границ и имена областей.
             if (relevant.some((record) => record.type !== 'characterData')) {
                 this.reconcile(root, options);
             }
@@ -239,7 +239,7 @@ export class MicrofrontendObserver {
         }
 
         for (const area of this.entries.values()) {
-            const name = area.root.getAttribute('data-mf') ?? '';
+            const name = this.readName(area.root);
             const parent = area.root.parentElement?.closest(options.boundarySelector!);
             const parentId = parent ? (this.entries.get(parent)?.state.id ?? null) : null;
 
@@ -276,7 +276,7 @@ export class MicrofrontendObserver {
             fingerprint: null,
             state: {
                 id,
-                name: root.getAttribute('data-mf') ?? '',
+                name: this.readName(root),
                 parentId: null,
                 snapshot: null,
                 logicalControls: [],
@@ -312,6 +312,14 @@ export class MicrofrontendObserver {
             ...area.state,
             error: error instanceof Error ? error.message : String(error),
         };
+    }
+
+    private readName(root: Element): string {
+        return (
+            root.getAttribute('data-microfrontend-name') ??
+            root.getAttribute('data-mf') ??
+            ''
+        );
     }
 
     private acceptArea(area: Area, result: SessionSnapshot): void {

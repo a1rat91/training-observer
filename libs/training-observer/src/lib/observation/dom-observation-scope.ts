@@ -4,7 +4,7 @@ import {type DomSnapshot} from '@training-observer/core/models';
 
 import {resolveRelatedRoots} from '../capture/snapshot-references';
 
-export const MICROFRONTEND_SELECTOR = '[data-mf]';
+export const MICROFRONTEND_SELECTOR = '[data-microfrontend], [data-mf]';
 
 const STYLESHEET_SELECTOR = 'style,link[rel="stylesheet"]';
 

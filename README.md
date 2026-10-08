@@ -35,8 +35,8 @@ npm ci
 npm start
 ```
 
-Открыть `http://localhost:4200/record`. Три раздела: `/record`, `/controls`, `/learn`. Корневой путь перенаправляется на
-запись.
+Открыть `http://localhost:4200/record`. Пять разделов: `/record`, `/controls`, `/microfrontends`, `/learn`,
+`/input-inspector`. Корневой путь перенаправляется на запись.
 
 ```sh
 npm run check                 # границы + формат + unit + production build

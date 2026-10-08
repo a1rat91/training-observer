@@ -2,8 +2,9 @@
     aria-label="Экран процедуры"
     [attr.aria-busy]="loading()"
     [attr.id]="screen()?.id ?? null"
+    [class.rearranged]="rearranged()"
 >
-    <h2>{{ screen()?.title ?? 'Открываем заявку' }}</h2>
+    <ng-container [ngTemplateOutlet]="rearranged() ? navigation : title" />
     @if (loading()) {
         <p role="status">Загрузка экрана…</p>
     }
@@ -26,7 +27,7 @@
             <p>Все экраны пройдены. Можно вернуться к ответам.</p>
         }
         @for (generation of [current.id]; track generation) {
-            @for (section of current.sections; track section.title) {
+            @for (section of sections(); track section.title) {
                 <fieldset [disabled]="loading()">
                     <legend>{{ section.title }}</legend>
                     <div class="fields">
@@ -42,35 +43,55 @@
             }
         }
     }
-    <footer>
-        <button
-            size="s"
-            tuiButton
-            type="button"
-            [disabled]="loading() || !screen() || !!error() || index() >= 3"
-            (click)="load(index() + 1)"
-        >
-            Далее
-        </button>
-        <button
-            appearance="secondary"
-            size="s"
-            tuiButton
-            type="button"
-            [disabled]="loading() || index() === 0"
-            (click)="load(index() === 4 ? returnIndex : index() - 1)"
-        >
-            Назад
-        </button>
-        <button
-            appearance="secondary"
-            size="s"
-            tuiButton
-            type="button"
-            [disabled]="loading() || !screen() || !!error() || index() === 4"
-            (click)="wrong()"
-        >
-            Неправильный переход
-        </button>
-    </footer>
+    <ng-container [ngTemplateOutlet]="rearranged() ? title : navigation" />
 </section>
+
+<ng-template #title>
+    <h2>{{ screen()?.title ?? 'Открываем заявку' }}</h2>
+</ng-template>
+
+<ng-template #navigation>
+    <footer>
+        @for (button of rearranged() ? [branch, forward, backward] : [forward, backward, branch]; track button) {
+            <ng-container [ngTemplateOutlet]="button" />
+        }
+    </footer>
+</ng-template>
+
+<ng-template #forward>
+    <button
+        size="s"
+        tuiButton
+        type="button"
+        [disabled]="loading() || !screen() || !!error() || index() >= 3"
+        (click)="load(index() + 1)"
+    >
+        Далее
+    </button>
+</ng-template>
+
+<ng-template #backward>
+    <button
+        appearance="secondary"
+        size="s"
+        tuiButton
+        type="button"
+        [disabled]="loading() || index() === 0"
+        (click)="load(index() === 4 ? returnIndex : index() - 1)"
+    >
+        Назад
+    </button>
+</ng-template>
+
+<ng-template #branch>
+    <button
+        appearance="secondary"
+        size="s"
+        tuiButton
+        type="button"
+        [disabled]="loading() || !screen() || !!error() || index() === 4"
+        (click)="wrong()"
+    >
+        Неправильный переход
+    </button>
+</ng-template>

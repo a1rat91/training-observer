@@ -2,13 +2,16 @@
  * Demo-плеер загружает экраны из HTTP fixture, сохраняет ответы при навигации и отменяет устаревший запрос.
  * ID секции — обычная идентичность экрана приложения. Никаких импортов библиотеки обучения или учебных правил.
  */
+import {NgTemplateOutlet} from '@angular/common';
 import {HttpClient} from '@angular/common/http';
 import {
     afterNextRender,
     ChangeDetectionStrategy,
     Component,
+    computed,
     DestroyRef,
     inject,
+    input,
     signal,
 } from '@angular/core';
 import {TuiButton} from '@taiga-ui/core';
@@ -31,7 +34,7 @@ interface ProcedureScreen {
 
 @Component({
     selector: 'app-procedure-form',
-    imports: [ProcedureFieldComponent, TuiButton],
+    imports: [NgTemplateOutlet, ProcedureFieldComponent, TuiButton],
     templateUrl: './procedure-form.component.html',
     styleUrl: './procedure-form.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +50,18 @@ export class ProcedureFormComponent {
     protected readonly error = signal('');
     protected readonly index = signal(0);
     protected returnIndex = 0;
+    protected readonly sections = computed(() => {
+        const sections = this.screen()?.sections ?? [];
+
+        return this.rearranged()
+            ? [...sections.slice(1), ...sections.slice(0, 1)].map((section) => ({
+                  ...section,
+                  fields: [...section.fields.slice(1), ...section.fields.slice(0, 1)],
+              }))
+            : sections;
+    });
+
+    public readonly rearranged = input(false);
 
     constructor() {
         inject(DestroyRef).onDestroy(() => this.request?.unsubscribe());

@@ -16,7 +16,7 @@ import {LogoComponent} from './components/logo';
 export const APP_PROVIDERS: Provider[] = [
     {
         provide: TUI_DOC_TITLE,
-        useValue: 'Training Observer | ',
+        useValue: 'Training Observer · ',
     },
     {
         provide: TUI_DOC_LOGO,

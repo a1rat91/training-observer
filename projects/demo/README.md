@@ -1,8 +1,8 @@
 # Demo: Angular-интеграция
 
-Приложение показывает запись `/record`, диагностику `/controls`, прохождение `/learn` и разбор одного input
-`/input-inspector`. Оно использует Angular 19.2 и Taiga UI 4.98. К бизнес-алгоритмам библиотек относится только передача
-снимков и обработка результатов; формы, HTTP и localStorage остаются здесь.
+Приложение показывает запись `/record`, диагностику `/controls`, асинхронные микрофронты `/microfrontends`, прохождение
+`/learn` и разбор одного input `/input-inspector`. Оно использует Angular 19.2 и Taiga UI 4.98. К бизнес-алгоритмам
+библиотек относится только передача снимков и обработка результатов; формы, HTTP и localStorage остаются здесь.
 
 ## Структура
 
@@ -12,6 +12,9 @@
 - `src/app/shared/demo-form` — тестовая форма, независимая от библиотек обучения.
 - `src/app/shared/scenarios` — общее хранилище публикации и её связи с исходной записью.
 - `src/app/fixtures` — нагрузочный и multi-MF примеры.
+- `src/app/fixtures/async-microfrontends` — асинхронный монтаж `div[data-microfrontend]`, загрузка данных и изменение
+  состояний с автоматическим обновлением снимков; отдельная страница `/microfrontends`, пункт основной навигации
+  **Микрофронты**.
 - `src/assets/procedure/screens.json` — тестовые HTTP-данные, не часть core или контрактов обучения.
 
 ## Алгоритм
@@ -35,11 +38,12 @@ ScenarioStore. LearnComponent читает публикацию, создаёт 
 
 ## Обновление из main
 
-Оболочка TuiDocMain содержит четыре раздела: запись, контролы, тренировка и разбор input. `/controls?fixture=selectors`
-открывает перенесённый инспектор областей по селекторам; старый адрес `/controls-example` перенаправляет на этот пример.
-Формы используют API Taiga UI 4: TuiTextfield из core, TuiCheckbox/TuiRadio из kit, уведомления — TuiAlertService.
-Select/ComboBox используют `*tuiTextfieldDropdown` и `<tui-data-list-wrapper new>`: это API новых контролов внутри v4.
-Справка: [Taiga UI v4](https://taiga-ui.dev/v4/getting-started). Повторы providers из исходной конфигурации устранены.
+Оболочка TuiDocMain содержит пять разделов: запись, контролы, микрофронты, тренировка и разбор input.
+`/controls?fixture=selectors` открывает перенесённый инспектор областей по селекторам; старый адрес `/controls-example`
+перенаправляет на этот пример. Формы используют API Taiga UI 4: TuiTextfield из core, TuiCheckbox/TuiRadio из kit,
+уведомления — TuiAlertService. Select/ComboBox используют `*tuiTextfieldDropdown` и `<tui-data-list-wrapper new>`: это
+API новых контролов внутри v4. Справка: [Taiga UI v4](https://taiga-ui.dev/v4/getting-started). Повторы providers из
+исходной конфигурации устранены.
 
 Сборка использует custom-webpack, `main.browser.ts`, настройки SSR и окружения из main. `npm test` — Jest,
 `npm run test:pw` — браузерные сценарии. Полные проверки описаны в

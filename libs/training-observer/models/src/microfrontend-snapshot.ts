@@ -2,7 +2,7 @@
 import {type ControlSnapshot} from './control-snapshot';
 import {type DomSnapshot} from './dom-snapshot';
 
-/** Сериализуемое состояние одного смонтированного корня data-mf. Имя не обязано быть уникальным. */
+/** Сериализуемое состояние одного смонтированного корня микрофронта. Имя не обязано быть уникальным. */
 export interface MicrofrontendSnapshot {
     readonly id: string;
     readonly name: string;
