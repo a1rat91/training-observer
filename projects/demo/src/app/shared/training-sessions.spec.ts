@@ -16,6 +16,7 @@ import {
     TrainingSession,
 } from '@training-observer/angular';
 import {type StateRecording, type TrainingScenario} from '@training-observer/contracts';
+import {StateRecorder} from '@training-observer/recording';
 import {type TrainingFeedback} from '@training-observer/runtime';
 
 const fixtures = new Set<ComponentFixture<unknown>>();
@@ -229,7 +230,8 @@ test('stop waits for rendering and includes the pending departure blur in its re
 
     recording.start();
     answer('a', 'Последний ответ');
-    void recording.stop().then((document) => {
+    recording.stop().subscribe((document) => {
+        expect(recording.stopping()).toBe(false);
         result = document;
     });
     expect(recording.stopping()).toBe(true);
@@ -244,6 +246,80 @@ test('stop waits for rendering and includes the pending departure blur in its re
             ],
         }),
     );
+    expect(recording.recording()).toBe(false);
+    expect(recording.stopping()).toBe(false);
+}));
+
+test('a failed stop clears its pending state and another stop can finish the recording', fakeAsync(() => {
+    const fixture = owner(OwnerA);
+    const {recording} = fixture.componentInstance;
+    const failure = new Error('Не удалось завершить запись');
+    const failures: unknown[] = [];
+    let result: StateRecording | undefined;
+
+    jest.spyOn(StateRecorder.prototype, 'stop').mockImplementationOnce(() => {
+        throw failure;
+    });
+    recording.start();
+    const stopped = recording.stop();
+
+    stopped.subscribe({
+        error: (error: unknown) => {
+            failures.push(error);
+        },
+    });
+    fixture.detectChanges();
+    flushMicrotasks();
+    expect(failures).toEqual([failure]);
+    expect(recording.stopping()).toBe(false);
+    expect(recording.recording()).toBe(true);
+    stopped.subscribe({
+        error: (error: unknown) => {
+            failures.push(error);
+        },
+    });
+    expect(failures).toEqual([failure, failure]);
+    recording.stop().subscribe((document) => {
+        result = document;
+    });
+    fixture.detectChanges();
+    flushMicrotasks();
+    expect(result).toBe(recording.draft());
+    expect(recording.recording()).toBe(false);
+    expect(recording.stopping()).toBe(false);
+}));
+
+test('stop shares one finalization and replays its result after consumers unsubscribe', fakeAsync(() => {
+    const fixture = owner(OwnerA);
+    const {recording} = fixture.componentInstance;
+    const firstResults: StateRecording[] = [];
+    const secondResults: StateRecording[] = [];
+    const replayed: StateRecording[] = [];
+
+    recording.start();
+    answer('a', 'Последний ответ');
+    const stopped = recording.stop();
+
+    expect(recording.stopping()).toBe(false);
+    const subscription = stopped.subscribe((result) => {
+        firstResults.push(result);
+    });
+
+    recording.stop().subscribe((result) => {
+        secondResults.push(result);
+    });
+    expect(recording.stopping()).toBe(true);
+    expect(() => recording.start()).toThrow(/завершения/i);
+    subscription.unsubscribe();
+    fixture.detectChanges();
+    flushMicrotasks();
+    stopped.subscribe((result) => {
+        replayed.push(result);
+    });
+    expect(firstResults).toEqual([]);
+    expect(secondResults).toHaveLength(1);
+    expect(replayed[0]).toBe(secondResults[0]);
+    expect(recording.draft()).toBe(secondResults[0]);
     expect(recording.recording()).toBe(false);
     expect(recording.stopping()).toBe(false);
 }));

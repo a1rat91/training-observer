@@ -15,6 +15,7 @@ import {
     provideDomObservation,
     TrainingObserver,
 } from '@training-observer/core';
+import {asapScheduler, Observable, observeOn, Subject, Subscription, tap} from 'rxjs';
 
 import {type TrainingIntegrationOptions} from './training-integration-options';
 
@@ -30,6 +31,7 @@ export class ObservationConnection {
     }) as Injector & Pick<EnvironmentInjector, 'destroy'>;
 
     private readonly pending = new Map<AfterRenderRef, () => void>();
+    private readonly mutations = new Subject<void>();
     private readonly failure = signal<string | null>(null);
     private watcher: MutationObserver | null = null;
     private root: Element | null = null;
@@ -46,12 +48,24 @@ export class ObservationConnection {
         private readonly options: TrainingIntegrationOptions,
         update: (value: ObservationUpdate) => void,
     ) {
-        const subscription = this.observer.updates$.subscribe(update);
+        const subscription = new Subscription();
+
+        subscription.add(this.observer.updates$.subscribe(update));
+        subscription.add(
+            this.mutations.pipe(observeOn(asapScheduler)).subscribe(() => {
+                try {
+                    this.reconcile();
+                } catch (error: unknown) {
+                    this.fail(error);
+                }
+            }),
+        );
 
         inject(DestroyRef).onDestroy(() => {
             this.destroyed = true;
             this.watcher?.disconnect();
             subscription.unsubscribe();
+            this.mutations.complete();
 
             for (const [ref, cancel] of this.pending) {
                 ref.destroy();
@@ -85,16 +99,8 @@ export class ObservationConnection {
         this.enabled = true;
         this.paused = false;
         this.zone.runOutsideAngular(() => {
-            this.watcher ??= new view.MutationObserver(() =>
-                // MutationObserver может быть поставлен в очередь раньше focusout microtask.
-                queueMicrotask(() => {
-                    try {
-                        this.reconcile();
-                    } catch (error: unknown) {
-                        this.fail(error);
-                    }
-                }),
-            );
+            // MutationObserver может быть поставлен в очередь раньше focusout microtask.
+            this.watcher ??= new view.MutationObserver(() => this.mutations.next());
             this.watcher.observe(this.document.body, {
                 childList: true,
                 subtree: true,
@@ -132,34 +138,46 @@ export class ObservationConnection {
     }
 
     public schedule(action: () => void): void {
-        void this.afterRender(action).catch((error: unknown) => {
-            if (!this.destroyed) {
-                this.fail(error);
-            }
-        });
+        this.afterRender()
+            .pipe(tap(action))
+            .subscribe({
+                error: (error: unknown) => {
+                    if (!this.destroyed) {
+                        this.fail(error);
+                    }
+                },
+            });
     }
 
-    public async afterRender<T>(action: () => Promise<T> | T): Promise<T> {
-        this.assertAlive();
+    public afterRender(): Observable<void> {
+        return new Observable<void>((subscriber) => {
+            this.assertAlive();
 
-        return new Promise<T>((resolve, reject) => {
             const ref = afterNextRender(
                 () => {
                     this.pending.delete(ref);
 
                     try {
                         this.assertAlive();
-                        resolve(action());
+                        subscriber.next();
+                        subscriber.complete();
                     } catch (error: unknown) {
-                        reject(error instanceof Error ? error : new Error(String(error)));
+                        subscriber.error(
+                            error instanceof Error ? error : new Error(String(error)),
+                        );
                     }
                 },
                 {injector: this.injector},
             );
 
             this.pending.set(ref, () =>
-                reject(new Error('Training session has been destroyed.')),
+                subscriber.error(new Error('Training session has been destroyed.')),
             );
+
+            return () => {
+                ref.destroy();
+                this.pending.delete(ref);
+            };
         });
     }
 

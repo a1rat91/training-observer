@@ -5,7 +5,8 @@ Angular-фасады записи и прохождения: `@training-observer
 ## Подключение
 
 ```ts
-import {Component, inject} from '@angular/core';
+import {Component, DestroyRef, inject} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {provideRecordingSession, RecordingSession} from '@training-observer/angular';
 
 @Component({
@@ -36,11 +37,16 @@ import {provideRecordingSession, RecordingSession} from '@training-observer/angu
   ],
 })
 export class Recorder {
+  private readonly destroy = inject(DestroyRef);
   readonly session = inject(RecordingSession);
 
-  async save() {
-    const document = await this.session.stop();
-    // Сохраните document в хранилище приложения.
+  save() {
+    this.session
+      .stop()
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe((document) => {
+        // Сохраните document в хранилище приложения.
+      });
   }
 }
 ```
@@ -62,10 +68,11 @@ Provider сам подключает core-сервисы, запускает н�
 
 ## Запись
 
-`start()` требует готовый экран, очищает документ и запоминает baseline подтверждений. `stop()` возвращает Promise
-документа после следующего рендера и финального flush: уход фокуса на кнопку сохраняет последнее поле. Остановка сама не
-создаёт blur для активного поля. Повторный вызов во время остановки ждёт ту же операцию; уничтожение владельца отменяет
-ожидающую остановку с ошибкой. После stop наблюдение продолжает обновлять инспектор и позволяет начать новую запись.
+`start()` требует готовый экран, очищает документ и запоминает baseline подтверждений. `stop()` возвращает
+`Observable<StateRecording>`: подписка запускает остановку и получает документ после следующего рендера и финального
+flush. Уход фокуса на кнопку сохраняет последнее поле; остановка сама не создаёт blur для активного поля. Параллельные
+подписки разделяют одну остановку. Уже запущенная остановка завершается и при отписке потребителя; уничтожение владельца
+отменяет её с ошибкой. После stop наблюдение продолжает обновлять инспектор и позволяет начать новую запись.
 
 Readonly signals: `screen`, `visit`, `draft`, `recording`, `stopping`, `error`, `snapshot`, `controls`,
 `confirmedControls`, `scanCount`, `revision`. `highlight(nodeId | null)` включает подсветку. Редактирование, undo,

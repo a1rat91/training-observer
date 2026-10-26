@@ -1,0 +1,329 @@
+{
+    "kind": "training-state-scenario",
+    "version": 1,
+    "steps": [
+        {
+            "key": "application-profile",
+            "task": "Заполните поля и продолжите.",
+            "transitionMessage": "Открыт неверный экран. Вернитесь и проверьте заполнение.",
+            "fields": [
+                {
+                    "descriptor": {
+                        "kind": "textbox",
+                        "label": "Фамилия",
+                        "tagName": "input",
+                        "role": "textbox",
+                        "inputType": "text",
+                        "id": "surname",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-profile",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Сведения о сотруднике"
+                            }
+                        ]
+                    },
+                    "expected": "wer",
+                    "message": "Проверьте поле «Фамилия».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "select",
+                        "label": "Подразделение",
+                        "tagName": "input",
+                        "role": "combobox",
+                        "inputType": "text",
+                        "id": "department",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-profile",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Сведения о сотруднике"
+                            }
+                        ]
+                    },
+                    "expected": ["Разработка"],
+                    "message": "Проверьте поле «Подразделение».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "combobox",
+                        "label": "Сотрудник",
+                        "tagName": "input",
+                        "role": "combobox",
+                        "inputType": "text",
+                        "id": "employee",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-profile",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Сведения о сотруднике"
+                            }
+                        ]
+                    },
+                    "expected": ["Анна Смирнова"],
+                    "message": "Проверьте поле «Сотрудник».",
+                    "optional": false
+                }
+            ]
+        },
+        {
+            "key": "application-details",
+            "task": "Заполните поля и продолжите.",
+            "transitionMessage": "Открыт неверный экран. Вернитесь и проверьте заполнение.",
+            "fields": [
+                {
+                    "descriptor": {
+                        "kind": "radio",
+                        "label": "Электронный",
+                        "tagName": "input",
+                        "role": "radio",
+                        "inputType": "radio",
+                        "id": "materials-0",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-details",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Программа"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Формат материалов"
+                            }
+                        ]
+                    },
+                    "expected": true,
+                    "message": "Проверьте поле «Электронный».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "radio",
+                        "label": "Бумажный",
+                        "tagName": "input",
+                        "role": "radio",
+                        "inputType": "radio",
+                        "id": "materials-1",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-details",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Программа"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Формат материалов"
+                            }
+                        ]
+                    },
+                    "expected": false,
+                    "message": "Проверьте поле «Бумажный».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "checkbox",
+                        "label": "Нужна практика",
+                        "tagName": "input",
+                        "role": "checkbox",
+                        "inputType": "checkbox",
+                        "id": "practice",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-details",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Программа"
+                            }
+                        ]
+                    },
+                    "expected": false,
+                    "message": "Проверьте поле «Нужна практика».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "select",
+                        "label": "Курс",
+                        "tagName": "input",
+                        "role": "combobox",
+                        "inputType": "text",
+                        "id": "course",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-details",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Программа"
+                            }
+                        ]
+                    },
+                    "expected": ["Angular"],
+                    "message": "Проверьте поле «Курс».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "textbox",
+                        "label": "Цель обучения",
+                        "tagName": "input",
+                        "role": "textbox",
+                        "inputType": "text",
+                        "id": "goal",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-details",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Программа"
+                            }
+                        ]
+                    },
+                    "expected": "wer",
+                    "message": "Проверьте поле «Цель обучения».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "number",
+                        "label": "Продолжительность в днях",
+                        "tagName": "input",
+                        "role": "textbox",
+                        "inputType": "text",
+                        "id": "days",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-details",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Программа"
+                            }
+                        ]
+                    },
+                    "expected": "2",
+                    "message": "Проверьте поле «Продолжительность в днях».",
+                    "optional": false
+                }
+            ]
+        },
+        {
+            "key": "application-review",
+            "task": "Заполните поля и продолжите.",
+            "transitionMessage": "Открыт неверный экран. Вернитесь и проверьте заполнение.",
+            "fields": [
+                {
+                    "descriptor": {
+                        "kind": "checkbox",
+                        "label": "Данные проверены",
+                        "tagName": "input",
+                        "role": "checkbox",
+                        "inputType": "checkbox",
+                        "id": "reviewed",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-review",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Проверка данных"
+                            }
+                        ]
+                    },
+                    "expected": false,
+                    "message": "Проверьте поле «Данные проверены».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "checkbox",
+                        "label": "Условия согласованы",
+                        "tagName": "input",
+                        "role": "checkbox",
+                        "inputType": "checkbox",
+                        "id": "terms",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-review",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Проверка данных"
+                            }
+                        ]
+                    },
+                    "expected": false,
+                    "message": "Проверьте поле «Условия согласованы».",
+                    "optional": false
+                },
+                {
+                    "descriptor": {
+                        "kind": "textbox",
+                        "label": "Примечание к заявке",
+                        "tagName": "input",
+                        "role": "textbox",
+                        "inputType": "text",
+                        "id": "note",
+                        "context": [
+                            {
+                                "tagName": "section",
+                                "id": "application-review",
+                                "label": "Экран процедуры"
+                            },
+                            {
+                                "tagName": "fieldset",
+                                "label": "Проверка данных"
+                            }
+                        ]
+                    },
+                    "expected": "",
+                    "message": "Проверьте поле «Примечание к заявке».",
+                    "optional": false
+                }
+            ]
+        },
+        {
+            "key": "application-done",
+            "task": "Заполните поля и продолжите.",
+            "transitionMessage": "Открыт неверный экран. Вернитесь и проверьте заполнение.",
+            "fields": []
+        }
+    ]
+}

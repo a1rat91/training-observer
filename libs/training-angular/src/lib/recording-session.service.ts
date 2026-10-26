@@ -7,6 +7,17 @@ import {
 } from '@training-observer/core';
 import {type ScreenVisit} from '@training-observer/core/models';
 import {StateRecorder} from '@training-observer/recording';
+import {
+    asapScheduler,
+    defer,
+    map,
+    type Observable,
+    observeOn,
+    of,
+    ReplaySubject,
+    share,
+    tap,
+} from 'rxjs';
 
 import {ObservationConnection} from './observation-connection';
 import {RECORDING_SESSION_OPTIONS} from './training-integration-options';
@@ -26,7 +37,7 @@ export class RecordingSession {
     private readonly running = signal(false);
     private readonly finishing = signal(false);
     private selected: string | null = null;
-    private pendingStop: Promise<StateRecording> | null = null;
+    private pendingStop: Observable<StateRecording> | null = null;
     private readonly connection = new ObservationConnection(this.options, (update) =>
         this.accept(update),
     );
@@ -59,38 +70,51 @@ export class RecordingSession {
         this.running.set(true);
     }
 
-    /** Дожидается focusout и следующего рендера. Само stop не подтверждает активное поле. */
-    public async stop(): Promise<StateRecording> {
-        this.connection.assertAlive();
+    /** Подписка дожидается focusout и рендера; само stop не подтверждает активное поле. */
+    public stop(): Observable<StateRecording> {
+        const stopped = defer(() => {
+            this.connection.assertAlive();
 
-        if (this.pendingStop) {
-            return this.pendingStop;
-        }
+            if (this.pendingStop) {
+                return this.pendingStop;
+            }
 
-        if (!this.running()) {
-            return Promise.resolve(this.recorder.snapshot());
-        }
+            if (!this.running()) {
+                return of(this.recorder.snapshot());
+            }
 
-        this.finishing.set(true);
-        this.pendingStop = this.connection
-            .afterRender(async () => {
+            this.finishing.set(true);
+            this.pendingStop = stopped;
+
+            return this.connection.afterRender().pipe(
                 // Рендер может завершиться в том же turn, что и focusout перед Stop.
-                await Promise.resolve();
-                this.connection.flush();
-                this.recorder.observe(this.screen(), this.confirmedControls());
-                const result = this.recorder.stop();
+                observeOn(asapScheduler),
+                map(() => {
+                    this.connection.flush();
+                    this.recorder.observe(this.screen(), this.confirmedControls());
+                    const result = this.recorder.stop();
 
-                this.running.set(false);
-                this.document.set(result);
+                    this.running.set(false);
+                    this.document.set(result);
 
-                return result;
-            })
-            .finally(() => {
-                this.finishing.set(false);
-                this.pendingStop = null;
-            });
+                    return result;
+                }),
+                tap({
+                    next: () => this.clearPendingStop(),
+                    error: () => this.clearPendingStop(),
+                }),
+            );
+        }).pipe(
+            share({
+                connector: () => new ReplaySubject<StateRecording>(1),
+                resetOnComplete: false,
+                resetOnError: false,
+                // Запущенная остановка принадлежит сеансу, а не отдельному подписчику.
+                resetOnRefCountZero: false,
+            }),
+        );
 
-        return this.pendingStop;
+        return stopped;
     }
 
     /** Подсветка для редактора без доступа к внутреннему observer. */
@@ -98,6 +122,11 @@ export class RecordingSession {
         this.connection.assertAlive();
         this.selected = nodeId;
         this.refreshHighlight();
+    }
+
+    private clearPendingStop(): void {
+        this.finishing.set(false);
+        this.pendingStop = null;
     }
 
     private accept(update: ObservationUpdate): void {

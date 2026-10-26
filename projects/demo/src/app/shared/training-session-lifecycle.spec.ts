@@ -136,14 +136,14 @@ test('destroy rejects a pending recording stop and cancels the queued blur and r
     input.focus();
     input.value = 'Отменённый ответ';
     button.focus();
-    void recording.stop().then(
-        (document) => {
+    recording.stop().subscribe({
+        next: (document) => {
             result = document;
         },
-        (error: unknown) => {
+        error: (error: unknown) => {
             failure = error;
         },
-    );
+    });
     const draft = recording.draft();
 
     expect(recording.stopping()).toBe(true);
@@ -159,9 +159,67 @@ test('destroy rejects a pending recording stop and cancels the queued blur and r
     expect(() => recording.start()).toThrow(/destroyed/i);
 }));
 
+test('destroy between rendering and the stop microtask prevents recording finalization', fakeAsync(() => {
+    const fixture = createOwner();
+
+    fixture.detectChanges();
+    const {recording} = fixture.componentInstance;
+    let result: StateRecording | undefined;
+    let failure: unknown;
+
+    recording.start();
+    recording.stop().subscribe({
+        next: (document) => {
+            result = document;
+        },
+        error: (error: unknown) => {
+            failure = error;
+        },
+    });
+    fixture.detectChanges();
+    const draft = recording.draft();
+
+    expect(result).toBeUndefined();
+    destroyOwner(fixture);
+    flushMicrotasks();
+    expect(result).toBeUndefined();
+    expect(failure).toEqual(
+        expect.objectContaining({message: expect.stringMatching(/destroyed/i)}),
+    );
+    expect(recording.draft()).toBe(draft);
+    expect(recording.stopping()).toBe(false);
+}));
+
+test('an unsubscribed stop is disposed on destroy without an unhandled error', fakeAsync(() => {
+    const fixture = createOwner();
+
+    fixture.detectChanges();
+    const {recording} = fixture.componentInstance;
+
+    recording.start();
+    const stopped = recording.stop();
+    const subscription = stopped.subscribe();
+
+    subscription.unsubscribe();
+    destroyOwner(fixture);
+    flushMicrotasks();
+    tick(20);
+    let failure: unknown;
+
+    stopped.subscribe({
+        error: (error: unknown) => {
+            failure = error;
+        },
+    });
+    expect(failure).toEqual(
+        expect.objectContaining({message: expect.stringMatching(/destroyed/i)}),
+    );
+    expect(recording.stopping()).toBe(false);
+}));
+
 test('server rendering uses public providers without DOM observation and disposes queued startup', async () => {
     let owner: LifecycleOwner | undefined;
-    let stopped: Promise<StateRecording> | undefined;
+    let stopped: StateRecording | undefined;
     let feedbackCompleted = false;
     let feedbackCount = 0;
     const html = await renderApplication(
@@ -185,7 +243,9 @@ test('server rendering uses public providers without DOM observation and dispose
             const recording = owner.recording;
 
             expect(() => recording.start()).toThrow(/готового экрана/i);
-            stopped = recording.stop();
+            recording.stop().subscribe((document) => {
+                stopped = document;
+            });
 
             return application;
         },
@@ -201,7 +261,7 @@ test('server rendering uses public providers without DOM observation and dispose
     expect(owner?.training.progress()).toBeNull();
     expect(owner?.recording.error()).toBeNull();
     expect(owner?.training.error()).toBeNull();
-    expect(await stopped).toEqual(expect.objectContaining({events: []}));
+    expect(stopped).toEqual(expect.objectContaining({events: []}));
     expect(feedbackCount).toBe(0);
     expect(feedbackCompleted).toBe(true);
 });

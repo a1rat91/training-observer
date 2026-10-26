@@ -43,6 +43,7 @@ npm registry; `--keep` сохраняет временные проекты дл
 
 ```ts
 import {inject} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {
   provideRecordingSession,
   RecordingSession,
@@ -53,7 +54,10 @@ import {
 // providers: [provideRecordingSession({root: 'main', screen: screenOptions})]
 const recording = inject(RecordingSession);
 recording.start();
-const document = await recording.stop();
+recording
+  .stop()
+  .pipe(takeUntilDestroyed())
+  .subscribe((document) => saveRecording(document));
 
 // providers: [provideTrainingSession({root: 'main', screen: screenOptions})]
 const training = inject(TrainingSession);

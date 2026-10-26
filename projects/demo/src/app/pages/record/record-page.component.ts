@@ -8,9 +8,11 @@ import {
     ChangeDetectionStrategy,
     Component,
     computed,
+    DestroyRef,
     inject,
     signal,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TuiButton} from '@taiga-ui/core';
 import {provideRecordingSession, RecordingSession} from '@training-observer/angular';
 import {
@@ -36,6 +38,7 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
 })
 export class RecordPageComponent {
     private readonly session = inject(RecordingSession);
+    private readonly destroy = inject(DestroyRef);
     private readonly editedDraft = signal<StateRecording | null>(null);
 
     protected readonly store = inject(RecordingStore);
@@ -125,11 +128,14 @@ export class RecordPageComponent {
         this.store.save(previous);
     }
 
-    protected async stopRecording(): Promise<void> {
-        const recording = await this.session.stop();
-
-        this.editedDraft.set(recording);
-        this.store.save(recording);
+    protected stopRecording(): void {
+        this.session
+            .stop()
+            .pipe(takeUntilDestroyed(this.destroy))
+            .subscribe((recording) => {
+                this.editedDraft.set(recording);
+                this.store.save(recording);
+            });
     }
 
     protected eventText(event: RecordedEvent): string {

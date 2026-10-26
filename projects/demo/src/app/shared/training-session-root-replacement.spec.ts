@@ -10,6 +10,7 @@ import {
 } from '@training-observer/angular';
 import {type TrainingScenario} from '@training-observer/contracts';
 import {provideDomObservation, TrainingObserver} from '@training-observer/core';
+import {firstValueFrom} from 'rxjs';
 
 const options = {
     root: '#replacement-procedure',
@@ -180,7 +181,7 @@ test('Stop in the replacement turn includes the departing answer in its returned
 
     answer();
     replaceRoot('B');
-    const result = recording.stop();
+    const result = firstValueFrom(recording.stop());
 
     await settle(fixture);
     expect((await result).events).toEqual([
