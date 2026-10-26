@@ -247,7 +247,7 @@ export class MicrofrontendObserver {
         }
 
         for (const area of this.entries.values()) {
-            const name = this.readName(area.root);
+            const name = area.root.localName;
             const parent = area.root.parentElement?.closest(options.boundarySelector!);
             const parentId = parent ? (this.entries.get(parent)?.state.id ?? null) : null;
 
@@ -284,7 +284,7 @@ export class MicrofrontendObserver {
             fingerprint: null,
             state: {
                 id,
-                name: this.readName(root),
+                name: root.localName,
                 parentId: null,
                 snapshot: null,
                 logicalControls: [],
@@ -320,14 +320,6 @@ export class MicrofrontendObserver {
             ...area.state,
             error: error instanceof Error ? error.message : String(error),
         };
-    }
-
-    private readName(root: Element): string {
-        return (
-            root.getAttribute('data-microfrontend-name') ??
-            root.getAttribute('data-mf') ??
-            ''
-        );
     }
 
     private acceptArea(area: Area, result: SessionSnapshot): void {

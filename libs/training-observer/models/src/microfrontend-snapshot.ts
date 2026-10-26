@@ -5,6 +5,7 @@ import {type DomSnapshot} from './dom-snapshot';
 /** Сериализуемое состояние одного смонтированного корня микрофронта. Имя не обязано быть уникальным. */
 export interface MicrofrontendSnapshot {
     readonly id: string;
+    /** Имя DOM-тега корневого компонента области (Element.localName). */
     readonly name: string;
     readonly parentId: string | null;
     readonly snapshot: DomSnapshot | null;

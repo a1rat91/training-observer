@@ -12,6 +12,8 @@ import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiDataListWrapper, TuiSelect} from '@taiga-ui/kit';
 import {MicrofrontendObserver, provideDomObservation} from '@training-observer/core';
 
+import {pocAreaLabel} from '../../shared/poc-area-label';
+
 @Component({
     selector: 'app-microfrontends',
     imports: [
@@ -28,6 +30,7 @@ import {MicrofrontendObserver, provideDomObservation} from '@training-observer/c
     providers: [provideDomObservation()],
 })
 export class MicrofrontendsComponent {
+    protected readonly areaLabel = pocAreaLabel;
     protected readonly observer = inject(MicrofrontendObserver);
     protected readonly selectedId = signal('');
     protected readonly selected = computed(
@@ -48,6 +51,6 @@ export class MicrofrontendsComponent {
     }
 
     protected start(): void {
-        this.observer.start(undefined, {propertyCheckIntervalMs: this.polling});
+        this.observer.observe('[data-mf]', {propertyCheckIntervalMs: this.polling});
     }
 }

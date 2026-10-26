@@ -1,6 +1,7 @@
 import {expect, type Page, test} from '@playwright/test';
 
 import {type MicrofrontendSnapshot} from '../libs/training-observer/src';
+import {pocAreaLabel} from '../projects/demo/src/app/shared/poc-area-label';
 
 test.use({trace: 'off'});
 
@@ -9,7 +10,7 @@ async function areas(page: Page): Promise<MicrofrontendSnapshot[]> {
 }
 
 async function area(page: Page, name: string): Promise<MicrofrontendSnapshot> {
-    return (await areas(page)).find((item) => item.name === name)!;
+    return (await areas(page)).find((item) => pocAreaLabel(item) === name)!;
 }
 
 async function scans(page: Page): Promise<Record<string, number>> {
@@ -203,7 +204,9 @@ test('duplicate names, mount/unmount and replacement keep instance identity sepa
 
     await page.getByRole('button', {name: 'Добавить микрофронт', exact: true}).click();
     await expect(page.getByTestId('mf-count')).toHaveText('4');
-    const duplicates = (await areas(page)).filter((item) => item.name === 'profile');
+    const duplicates = (await areas(page)).filter(
+        (item) => pocAreaLabel(item) === 'profile',
+    );
 
     expect(new Set(duplicates.map((item) => item.id)).size).toBe(2);
     const extraId = duplicates.find((item) => item.id !== original.id)!.id;

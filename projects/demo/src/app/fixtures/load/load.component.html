@@ -78,11 +78,11 @@
                 @for (area of observer.areas(); track area.id) {
                     <li
                         class="area-status"
-                        [attr.data-name]="area.name"
+                        [attr.data-name]="areaLabel(area)"
                         [attr.data-scans]="area.scanCount"
                         [attr.data-value]="area.logicalControls.at(0)?.state?.value"
                     >
-                        {{ area.name }}: {{ area.scanCount }} пересчётов
+                        {{ areaLabel(area) }}: {{ area.scanCount }} пересчётов
                         @if (area.error) {
                             <span role="alert">{{ area.error }}</span>
                         }

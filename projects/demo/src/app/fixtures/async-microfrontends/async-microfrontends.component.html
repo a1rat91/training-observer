@@ -164,7 +164,7 @@
                     [class.selected]="selected()?.id === area.id"
                     (click)="selectedId.set(area.id)"
                 >
-                    <strong>{{ area.name || 'Без имени' }}</strong>
+                    <strong>{{ areaLabel(area) || 'Без имени' }}</strong>
                     · {{ area.id }}
                     <small>
                         {{ phaseNames[phase(area)] }} · контролов:
@@ -182,7 +182,7 @@
                 <p>Ожидаем появления микрофронтов.</p>
             }
             @if (selected(); as area) {
-                <h3>Контролы {{ area.name }}</h3>
+                <h3>Контролы {{ areaLabel(area) }}</h3>
                 @if (area.snapshot?.stats?.truncated) {
                     <p role="alert">Снимок неполный: достигнут лимит.</p>
                 }
@@ -191,7 +191,7 @@
                         <li>
                             <strong>{{ control.label || 'Без подписи' }}</strong>
                             · {{ control.kind }}
-                            <small>Владелец: {{ area.name }} · {{ area.id }}</small>
+                            <small>Владелец: {{ areaLabel(area) }} · {{ area.id }}</small>
                             <small>Значение: {{ control.state.value ?? control.state.checked ?? '—' }}</small>
                             <small>{{ control.state.disabled ? 'Заблокирован' : 'Доступен' }}</small>
                         </li>
@@ -200,7 +200,7 @@
                     }
                 </ul>
                 <details>
-                    <summary>Снимок {{ area.name }}</summary>
+                    <summary>Снимок {{ areaLabel(area) }}</summary>
                     <pre>{{ area.snapshot | json }}</pre>
                 </details>
             }

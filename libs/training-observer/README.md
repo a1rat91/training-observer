@@ -74,9 +74,10 @@ Taiga-правила находятся в отдельном `@training-observe
 границы обхода и truncated явно отражаются в снимке.
 
 Снимки не доказывают конкретный клик или происхождение изменения. MicrofrontendObserver обнаруживает области по
-`observe(selectors)`; по умолчанию `start()` ищет `[data-microfrontend]` и прежний `[data-mf]`. Имя читается из
-`data-microfrontend-name`, затем из `data-mf`. `TrainingObserver.start(root)` наблюдает одну переданную область и её
-явные внешние зависимости.
+`observe(selectors)`; по умолчанию `start()` ищет `microfrontend > *`. Имя всегда берётся из DOM-тега корня области. Для
+разметки `<microfrontend><employee-search>…</employee-search></microfrontend>` достаточно `start()`: область получит имя
+`employee-search`, перечислять микрофронты заранее и добавлять атрибуты не нужно. `TrainingObserver.start(root)`
+наблюдает одну переданную область и её явные внешние зависимости.
 
 ## Проверка и расширение
 

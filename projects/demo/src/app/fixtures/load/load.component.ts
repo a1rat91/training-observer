@@ -13,6 +13,8 @@ import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
 import {MicrofrontendObserver, provideDomObservation} from '@training-observer/core';
 
+import {pocAreaLabel} from '../../shared/poc-area-label';
+
 interface AreaFixture {
     readonly id: number;
     readonly kind: 'checkbox' | 'form' | 'select' | 'table';
@@ -47,6 +49,7 @@ export class LoadComponent {
     private nextId = 0;
     private mixed = this.params.get('mixed') === '1' || !this.params.has('count');
 
+    protected readonly areaLabel = pocAreaLabel;
     protected readonly observer = inject(MicrofrontendObserver);
 
     protected readonly items = signal(
@@ -90,7 +93,7 @@ export class LoadComponent {
     protected start(): void {
         const started = performance.now();
 
-        this.observer.start(undefined, {propertyCheckIntervalMs: this.polling});
+        this.observer.observe('[data-mf]', {propertyCheckIntervalMs: this.polling});
         this.startMs.set(performance.now() - started);
     }
 

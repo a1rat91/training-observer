@@ -158,7 +158,7 @@
                     [class.selected]="selected()?.id === area.id"
                     (click)="selectedId.set(area.id)"
                 >
-                    <strong>{{ area.name || 'Без имени' }}</strong>
+                    <strong>{{ areaLabel(area) || 'Без имени' }}</strong>
                     · {{ area.id }}
                     <small>
                         Пересчётов: {{ area.scanCount }} · публикаций: {{ area.revision }} · контролов:
@@ -173,7 +173,7 @@
                 </button>
             }
             @if (selected(); as area) {
-                <h3>{{ area.name }} · контролы</h3>
+                <h3>{{ areaLabel(area) }} · контролы</h3>
                 @if (area.snapshot?.stats?.truncated) {
                     <p role="alert">Снимок неполный: достигнут лимит.</p>
                 }

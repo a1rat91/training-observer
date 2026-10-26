@@ -26,7 +26,13 @@ const decorationAdapter: ControlAdapter = {
 };
 
 const scopes = new Set<EnvironmentInjector>();
-const options = {includeText: false, batchDelayMs: 0, propertyCheckIntervalMs: 0};
+const options = {
+    includeText: false,
+    batchDelayMs: 0,
+    propertyCheckIntervalMs: 0,
+    boundarySelector: '[data-mf]',
+};
+
 const transitionSelectors = [
     '.adapter-decoration',
     '[data-decoration]',
@@ -212,7 +218,7 @@ test('microfrontend discovery ignores excluded roots and exclusive excluded moun
     const observer = owner().get(MicrofrontendObserver);
 
     observer.start(document.body, options);
-    expect(observer.areas().map((area) => area.name)).toEqual(['visible']);
+    expect(observer.areas().map((area) => area.name)).toEqual(['section']);
     await settleMutations();
     const initial = observer.areas()[0]!;
     const queries = jest.spyOn(document.body, 'querySelectorAll');

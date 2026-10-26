@@ -16,6 +16,7 @@ import {
     type FieldValue,
     ProcedureFieldComponent,
 } from '../../shared/demo-form/procedure-field.component';
+import {pocAreaLabel} from '../../shared/poc-area-label';
 import {
     ASYNC_MICROFRONTENDS,
     type AsyncMicrofrontendDefinition,
@@ -42,6 +43,7 @@ export class AsyncMicrofrontendsComponent {
     private readonly pending = new Map<string, Set<number>>();
     private generation = 0;
 
+    protected readonly areaLabel = pocAreaLabel;
     protected readonly observer = inject(MicrofrontendObserver);
     protected readonly definitions = ASYNC_MICROFRONTENDS;
     protected readonly phaseNames = {
@@ -80,7 +82,7 @@ export class AsyncMicrofrontendsComponent {
     }
 
     protected start(): void {
-        this.observer.start();
+        this.observer.observe('[data-microfrontend]');
     }
 
     protected reloadAll(): void {

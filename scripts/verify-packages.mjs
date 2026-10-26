@@ -214,6 +214,7 @@ import {provideControlAdapters, provideDomObservation, TrainingObserver} from '@
 import {type ControlAdapter} from '@training-observer/core/adapters';
 import {ControlType, type DomSnapshot} from '@training-observer/core/models';
 import {compileScenario} from '@training-observer/recording';
+import {firstValueFrom} from 'rxjs';
 
 const contenteditableAdapter: ControlAdapter = {
     id: 'consumer-contenteditable',
@@ -268,7 +269,7 @@ export class AppComponent {
 
     protected async finish(): Promise<void> {
         const subscription = this.training.feedback$.subscribe((feedback) => console.log(feedback));
-        const recording = await this.recording.stop();
+        const recording = await firstValueFrom(this.recording.stop());
         this.training.start(compileScenario(recording));
         this.recording.highlight(null);
         this.training.stop();

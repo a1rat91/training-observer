@@ -1,6 +1,7 @@
 import {expect, type Page, test} from '@playwright/test';
 
 import {type MicrofrontendSnapshot} from '../libs/training-observer/src';
+import {pocAreaLabel} from '../projects/demo/src/app/shared/poc-area-label';
 
 // Tracing itself reads input properties and would interfere with the polling leak probe.
 test.use({trace: 'off'});
@@ -13,7 +14,7 @@ async function area(
     page: Page,
     name: string,
 ): Promise<MicrofrontendSnapshot | undefined> {
-    return (await areas(page)).find((item) => item.name === name);
+    return (await areas(page)).find((item) => pocAreaLabel(item) === name);
 }
 
 function rootAttribute(item: MicrofrontendSnapshot, name: string): string | undefined {
@@ -34,7 +35,7 @@ async function expectUnchanged(
     names: readonly string[],
 ): Promise<void> {
     for (const name of names) {
-        const previous = before.find((item) => item.name === name)!;
+        const previous = before.find((item) => pocAreaLabel(item) === name)!;
         const current = (await area(page, name))!;
 
         expect(current.id).toBe(previous.id);
@@ -115,7 +116,7 @@ test('input and silent property changes update only the owning microfrontend', a
         .toBe('Изменение profile');
     await settle(page);
     expect((await area(page, 'profile'))!.revision).toBeGreaterThan(
-        beforeInput.find((item) => item.name === 'profile')!.revision,
+        beforeInput.find((item) => pocAreaLabel(item) === 'profile')!.revision,
     );
     await expectUnchanged(page, beforeInput, ['employment', 'review']);
 
