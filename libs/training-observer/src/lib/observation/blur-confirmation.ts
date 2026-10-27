@@ -11,6 +11,7 @@ import {
 } from '@training-observer/core/models';
 
 import {DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
+import {containsAcrossShadow, deepActiveElement, eventOrigin} from '../capture/dom-tree';
 import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {SelectionEvidence} from './selection-evidence';
@@ -39,7 +40,7 @@ export class BlurConfirmation {
         snapshot: DomSnapshot | null,
         controls: readonly ControlSnapshot[],
     ): void {
-        const target = event.target;
+        const target = eventOrigin(event);
 
         if (!snapshot || !(target instanceof this.document.defaultView!.Node)) {
             return;
@@ -50,8 +51,8 @@ export class BlurConfirmation {
 
             if (
                 element &&
-                (element.contains(target) ||
-                    (event.type === 'reset' && target.contains(element)))
+                (containsAcrossShadow(element, target) ||
+                    (event.type === 'reset' && containsAcrossShadow(target, element)))
             ) {
                 this.evidence.invalidate(control.id);
             }
@@ -69,8 +70,9 @@ export class BlurConfirmation {
     ): void {
         const {root, options} = session;
         const generation = this.generation;
+        const target = eventOrigin(event);
 
-        if (!snapshot || !event.target) {
+        if (!snapshot || !target) {
             return;
         }
 
@@ -82,7 +84,7 @@ export class BlurConfirmation {
         const departing = controls.filter(
             (candidate) =>
                 this.requiresBlur(candidate) &&
-                contains(candidate, event.target) &&
+                contains(candidate, target) &&
                 !contains(candidate, event.relatedTarget),
         );
 
@@ -122,7 +124,7 @@ export class BlurConfirmation {
             }
 
             for (const {control, departure} of departures) {
-                if (!contains(control, this.document.activeElement)) {
+                if (!contains(control, deepActiveElement(this.document))) {
                     this.pending.set(control.id, departure);
                 }
             }
@@ -197,9 +199,11 @@ export class BlurConfirmation {
             ...(control.choice?.popup.rootNodeIds ?? control.popup?.rootNodeIds ?? []),
         ];
 
-        return ids.some((id) =>
-            this.snapshots.resolveElement(snapshot, id)?.contains(node),
-        );
+        return ids.some((id) => {
+            const element = this.snapshots.resolveElement(snapshot, id);
+
+            return !!element && containsAcrossShadow(element, node);
+        });
     }
 
     private requiresBlur(control: ControlSnapshot): boolean {

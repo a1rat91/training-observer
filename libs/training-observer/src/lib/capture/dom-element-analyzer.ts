@@ -7,6 +7,7 @@ import {
 } from '@training-observer/core/models';
 
 import {type DomGeometry} from './dom-geometry';
+import {closestAcrossShadow, renderedParent} from './dom-tree';
 
 const INTERACTIVE_ROLES = new Set([
     'button',
@@ -72,8 +73,8 @@ export class DomElementAnalyzer {
         if (
             cursorHeuristics &&
             geometry.style(element).cursor === 'pointer' &&
-            (!element.parentElement ||
-                geometry.style(element.parentElement).cursor !== 'pointer')
+            (!renderedParent(element) ||
+                geometry.style(renderedParent(element)!).cursor !== 'pointer')
         ) {
             reasons.push('cursor');
         }
@@ -102,7 +103,11 @@ export class DomElementAnalyzer {
             .getAttribute('aria-labelledby')
             ?.trim()
             .split(/\s+/)
-            .map((id) => element.ownerDocument.getElementById(id)?.textContent ?? '')
+            .map(
+                (id) =>
+                    (element.getRootNode() as Document | ShadowRoot).getElementById(id)
+                        ?.textContent ?? '',
+            )
             .join(' ');
 
         const labels = (element as HTMLInputElement).labels;
@@ -144,7 +149,7 @@ export class DomElementAnalyzer {
             readOnly:
                 ('readOnly' in element && control.readOnly) ||
                 element.getAttribute('aria-readonly') === 'true',
-            inert: Boolean(element.closest('[inert]')),
+            inert: Boolean(closestAcrossShadow(element, '[inert]')),
             required:
                 ('required' in element && control.required) ||
                 element.getAttribute('aria-required') === 'true',

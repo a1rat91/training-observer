@@ -25,7 +25,7 @@ export class DomSnapshotBuilder {
 
     private nextId = 0;
 
-    /** Синхронное чтение light DOM одного document без изменения страницы. */
+    /** Синхронное чтение DOM и открытых shadow roots без изменения страницы. */
     public build(
         root: Element = this.document.body,
         overrides: Partial<DomSnapshotOptions> = {},

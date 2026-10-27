@@ -48,13 +48,12 @@ export function buildPopupSnapshot(
         target.state.expanded ??
         hosts.find((host) => host.state.expanded !== undefined)?.state.expanded;
 
-    const controls =
-        target.attributes['aria-controls'] ??
-        hosts.find((host) => host.attributes['aria-controls'] !== undefined)?.attributes[
-            'aria-controls'
-        ] ??
-        '';
+    const referenceHost =
+        target.attributes['aria-controls'] === undefined
+            ? hosts.find((host) => host.attributes['aria-controls'] !== undefined)
+            : target;
 
+    const controls = referenceHost?.attributes['aria-controls'] ?? '';
     const referencedIds = [...new Set(controls.trim().split(/\s+/).filter(Boolean))];
 
     const elements = Object.values(snapshot.nodes).filter(
@@ -67,7 +66,11 @@ export function buildPopupSnapshot(
         roots = [target];
     } else if (expanded === true) {
         roots = referencedIds.flatMap((id) => {
-            const matches = elements.filter((node) => node.attributes['id'] === id);
+            const matches = elements.filter(
+                (node) =>
+                    node.attributes['id'] === id &&
+                    node.treeScopeId === referenceHost?.treeScopeId,
+            );
 
             return matches.length === 1 ? matches : [];
         });

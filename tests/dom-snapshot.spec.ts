@@ -259,11 +259,13 @@ test('reports iframe and open shadow boundaries, ignores its own UI and excluded
     expect(snapshot.stats.boundaryCount).toBe(2);
     expect(byId(snapshot, 'frame').boundaries).toEqual(['iframe']);
     expect(byId(snapshot, 'shadow-host').boundaries).toEqual(['open-shadow-root']);
-    expect(
-        elements(snapshot).some((node) =>
-            ['excluded', 'shadow-button'].includes(node.attributes['id']),
-        ),
-    ).toBe(false);
+    expect(byId(snapshot, 'shadow-button')).toMatchObject({
+        interactive: true,
+        label: 'Shadow',
+    });
+    expect(elements(snapshot).some((node) => node.attributes['id'] === 'excluded')).toBe(
+        false,
+    );
     expect(elements(snapshot).some((node) => node.tagName === 'script')).toBe(false);
 });
 

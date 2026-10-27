@@ -1,10 +1,12 @@
+import {closestAcrossShadow, parentAcrossShadow} from '../capture/dom-tree';
+
 /** Зарезервировано для собственного отображения библиотеки независимо от ignoreSelector потребителя. */
 export const OBSERVER_UI_ATTRIBUTE = 'data-training-observer-ui';
 
 export function isObserverUi(node: Node): boolean {
-    const element = node.nodeType === 1 ? (node as Element) : node.parentElement;
+    const element = node.nodeType === 1 ? (node as Element) : parentAcrossShadow(node);
 
-    return Boolean(element?.closest(`[${OBSERVER_UI_ATTRIBUTE}]`));
+    return Boolean(element && closestAcrossShadow(element, `[${OBSERVER_UI_ATTRIBUTE}]`));
 }
 
 export function isObserverUiMutation(record: MutationRecord): boolean {

@@ -12,6 +12,7 @@ import {isAdapterExcluded} from './dom-adapter-exclusions';
 import {type DomElementAnalyzer} from './dom-element-analyzer';
 import {DomGeometry} from './dom-geometry';
 import {findPopupRoots} from './dom-popup-roots';
+import {closestAcrossShadow, shadowHost} from './dom-tree';
 
 const SKIP_TAGS = new Set([
     'link',
@@ -26,6 +27,7 @@ const SKIP_TAGS = new Set([
 /** Один экземпляр на синхронный capture. Основное дерево и popup используют общие лимиты и геометрию. */
 export class DomCapture {
     private readonly nodes: Record<DomNodeId, DomNodeSnapshot> = {};
+    private readonly elements = new Map<DomNodeId, Element>();
     private readonly interactiveIds: DomNodeId[] = [];
     private readonly limits = new Set<'maxDepth' | 'maxNodes'>();
     private readonly view: Window;
@@ -52,7 +54,8 @@ export class DomCapture {
 
     public capture(): DomSnapshot {
         const ignored =
-            this.options.ignoreSelector && this.root.closest(this.options.ignoreSelector);
+            this.options.ignoreSelector &&
+            closestAcrossShadow(this.root, this.options.ignoreSelector);
 
         const rootId = ignored
             ? null
@@ -65,6 +68,7 @@ export class DomCapture {
             Object.values(this.nodes),
             this.options,
             this.excludedSelector,
+            (id) => this.elements.get(id) ?? null,
         )) {
             const id = this.visit(element, null, this.rootPath(element), 0);
 
@@ -168,6 +172,9 @@ export class DomCapture {
         depth: number,
     ): DomNodeId {
         const id = this.idFor(element);
+
+        this.elements.set(id, element);
+
         const children: DomNodeId[] = [];
         const state = this.analyzer.state(element);
         const interactionReasons = this.analyzer.interactionReasons(
@@ -196,6 +203,9 @@ export class DomCapture {
             parentId,
             tagName: element.localName,
             path,
+            treeScopeId: shadowHost(element.getRootNode())
+                ? this.idFor(element.getRootNode())
+                : undefined,
             attributes: this.analyzer.attributes(element),
             label: this.analyzer.label(element),
             children,
@@ -238,9 +248,33 @@ export class DomCapture {
         children: DomNodeId[],
     ): void {
         // Скрытая обёртка или обёртка без собственного rect может содержать видимые контролы; поддерево не отсекается.
+        this.captureChildNodes(element.childNodes, parentId, path, depth, children);
+
+        // Открытые shadow root веб-компонентов: контролы рендерятся внутри них и раньше терялись.
+        // Закрытые (mode: 'closed') недоступны; их наличие нельзя определить через shadowRoot.
+        const shadow = element.shadowRoot;
+
+        if (shadow) {
+            this.captureChildNodes(
+                shadow.childNodes,
+                parentId,
+                `${path}/shadow-root`,
+                depth,
+                children,
+            );
+        }
+    }
+
+    private captureChildNodes(
+        nodes: NodeListOf<ChildNode>,
+        parentId: DomNodeId,
+        path: string,
+        depth: number,
+        children: DomNodeId[],
+    ): void {
         const positions = new Map<string, number>();
 
-        for (const child of Array.from(element.childNodes)) {
+        for (const child of Array.from(nodes)) {
             let childPath = path;
 
             if (child.nodeType === 1) {

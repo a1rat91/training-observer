@@ -10,11 +10,18 @@ import {
 } from '../capture/dom-adapter-exclusions';
 import {DomElementAnalyzer} from '../capture/dom-element-analyzer';
 import {DomSnapshotBuilder} from '../capture/dom-snapshot-builder';
-import {resolveRelatedRoots} from '../capture/snapshot-references';
+import {
+    closestAcrossShadow,
+    containsAcrossShadow,
+    eventOrigin,
+    parentAcrossShadow,
+    querySelectorAllDeep,
+} from '../capture/dom-tree';
 import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
 import {CONTROL_ADAPTER_EXCLUSIONS} from '../tokens/control-adapters';
 import {BlurConfirmation} from './blur-confirmation';
 import {DomObservationScope} from './dom-observation-scope';
+import {DomObservationSources} from './dom-observation-sources';
 import {isObserverUi} from './dom-observer-ui';
 import {SESSION_CONTEXT, SessionSourceMode} from './session-context';
 
@@ -30,6 +37,7 @@ export const PAGE_EVENTS = [
     'load',
     'transitionend',
     'animationend',
+    'slotchange',
 ];
 // Эти переходы меняют декорацию, а не представленное в снимке состояние или геометрию.
 // Неизвестные свойства, opacity, visibility и изменения раскладки учитываются: они могут показать контролы.
@@ -79,7 +87,7 @@ export class DomObservationSession {
     private readonly document: Document;
     private readonly view: Window & typeof globalThis;
     private readonly cleanups: Array<() => void> = [];
-    private mutationObserver: MutationObserver | null = null;
+    private sources: DomObservationSources | null = null;
     private batchTimer: number | null = null;
     private propertyTimer: number | null = null;
     private propertyStates = new Map<Element, string>();
@@ -162,7 +170,7 @@ export class DomObservationSession {
             return;
         }
 
-        const target = event.target as Node | null;
+        const target = eventOrigin(event) as Node | null;
         // Внешнее перекрытие учитывается в standalone capture; завершение его движения
         // должно обновить геометрию даже без следующей DOM mutation.
         const externalVisualEvent =
@@ -220,7 +228,7 @@ export class DomObservationSession {
     public wasCaptured(element: Element): boolean {
         return (
             this.capturedElements.has(element) ||
-            this.capturedRoots.some((root) => element.contains(root))
+            this.capturedRoots.some((root) => containsAcrossShadow(element, root))
         );
     }
 
@@ -254,6 +262,10 @@ export class DomObservationSession {
         }
 
         try {
+            if (this.sources?.refresh()) {
+                this.schedule();
+            }
+
             const next = this.readProperties();
             const changed =
                 next.size !== this.propertyStates.size ||
@@ -282,8 +294,8 @@ export class DomObservationSession {
 
     public dispose(): void {
         this.disposed = true;
-        this.mutationObserver?.disconnect();
-        this.mutationObserver = null;
+        this.sources?.dispose();
+        this.sources = null;
 
         if (this.batchTimer !== null) {
             this.view.clearTimeout(this.batchTimer);
@@ -310,20 +322,12 @@ export class DomObservationSession {
     }
 
     private connectOwnSources(): void {
-        this.mutationObserver = new this.view.MutationObserver((records) =>
-            this.handleMutations(records),
+        this.sources = new DomObservationSources(
+            this.document,
+            PAGE_EVENTS,
+            (records) => this.handleMutations(records),
+            (event) => this.handleEvent(event),
         );
-        // Стили предков, внешние подписи и перекрытия могут влиять даже на снимок ограниченной области.
-        this.mutationObserver.observe(this.document, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            characterData: true,
-        });
-
-        for (const name of PAGE_EVENTS) {
-            this.listen(this.document, name, (event) => this.handleEvent(event));
-        }
 
         // Сам scroll не меняет наблюдаемое состояние. Виртуализация и отложенная загрузка обнаруживаются
         // по результирующим DOM-изменениям; геометрию можно обновить явным capture.
@@ -339,7 +343,8 @@ export class DomObservationSession {
 
     /** Зависимости должны обновляться даже при отключённой проверке native-свойств. */
     private acceptSnapshot(snapshot: DomSnapshot): void {
-        this.scope?.update(snapshot);
+        this.scope?.update(snapshot, (id) => this.builder.resolveElement(snapshot, id));
+        this.sources?.refresh();
 
         if (this.excludedSelector) {
             this.capturedElements = new WeakSet(
@@ -366,7 +371,11 @@ export class DomObservationSession {
             return;
         }
 
-        this.relatedRoots = resolveRelatedRoots(snapshot, this.document);
+        this.relatedRoots = (snapshot.relatedRootIds ?? []).flatMap((id) => {
+            const element = this.builder.resolveElement(snapshot, id);
+
+            return element ? [element] : [];
+        });
         this.resetPropertyBaseline();
     }
 
@@ -465,10 +474,11 @@ export class DomObservationSession {
     }
 
     private excludedAncestor(node: Node): Element | null {
-        const element = node.nodeType === 1 ? (node as Element) : node.parentElement;
+        const element =
+            node.nodeType === 1 ? (node as Element) : parentAcrossShadow(node);
 
-        return this.options.ignoreSelector
-            ? (element?.closest(this.options.ignoreSelector) ?? null)
+        return this.options.ignoreSelector && element
+            ? closestAcrossShadow(element, this.options.ignoreSelector)
             : null;
     }
 
@@ -485,7 +495,7 @@ export class DomObservationSession {
                 controls.add(root);
             }
 
-            root.querySelectorAll(PROPERTY_CONTROLS).forEach((element) => {
+            querySelectorAllDeep(root, PROPERTY_CONTROLS).forEach((element) => {
                 controls.add(element);
             });
         }
