@@ -1,6 +1,8 @@
 /** Чтение геометрии и доступности указателю. Проверяет rects, viewport и перекрытие; не использует координаты как постоянную идентичность. */
 import {type DomRectSnapshot, type HitTestResult} from '@training-observer/core/models';
 
+import {containsAcrossShadow, renderedParent} from './dom-tree';
+
 /** Кэш одного capture: геометрия и computed styles не переиспользуются между снимками. */
 export class DomGeometry {
     private readonly styles = new WeakMap<Element, CSSStyleDeclaration>();
@@ -46,7 +48,9 @@ export class DomGeometry {
     }
 
     public textVisible(text: Text): boolean {
-        if (!text.parentElement || !this.stylesAllowVisibility(text.parentElement)) {
+        const parent = text.parentElement ?? (text.getRootNode() as ShadowRoot).host;
+
+        if (!parent || !this.stylesAllowVisibility(parent)) {
             return false;
         }
 
@@ -89,9 +93,22 @@ export class DomGeometry {
             ];
 
             for (const [x, y] of points) {
-                const hit = element.ownerDocument.elementFromPoint(x, y);
+                let hit = element.ownerDocument.elementFromPoint(x, y);
 
-                if (hit && element.contains(hit)) {
+                while (
+                    hit?.shadowRoot &&
+                    typeof hit.shadowRoot.elementFromPoint === 'function'
+                ) {
+                    const inner = hit.shadowRoot.elementFromPoint(x, y);
+
+                    if (!inner || inner === hit) {
+                        break;
+                    }
+
+                    hit = inner;
+                }
+
+                if (hit && containsAcrossShadow(element, hit)) {
                     return 'hit';
                 }
             }
@@ -111,7 +128,7 @@ export class DomGeometry {
         for (
             let current: Element | null = element;
             current;
-            current = current.parentElement
+            current = renderedParent(current)
         ) {
             const style = this.style(current);
 

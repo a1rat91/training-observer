@@ -208,7 +208,11 @@ function isContextElement(element: DomElementSnapshot): boolean {
 }
 
 function contextLabel(reader: SnapshotReader, element: DomElementSnapshot): string {
-    const referenced = reader.referencedText(element.attributes['aria-labelledby'] ?? '');
+    const referenced = reader.referencedText(
+        element.attributes['aria-labelledby'] ?? '',
+        element,
+    );
+
     const legend = element.tagName === 'fieldset' ? reader.legendText(element) : '';
 
     return normalizeText(referenced || element.attributes['aria-label'] || legend);

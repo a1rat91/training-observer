@@ -8,8 +8,15 @@ import {
     isCaptureExcludedMutation,
 } from './capture/dom-adapter-exclusions';
 import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
+import {
+    closestAcrossShadow,
+    containsAcrossShadow,
+    parentAcrossShadow,
+    querySelectorAllDeep,
+} from './capture/dom-tree';
 import {MICROFRONTEND_SELECTOR} from './observation/dom-observation-scope';
 import {PAGE_EVENTS, type SessionSnapshot} from './observation/dom-observation-session';
+import {DomObservationSources} from './observation/dom-observation-sources';
 import {isObserverUi} from './observation/dom-observer-ui';
 import {
     ObservationSessionFactory,
@@ -46,6 +53,7 @@ export class MicrofrontendObserver {
     private readonly entries = new Map<Element, Area>();
     private readonly identities = new WeakMap<Element, string>();
     private nextId = 0;
+    private sources: DomObservationSources | null = null;
     private readonly cleanups: Array<() => void> = [];
     private destroyed = false;
 
@@ -118,6 +126,8 @@ export class MicrofrontendObserver {
     /** Обновить одну область или все области после внешнего изменения раскладки. */
     public refresh(id?: string): void {
         this.zone.runOutsideAngular(() => {
+            this.sources?.refresh();
+
             for (const area of this.entries.values()) {
                 if (!id || area.state.id === id) {
                     area.sessionRef.session.invalidate();
@@ -137,6 +147,7 @@ export class MicrofrontendObserver {
         }
 
         this.entries.clear();
+        this.sources = null;
         this.active.set(false);
     }
 
@@ -150,52 +161,40 @@ export class MicrofrontendObserver {
         options: DomObservationOptions,
         view: Window & typeof globalThis,
     ): void {
-        const mutations = new view.MutationObserver((records) => {
-            const relevant = records.filter((record) =>
-                this.discoveryRelevant(record, options.ignoreSelector),
-            );
+        const sources = new DomObservationSources(
+            this.document,
+            PAGE_EVENTS,
+            (records) => {
+                const relevant = records.filter((record) =>
+                    this.discoveryRelevant(record, options.ignoreSelector),
+                );
 
-            if (!relevant.length) {
-                return;
-            }
-
-            const existing = new Set(this.entries.values());
-
-            // Изменение атрибутов влияет на ignoreSelector, маркеры границ и имена областей.
-            if (relevant.some((record) => record.type !== 'characterData')) {
-                this.reconcile(root, options);
-            }
-
-            for (const area of this.entries.values()) {
-                if (existing.has(area)) {
-                    area.sessionRef.session.handleMutations(relevant);
+                if (!relevant.length) {
+                    return;
                 }
-            }
-        });
 
-        mutations.observe(this.document, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            characterData: true,
-        });
-        this.cleanups.push(() => mutations.disconnect());
+                const existing = new Set(this.entries.values());
 
-        for (const name of PAGE_EVENTS) {
-            const listener = (event: Event): void => {
+                // Изменение атрибутов влияет на ignoreSelector, маркеры границ и имена областей.
+                if (relevant.some((record) => record.type !== 'characterData')) {
+                    this.reconcile(root, options);
+                }
+
+                for (const area of this.entries.values()) {
+                    if (existing.has(area)) {
+                        area.sessionRef.session.handleMutations(relevant);
+                    }
+                }
+            },
+            (event) => {
                 for (const area of this.entries.values()) {
                     area.sessionRef.session.handleEvent(event);
                 }
-            };
+            },
+        );
 
-            this.document.addEventListener(name, listener, {
-                capture: true,
-                passive: true,
-            });
-            this.cleanups.push(() =>
-                this.document.removeEventListener(name, listener, true),
-            );
-        }
+        this.sources = sources;
+        this.cleanups.push(() => sources.dispose());
 
         const resize = (): void => this.refresh();
 
@@ -204,6 +203,11 @@ export class MicrofrontendObserver {
 
         if (options.propertyCheckIntervalMs > 0) {
             const timer = view.setInterval(() => {
+                if (sources.refresh()) {
+                    this.reconcile(root, options);
+                    this.refresh();
+                }
+
                 for (const area of this.entries.values()) {
                     area.sessionRef.session.checkProperties();
                 }
@@ -215,16 +219,13 @@ export class MicrofrontendObserver {
 
     private reconcile(root: Element, options: DomObservationOptions): void {
         const roots = root.isConnected
-            ? [
-                  root,
-                  ...Array.from(root.querySelectorAll(options.boundarySelector!)),
-              ].filter(
+            ? [root, ...querySelectorAllDeep(root, options.boundarySelector!)].filter(
                   (element) =>
                       element.matches(options.boundarySelector!) &&
                       !isObserverUi(element) &&
                       !isAdapterExcluded(element, this.excludedSelector) &&
                       (!options.ignoreSelector ||
-                          !element.closest(options.ignoreSelector)),
+                          !closestAcrossShadow(element, options.ignoreSelector)),
               )
             : [];
 
@@ -248,11 +249,17 @@ export class MicrofrontendObserver {
 
         for (const area of this.entries.values()) {
             const name = area.root.localName;
-            const parent = area.root.parentElement?.closest(options.boundarySelector!);
+            const parent = parentAcrossShadow(area.root)
+                ? closestAcrossShadow(
+                      parentAcrossShadow(area.root)!,
+                      options.boundarySelector!,
+                  )
+                : null;
+
             const parentId = parent ? (this.entries.get(parent)?.state.id ?? null) : null;
 
-            if (area.parent !== area.root.parentElement) {
-                area.parent = area.root.parentElement;
+            if (area.parent !== parentAcrossShadow(area.root)) {
+                area.parent = parentAcrossShadow(area.root);
                 area.sessionRef.session.invalidate();
             }
 
@@ -280,7 +287,7 @@ export class MicrofrontendObserver {
         const area: Area = {
             root,
             sessionRef,
-            parent: root.parentElement,
+            parent: parentAcrossShadow(root),
             fingerprint: null,
             state: {
                 id,
@@ -352,7 +359,7 @@ export class MicrofrontendObserver {
             isCaptureExcludedMutation(record, this.excludedSelector, (element) =>
                 [...this.entries.values()].some(
                     (area) =>
-                        element.contains(area.root) ||
+                        containsAcrossShadow(element, area.root) ||
                         area.sessionRef.session.wasCaptured(element),
                 ),
             )
@@ -363,9 +370,10 @@ export class MicrofrontendObserver {
         const target =
             record.target.nodeType === 1
                 ? (record.target as Element)
-                : record.target.parentElement;
+                : parentAcrossShadow(record.target);
 
-        const ignored = ignoreSelector ? target?.closest(ignoreSelector) : null;
+        const ignored =
+            ignoreSelector && target ? closestAcrossShadow(target, ignoreSelector) : null;
 
         return !ignored || (record.type === 'attributes' && target === ignored);
     }

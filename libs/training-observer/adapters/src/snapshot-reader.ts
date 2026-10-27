@@ -26,7 +26,10 @@ export class SnapshotReader {
             const htmlId = element.attributes['id'];
 
             if (htmlId) {
-                this.lastElementByHtmlId.set(htmlId, element);
+                this.lastElementByHtmlId.set(
+                    `${element.treeScopeId ?? ''}\0${htmlId}`,
+                    element,
+                );
             }
         }
     }
@@ -56,11 +59,13 @@ export class SnapshotReader {
     }
 
     /** Сохраняет существующее правило контекстной подписи: последний дубликат HTML id побеждает. */
-    public referencedText(ids: string): string {
+    public referencedText(ids: string, context?: DomElementSnapshot): string {
         return ids
             .trim()
             .split(/\s+/)
-            .map((id) => this.lastElementByHtmlId.get(id))
+            .map((id) =>
+                this.lastElementByHtmlId.get(`${context?.treeScopeId ?? ''}\0${id}`),
+            )
             .filter((node): node is DomElementSnapshot => !!node)
             .map((node) => this.text(node.id))
             .join(' ');
@@ -80,9 +85,10 @@ export class SnapshotReader {
     ): readonly DomElementSnapshot[] {
         return this.labels.filter(
             (label) =>
-                (target.attributes['id'] &&
+                target.treeScopeId === label.treeScopeId &&
+                ((target.attributes['id'] &&
                     label.attributes['for'] === target.attributes['id']) ||
-                ancestors.some((parent) => parent.id === label.id),
+                    ancestors.some((parent) => parent.id === label.id)),
         );
     }
 

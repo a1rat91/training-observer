@@ -42,6 +42,8 @@ export interface DomElementSnapshot extends DomNodeBase {
     readonly tagName: string;
     /** Структурный путь для диагностики, не устойчивый локатор между сеансами. */
     readonly path: string;
+    /** Область HTML ID внутри shadow root; отсутствие означает document. */
+    readonly treeScopeId?: string;
     readonly attributes: Readonly<Record<string, string>>;
     /** Приближённая подпись; полный алгоритм accessible name не реализован. */
     readonly label: string;
@@ -55,7 +57,7 @@ export interface DomElementSnapshot extends DomNodeBase {
     readonly interactionReasons: readonly InteractionReason[];
     readonly pointerActionable: boolean;
     readonly state: DomControlState;
-    /** Границы присутствуют в диагностике, но содержимое за ними не обходится. */
+    /** Диагностика границ: open shadow root обходится, iframe остаётся непрозрачным. */
     readonly boundaries: ReadonlyArray<'iframe' | 'open-shadow-root'>;
 }
 

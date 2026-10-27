@@ -1,10 +1,11 @@
 /** Общие исключения DOM, объявленные подключёнными адаптерами. */
 import {isObserverUi} from '../observation/dom-observer-ui';
+import {closestAcrossShadow, parentAcrossShadow} from './dom-tree';
 
 export function isAdapterExcluded(node: Node, selector: string): boolean {
-    const element = node.nodeType === 1 ? (node as Element) : node.parentElement;
+    const element = node.nodeType === 1 ? (node as Element) : parentAcrossShadow(node);
 
-    return Boolean(selector && element?.closest(selector));
+    return Boolean(selector && element && closestAcrossShadow(element, selector));
 }
 
 /** Удаление проверяется по самому узлу: его новые предки не должны скрыть изменение прежнего родителя. */
@@ -27,9 +28,9 @@ export function isCaptureExcludedMutation(
     const target =
         record.target.nodeType === 1
             ? (record.target as Element)
-            : record.target.parentElement;
+            : parentAcrossShadow(record.target);
 
-    const excluded = selector ? target?.closest(selector) : null;
+    const excluded = selector && target ? closestAcrossShadow(target, selector) : null;
 
     // Проверяем прежнее включение предка, а не только target: :has() может исключить
     // всё поддерево после mutation в любом из его потомков.

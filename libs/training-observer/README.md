@@ -34,7 +34,7 @@ DomSnapshotBuilder → control-projection. Затем BlurConfirmation объя�
 ## Алгоритм
 
 1. `start(root, options)` проверяет параметры и строит исходный снимок до замены старого сеанса.
-2. DomCapture обходит light DOM, соблюдая ограничения, и добавляет явно связанные popup.
+2. DomCapture обходит light DOM и открытые shadow roots, соблюдая общие ограничения, и добавляет явно связанные popup.
 3. Адаптеры объединяют служебные узлы в ControlSnapshot с target, host, value и locator hints.
 4. Browser events, MutationObserver и polling native properties запускают объединённый capture.
 5. Fingerprint подавляет одинаковые публикации; время capture не считается изменением страницы.
@@ -70,8 +70,19 @@ Taiga-правила находятся в отдельном `@training-observe
 подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui/angular`. Core по умолчанию использует native/ARIA
 правила. Сессионные ID меняются при remount. Подписи — приближённый алгоритм, не полный accessible-name standard.
 Структурный path предназначен для диагностики. Core не гарантирует идентичность поля между документами. Password/file
-скрываются; произвольная политика конфиденциальных данных ещё требует отдельной настройки. Неизвестные popup, закрытые
-границы обхода и truncated явно отражаются в снимке.
+скрываются; произвольная политика конфиденциальных данных ещё требует отдельной настройки. Неизвестные popup, iframe и
+truncated явно отражаются в снимке. Закрытый shadow root недоступен через DOM API; его наличие и содержимое библиотека
+не определяет.
+
+Открытые shadow roots поддерживают capture, геометрию, события, mutations, polling native-свойств и подтверждение blur.
+В графе их потомки связаны с host; path содержит `/shadow-root`, а необязательный `treeScopeId` отделяет области HTML ID
+разных экземпляров компонента. Ссылки `aria-labelledby`, `aria-controls` и `label[for]` разрешаются внутри своей
+области. Light DOM и slot сохраняются как отдельные DOM-узлы, без дублирования назначенных slot потомков. Это DOM-граф,
+не полное flattened/accessibility tree.
+
+Новые shadow roots обнаруживаются после DOM mutations и при polling. Если `attachShadow()` вызван на уже существующем
+host без других DOM-изменений и polling отключён, нужен явный `capture()` (или `refresh()` для MicrofrontendObserver).
+Остановка сеанса освобождает listeners и MutationObserver всех подключённых shadow roots.
 
 Снимки не доказывают конкретный клик или происхождение изменения. MicrofrontendObserver обнаруживает области по
 `observe(selectors)`; по умолчанию `start()` ищет `microfrontend > *`. Имя всегда берётся из DOM-тега корня области. Для

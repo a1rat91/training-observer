@@ -2,6 +2,12 @@
 /** Правила владения DOM-областью и её зависимостями. Отфильтровывает чужие события, учитывая popup и внешние подписи. */
 import {type DomSnapshot} from '@training-observer/core/models';
 
+import {
+    closestAcrossShadow,
+    containsAcrossShadow,
+    parentAcrossShadow,
+    querySelectorAllDeep,
+} from '../capture/dom-tree';
 import {resolveRelatedRoots} from '../capture/snapshot-references';
 
 export const MICROFRONTEND_SELECTOR = 'microfrontend > *';
@@ -23,12 +29,13 @@ export class DomObservationScope {
         private readonly boundarySelector = MICROFRONTEND_SELECTOR,
     ) {}
 
-    public update(snapshot: DomSnapshot): void {
+    public update(snapshot: DomSnapshot, resolve?: (id: string) => Element | null): void {
         const document = this.root.ownerDocument;
+        const dependencies: Element[] = [];
 
         this.nestedRoots = new WeakSet(
             this.boundarySelector
-                ? Array.from(this.root.querySelectorAll(this.boundarySelector))
+                ? querySelectorAllDeep(this.root, this.boundarySelector)
                 : [],
         );
         this.referenceIds = new Set<string>();
@@ -37,6 +44,9 @@ export class DomObservationScope {
             if (node.kind !== 'element') {
                 continue;
             }
+
+            const scope = resolve?.(node.id)?.getRootNode() as
+                Document | ShadowRoot | undefined;
 
             const attributes = ['aria-labelledby', 'aria-describedby'];
 
@@ -49,18 +59,26 @@ export class DomObservationScope {
                     .split(/\s+/)
                     .filter(Boolean)) {
                     this.referenceIds.add(id);
+
+                    const element = (scope ?? document).getElementById(id);
+
+                    if (element) {
+                        dependencies.push(element);
+                    }
                 }
             }
         }
 
-        this.portals = resolveRelatedRoots(snapshot, document);
+        this.portals = resolve
+            ? (snapshot.relatedRootIds ?? []).flatMap((id) => {
+                  const element = resolve(id);
+
+                  return element ? [element] : [];
+              })
+            : resolveRelatedRoots(snapshot, document);
         this.dependencies = [
             ...new Set([
-                ...[...this.referenceIds].flatMap((id) => {
-                    const element = document.getElementById(id);
-
-                    return element ? [element] : [];
-                }),
+                ...dependencies,
                 ...this.ownedElements(
                     'button,input,meter,output,progress,select,textarea',
                 ).flatMap((element) =>
@@ -71,19 +89,21 @@ export class DomObservationScope {
     }
 
     public owns(node: Node): boolean {
-        const element = node.nodeType === 1 ? (node as Element) : node.parentElement;
+        const element =
+            node.nodeType === 1 ? (node as Element) : parentAcrossShadow(node);
 
         if (!element) {
             return false;
         }
 
         const owner = this.boundarySelector
-            ? element.closest(this.boundarySelector)
+            ? closestAcrossShadow(element, this.boundarySelector)
             : null;
 
-        return this.root.contains(element)
-            ? !owner || !this.root.contains(owner) || owner === this.root
-            : !owner && this.portals.some((portal) => portal.contains(element));
+        return containsAcrossShadow(this.root, element)
+            ? !owner || !containsAcrossShadow(this.root, owner) || owner === this.root
+            : !owner &&
+                  this.portals.some((portal) => containsAcrossShadow(portal, element));
     }
 
     public acceptsEvent(node: Node, eventType: string): boolean {
@@ -112,7 +132,7 @@ export class DomObservationScope {
         const target =
             record.target.nodeType === 1
                 ? (record.target as Element)
-                : record.target.parentElement;
+                : parentAcrossShadow(record.target);
 
         if (!target) {
             return false;
@@ -152,7 +172,7 @@ export class DomObservationScope {
         if (
             record.type !== 'attributes' ||
             !this.boundarySelector ||
-            !this.root.contains(target)
+            !containsAcrossShadow(this.root, target)
         ) {
             return false;
         }
@@ -162,7 +182,7 @@ export class DomObservationScope {
 
         return (
             wasBoundary !== isBoundary &&
-            Boolean(target.parentElement && this.owns(target.parentElement))
+            Boolean(parentAcrossShadow(target) && this.owns(parentAcrossShadow(target)!))
         );
     }
 
@@ -178,7 +198,7 @@ export class DomObservationScope {
         return (
             node.nodeType === 1 &&
             [this.root, ...this.portals, ...this.dependencies].some((element) =>
-                node.contains(element),
+                containsAcrossShadow(node, element),
             )
         );
     }
@@ -190,18 +210,18 @@ export class DomObservationScope {
         return Boolean(
             control &&
             this.owns(control) &&
-            (!this.ignoreSelector || !control.closest(this.ignoreSelector)),
+            (!this.ignoreSelector || !closestAcrossShadow(control, this.ignoreSelector)),
         );
     }
 
     private isInsideDependency(node: Node): boolean {
-        return this.dependencies.some((element) => element.contains(node));
+        return this.dependencies.some((element) => containsAcrossShadow(element, node));
     }
 
     private affectsExternalContext(node: Node): boolean {
         if (
-            node.contains(this.root) ||
-            this.dependencies.some((element) => node.contains(element))
+            containsAcrossShadow(node, this.root) ||
+            this.dependencies.some((element) => containsAcrossShadow(node, element))
         ) {
             return true;
         }
@@ -267,7 +287,7 @@ export class DomObservationScope {
                 controls.push(root);
             }
 
-            root.querySelectorAll(selector).forEach((control) => {
+            querySelectorAllDeep(root, selector).forEach((control) => {
                 controls.push(control);
             });
         }
@@ -275,7 +295,8 @@ export class DomObservationScope {
         return controls.filter(
             (element) =>
                 this.owns(element) &&
-                (!this.ignoreSelector || !element.closest(this.ignoreSelector)),
+                (!this.ignoreSelector ||
+                    !closestAcrossShadow(element, this.ignoreSelector)),
         );
     }
 }
