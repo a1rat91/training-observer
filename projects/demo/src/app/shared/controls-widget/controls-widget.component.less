@@ -1,0 +1,66 @@
+.widget {
+    position: fixed;
+    display: flex;
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    flex-direction: column;
+    box-sizing: border-box;
+    /* stylelint-disable rem-over-px/rem-over-px -- Фиксированный размер виджета в пикселях. */
+    inline-size: 200px;
+    block-size: 300px;
+    /* stylelint-enable rem-over-px/rem-over-px */
+    overflow: hidden;
+    border: 1px solid var(--tui-border-normal);
+    border-radius: var(--tui-radius-m);
+    background: var(--tui-background-elevation-1);
+    color: var(--tui-text-primary);
+    box-shadow: var(--tui-shadow-medium);
+    pointer-events: auto;
+    font: var(--tui-font-text-s);
+}
+
+.handle {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--tui-border-normal);
+    padding: 0.75rem;
+    cursor: move;
+    touch-action: none;
+    user-select: none;
+}
+
+h2 {
+    margin: 0;
+    font: inherit;
+    font-weight: bold;
+}
+
+.content {
+    flex: 1;
+    min-block-size: 0;
+    padding: 0 0.75rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    overflow-wrap: anywhere;
+}
+
+.control {
+    border-bottom: 1px solid var(--tui-border-normal);
+    padding-block: 0.75rem;
+}
+
+small {
+    display: block;
+    color: var(--tui-text-secondary);
+}
+
+p {
+    margin: 0.375rem 0 0;
+}
+
+.muted {
+    color: var(--tui-text-secondary);
+}

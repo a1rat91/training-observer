@@ -1,0 +1,73 @@
+<section
+    *tuiDropdown="true"
+    aria-label="Текущие контролы"
+    data-training-observer-ignore
+    class="widget"
+    [attr.tuiTheme]="darkMode() ? 'dark' : 'light'"
+    [style.transform]="transform()"
+>
+    <header
+        title="Перетащить виджет"
+        class="handle"
+        (tuiPan)="onPan($event)"
+    >
+        <h2>Контролы · {{ session.screen().controls.length }}</h2>
+        <span aria-hidden="true">⠿</span>
+    </header>
+    <div
+        aria-label="Список распознанных контролов"
+        tabindex="0"
+        class="content"
+    >
+        @if (session.error()) {
+            <p role="alert">{{ session.error() }}</p>
+        }
+        @for (control of session.screen().controls; track control.id) {
+            <div
+                class="control"
+                [attr.data-control-id]="control.locatorHints.id"
+            >
+                <strong>{{ control.label || 'Без подписи' }}</strong>
+                <small>{{ control.kind }}</small>
+                <p>
+                    Сейчас:
+                    <b>{{ value(control) }}</b>
+                </p>
+                @if (needsBlur(control)) {
+                    <p class="muted">
+                        После blur:
+                        @if (session.confirmedControls()[control.id]; as confirmed) {
+                            {{ value(confirmed) }}
+                        } @else {
+                            Ожидает выхода из поля
+                        }
+                    </p>
+                }
+                <p class="muted">
+                    {{ control.visible ? 'Виден' : 'Скрыт' }} ·
+                    {{ control.state.disabled ? 'Заблокирован' : 'Доступен' }}
+                    @if (control.state.readOnly) {
+                        · Только чтение
+                    }
+                    @if (control.state.required) {
+                        · Обязательное
+                    }
+                    @if (control.state.invalid) {
+                        · Ошибка
+                    }
+                    @if (control.visible && !control.inViewport) {
+                        · Вне экрана
+                    }
+                    @if (control.hitTest === 'covered') {
+                        · Перекрыт
+                    }
+                </p>
+                @if (control.choice?.popup ?? control.popup; as popup) {
+                    <p class="muted">Dropdown: {{ popupLabels[popup.status] }}</p>
+                }
+            </div>
+        } @empty {
+            <p class="muted">Пока нет распознанных контролов этого экрана.</p>
+        }
+    </div>
+</section>

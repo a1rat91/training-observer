@@ -23,14 +23,22 @@ import {
 import {type ControlSnapshot} from '@training-observer/core/models';
 import {recordingProblem, removeRecordedEvent} from '@training-observer/recording';
 
+import {ControlsWidgetComponent} from '../../shared/controls-widget/controls-widget.component';
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
 import {PROCEDURE_SCREEN} from '../../shared/demo-form/procedure-screen';
+import {formatControlValue} from '../../shared/format-control-value';
 import {RecordingStore} from './recording-store';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
 @Component({
     selector: 'app-procedure',
-    imports: [JsonPipe, ProcedureFormComponent, ScenarioEditorComponent, TuiButton],
+    imports: [
+        ControlsWidgetComponent,
+        JsonPipe,
+        ProcedureFormComponent,
+        ScenarioEditorComponent,
+        TuiButton,
+    ],
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -184,34 +192,6 @@ export class RecordPageComponent {
     }
 
     protected value(control: ControlSnapshot): string {
-        if (control.state.redacted) {
-            return 'Значение скрыто';
-        }
-
-        if (control.kind === 'button') {
-            return '—';
-        }
-
-        if (control.kind === 'combobox' && control.choice) {
-            return control.choice.displayValue || 'Пусто';
-        }
-
-        if (control.choice) {
-            return control.choice.selection.status === 'observed'
-                ? control.choice.selection.labels.join(', ') || 'Не выбран'
-                : `Выбор не подтверждён${control.choice.displayValue ? `: ${control.choice.displayValue}` : ''}`;
-        }
-
-        if (control.state.indeterminate) {
-            return 'Смешанное состояние';
-        }
-
-        if (typeof control.state.checked === 'boolean') {
-            return control.state.checked ? 'Включён' : 'Выключен';
-        }
-
-        return control.state.value === undefined
-            ? 'Недоступно'
-            : String(control.state.value) || 'Пусто';
+        return formatControlValue(control);
     }
 }
