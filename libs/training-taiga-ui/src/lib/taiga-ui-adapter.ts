@@ -18,6 +18,16 @@ const TAIGA_FIELD_KINDS: readonly ControlKind[] = [
     'combobox',
 ];
 
+const TAIGA_FIELD_HOSTS = new Set([
+    'tui-combo-box',
+    'tui-input',
+    'tui-input-number',
+    'tui-primitive-textfield',
+    'tui-select',
+    'tui-textarea',
+    'tui-textfield',
+]);
+
 // Each projection owns its candidate array; the weak key retains no snapshot graph.
 const fieldHostsByCandidates = new WeakMap<
     readonly ControlCandidate[],
@@ -30,7 +40,15 @@ export const taigaUiAdapter: ControlAdapter = {
     priority: 100,
     excludedSubtreeSelectors: ['tui-scroll-controls'],
     match({target, ancestors, nativeKind}) {
-        const field = ancestors.find((parent) => parent.tagName === 'tui-textfield');
+        // Taiga рендерит legacy-дубликат рядом с нативным полем - это один логический контрол.
+        if (
+            'tuitextfieldlegacy' in target.attributes &&
+            (target.tagName === 'input' || target.tagName === 'textarea')
+        ) {
+            return {status: 'exclude'};
+        }
+
+        const field = ancestors.find((parent) => TAIGA_FIELD_HOSTS.has(parent.tagName));
 
         if (field && isTaigaFiller(target)) {
             return {status: 'exclude'};
@@ -82,8 +100,20 @@ export const taigaUiAdapter: ControlAdapter = {
         );
 
         // Do not choose between unrelated floating labels.
-        return labels.length === 1 && labels[0]
-            ? normalizeText(reader.text(labels[0].id))
+        if (labels.length === 1 && labels[0]) {
+            return normalizeText(reader.text(labels[0].id));
+        }
+
+        // Без tuiLabel меткой поля выступает плейсхолдер (t-placeholder): его for-связь
+        // указывает на исключенный legacy-input, а не нативный, поэтому generic-анализатор его не видит.
+        const placeholders = reader.labels.filter(
+            (label) =>
+                members.has(label.id) &&
+                (label.attributes['class'] ?? '').split(/\s+/).includes('t-placeholder'),
+        );
+
+        return placeholders.length === 1 && placeholders[0]
+            ? normalizeText(reader.text(placeholders[0].id))
             : undefined;
     },
 };

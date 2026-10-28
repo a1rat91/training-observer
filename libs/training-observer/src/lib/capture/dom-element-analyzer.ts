@@ -113,7 +113,7 @@ export class DomElementAnalyzer {
         const labels = (element as HTMLInputElement).labels;
         const associatedLabel = labels
             ? Array.from(labels)
-                  .map((label) => label.textContent ?? '')
+                  .map((label) => this.visibleText(label))
                   .join(' ')
             : '';
 
@@ -216,10 +216,14 @@ export class DomElementAnalyzer {
         );
     }
 
-    /** Декоративные aria-hidden-потомки не меняют подпись действия.
+    /** Декоративные aria-hidden-потомки не меняют подпись: зеркало значения (t-pseudo-content) исключается из метки.
      * TreeWalker отсекает всё скрытое поддерево без рекурсии; явные aria-label/labelledby имеют приоритет выше.
      */
     private actionText(element: Element): string {
+        return this.visibleText(element);
+    }
+
+    private visibleText(element: Element): string {
         const walker = element.ownerDocument.createTreeWalker(
             element,
             NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
