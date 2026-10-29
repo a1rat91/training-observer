@@ -295,6 +295,7 @@ export class MicrofrontendObserver {
                 parentId: null,
                 snapshot: null,
                 logicalControls: [],
+                confirmedControls: {},
                 scanCount: 0,
                 revision: 0,
                 error: null,
@@ -330,7 +331,7 @@ export class MicrofrontendObserver {
     }
 
     private acceptArea(area: Area, result: SessionSnapshot): void {
-        const {snapshot, controls} = result;
+        const {snapshot, controls, confirmedControls} = result;
         const fingerprint = snapshotFingerprint(snapshot);
         const changed = fingerprint !== area.fingerprint;
 
@@ -338,6 +339,7 @@ export class MicrofrontendObserver {
         area.state = {
             ...area.state,
             scanCount: area.state.scanCount + 1,
+            confirmedControls,
             ...(changed
                 ? {
                       snapshot,
