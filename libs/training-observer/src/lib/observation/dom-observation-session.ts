@@ -191,8 +191,10 @@ export class DomObservationSession {
             return;
         }
 
-        // Только одиночный фасад публикует blur-подтверждения; shared-области сохраняют прежний контракт снимков.
-        if (this.current && this.context.mode === SessionSourceMode.Standalone) {
+        // Blur-подтверждения нужны и одиночному фасаду, и агрегации микрофронтов (виджет).
+        // В shared-режиме каждое событие обрабатывается per-area: регистрируется только область,
+        // содержащая уходящий контрол.
+        if (this.current) {
             try {
                 if (event.type === 'input' || event.type === 'reset') {
                     this.confirmations.onEdit(

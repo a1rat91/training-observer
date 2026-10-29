@@ -10,6 +10,8 @@ export interface MicrofrontendSnapshot {
     readonly parentId: string | null;
     readonly snapshot: DomSnapshot | null;
     readonly logicalControls: readonly ControlSnapshot[];
+    /** Состояние полей после подтверждения blur; ключи совпадают с logicalControls[].id. */
+    readonly confirmedControls: Readonly<Record<string, ControlSnapshot>>;
     readonly scanCount: number;
     readonly revision: number;
     readonly error: string | null;
