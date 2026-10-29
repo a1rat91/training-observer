@@ -279,6 +279,13 @@ function matchTaigaControl(
     } else if (
         node.tagName === 'input' &&
         attributes['role'] === 'combobox' &&
+        ancestors.some((parent) => parent.tagName === 'tui-combo-box')
+    ) {
+        // Combo-box: выбор из дропдауна, значение живёт в нативном input/ghost.
+        kind = 'combobox';
+    } else if (
+        node.tagName === 'input' &&
+        attributes['role'] === 'combobox' &&
         ancestors.some(
             (parent) =>
                 parent.tagName === 'tui-multi-select' ||
