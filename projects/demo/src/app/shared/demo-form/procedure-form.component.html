@@ -1,6 +1,7 @@
 <section
     aria-label="Экран процедуры"
     [attr.aria-busy]="loading()"
+    [attr.block-id]="screen()?.id ?? null"
     [attr.id]="screen()?.id ?? null"
     [class.rearranged]="rearranged()"
 >

@@ -14,21 +14,27 @@ DAP не используются.
 
 ## Пакеты
 
-| Пакет                              | Ответственность                                                  | Входная точка                                                         |
-| ---------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `@training-observer/core`          | DOM capture, распознавание, наблюдение, blur, optional highlight | [src/index.ts](libs/training-observer/src/index.ts)                   |
-| `@training-observer/core/models`   | Только сериализуемые модели DOM и enum, без Angular              | [models/src/index.ts](libs/training-observer/models/src/index.ts)     |
-| `@training-observer/core/adapters` | Чистый SDK адаптеров и проекция сохранённого снимка              | [adapters/src/index.ts](libs/training-observer/adapters/src/index.ts) |
-| `@training-observer/contracts`     | JSON-форматы, валидация и общие правила учебного значения        | [src/index.ts](libs/training-contracts/src/index.ts)                  |
-| `@training-observer/recording`     | Запись администратора, удаление строк, компиляция сценария       | [src/index.ts](libs/training-recording/src/index.ts)                  |
-| `@training-observer/runtime`       | Сопоставление ожиданий, переходы, прогресс и сообщения           | [src/index.ts](libs/training-runtime/src/index.ts)                    |
-| `@training-observer/angular`       | Автоматическое наблюдение, запись и прохождение в Angular        | [src/index.ts](libs/training-angular/src/index.ts)                    |
-| `@training-observer/taiga-ui`      | Чистый DOM-адаптер Taiga UI 4; Angular provider в `/angular`     | [src/index.ts](libs/training-taiga-ui/src/index.ts)                   |
+| Пакет                                 | Ответственность                                                  | Входная точка                                                         |
+| ------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `@training-observer/core`             | DOM capture, распознавание, наблюдение, blur, optional highlight | [src/index.ts](libs/training-observer/src/index.ts)                   |
+| `@training-observer/core/models`      | Только сериализуемые модели DOM и enum, без Angular              | [models/src/index.ts](libs/training-observer/models/src/index.ts)     |
+| `@training-observer/core/adapters`    | Чистый SDK адаптеров и проекция сохранённого снимка              | [adapters/src/index.ts](libs/training-observer/adapters/src/index.ts) |
+| `@training-observer/contracts`        | JSON-форматы, валидация и общие правила учебного значения        | [src/index.ts](libs/training-contracts/src/index.ts)                  |
+| `@training-observer/recording`        | Запись администратора, удаление строк, компиляция сценария       | [src/index.ts](libs/training-recording/src/index.ts)                  |
+| `@training-observer/runtime`          | Сопоставление ожиданий, переходы, прогресс и сообщения           | [src/index.ts](libs/training-runtime/src/index.ts)                    |
+| `@training-observer/angular`          | Автоматическое наблюдение, запись и прохождение в Angular        | [src/index.ts](libs/training-angular/src/index.ts)                    |
+| `@training-observer/taiga-ui`         | Чистый DOM-адаптер Taiga UI 4; Angular provider в `/angular`     | [src/index.ts](libs/training-taiga-ui/src/index.ts)                   |
+| `@training-observer/procedure-player` | Блоки procedure-player, события переходов и адаптеры компонентов | [Руководство](libs/training-procedure-player/README.md)               |
 
 Angular-интеграция — [@training-observer/angular](libs/training-angular/README.md): `provideRecordingSession()` и
 `provideTrainingSession()` автоматически управляют наблюдением, доставкой состояний и очисткой ресурсов. Модели остаются
 в core/models; Angular/RxJS peers core необязательны для чистых consumers `core/models` и `core/adapters`. Основной core
 и Angular-пакет используют framework-зависимости приложения.
+
+Для `procedure-player` зарегистрируйте `provideProcedurePlayerAdapter()` из
+`@training-observer/procedure-player/angular`. Сеансы записи и тренировки распознают текущий `block-id` без конфигурации
+экрана на странице. `ProcedurePlayerObserver.blockChanges$` сообщает об изменениях блоков независимо для каждого
+экземпляра микрофронта и не требует запуска записи.
 
 Core не импортирует и не экспортирует запись, сценарии или проверку ответов. Recording и runtime не зависят друг от
 друга. Core по умолчанию распознаёт native/ARIA-контролы. Для Taiga UI явно подключите `provideTaigaUiAdapter()` из
@@ -57,7 +63,7 @@ npm run format                # применить единое оформлен
 npm run test:load              # отдельные измерения, production сервер 4302
 ```
 
-Каждая библиотека собирается отдельно. `npm run build` собирает все шесть библиотек и demo в `dist/`. `npx nx graph`
+Каждая библиотека собирается отдельно. `npm run build` собирает все библиотеки и demo в `dist/`. `npx nx graph`
 открывает граф Nx-проектов — это средство разработки, не часть обучения.
 
 ## Главные правила

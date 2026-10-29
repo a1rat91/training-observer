@@ -59,7 +59,7 @@ export interface ControlAdapter {
         readonly candidate: ControlCandidate;
         readonly members: ReadonlySet<DomNodeId>;
     }): string | undefined;
-    /** Overrides the control value; used when the value lives outside the target element (e.g. multi-select tags). */
+    /** Refines non-redacted value-carrying controls. undefined falls back to the next inner layer, then native value. */
     resolveValue?(context: {
         readonly reader: SnapshotReader;
         readonly candidate: ControlCandidate;

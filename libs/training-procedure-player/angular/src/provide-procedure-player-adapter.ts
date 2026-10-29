@@ -1,9 +1,20 @@
-import {provideControlAdapters} from '@training-observer/core';
-import {procedurePlayerAdapter} from '@training-observer/procedure-player';
+import {type Provider} from '@angular/core';
+import {provideControlAdapters, provideScreenAdapters} from '@training-observer/core';
+import {type ControlAdapter} from '@training-observer/core/adapters';
+import {
+    procedurePlayerAdapter,
+    procedurePlayerScreenAdapter,
+} from '@training-observer/procedure-player';
 
-/** Registers the procedure-player DOM rules in the current Angular injector scope. */
-export function provideProcedurePlayerAdapter(): ReturnType<
-    typeof provideControlAdapters
-> {
-    return provideControlAdapters(procedurePlayerAdapter);
+import {ProcedurePlayerObserver} from './procedure-player-observer.service';
+
+/** Регистрирует правила procedure-player и его компонентов, независимо от Taiga UI. */
+export function provideProcedurePlayerAdapter(
+    ...components: readonly ControlAdapter[]
+): Provider[] {
+    return [
+        ...provideScreenAdapters(procedurePlayerScreenAdapter),
+        ...provideControlAdapters(procedurePlayerAdapter, ...components),
+        ProcedurePlayerObserver,
+    ];
 }

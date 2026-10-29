@@ -48,5 +48,19 @@ export const routes: Routes = [
             ),
     },
     {path: 'controls-example', redirectTo: 'controls?fixture=selectors'},
+    {
+        path: 'procedure-player-controls',
+        loadComponent: async () =>
+            import('./fixtures/procedure-player-controls/procedure-player-controls.component').then(
+                (module) => module.ProcedurePlayerControlsComponent,
+            ),
+    },
+    {
+        path: 'taiga-values',
+        loadComponent: async () =>
+            import('./fixtures/taiga-values/taiga-values.component').then(
+                (module) => module.TaigaValuesComponent,
+            ),
+    },
     {path: '**', redirectTo: 'record'},
 ];

@@ -31,6 +31,7 @@ export interface ScreenState {
     readonly schemaVersion: 1;
     readonly status: `${ScreenStatus}`;
     readonly reason:
+        | 'adapter-missing'
         | 'identity-ambiguous'
         | 'identity-element-missing'
         | 'identity-missing'

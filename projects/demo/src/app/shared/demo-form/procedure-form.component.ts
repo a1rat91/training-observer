@@ -1,6 +1,6 @@
 /**
  * Demo-плеер загружает экраны из HTTP fixture, сохраняет ответы при навигации и отменяет устаревший запрос.
- * ID секции — обычная идентичность экрана приложения. Никаких импортов библиотеки обучения или учебных правил.
+ * block-id секции — идентичность текущего блока procedure-player. Никаких импортов библиотеки обучения или учебных правил.
  */
 import {NgTemplateOutlet} from '@angular/common';
 import {HttpClient} from '@angular/common/http';
@@ -33,7 +33,7 @@ interface ProcedureScreen {
 }
 
 @Component({
-    selector: 'app-procedure-form',
+    selector: 'procedure-player',
     imports: [NgTemplateOutlet, ProcedureFieldComponent, TuiButton],
     templateUrl: './procedure-form.component.html',
     styleUrl: './procedure-form.component.less',

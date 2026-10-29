@@ -25,7 +25,6 @@ import {recordingProblem, removeRecordedEvent} from '@training-observer/recordin
 
 import {ControlsWidgetComponent} from '../../shared/controls-widget/controls-widget.component';
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
-import {PROCEDURE_SCREEN} from '../../shared/demo-form/procedure-screen';
 import {formatControlValue} from '../../shared/format-control-value';
 import {RecordingStore} from './recording-store';
 import {ScenarioEditorComponent} from './scenario-editor.component';
@@ -42,7 +41,7 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     templateUrl: './record-page.component.html',
     styleUrl: './record-page.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [provideRecordingSession({screen: PROCEDURE_SCREEN})],
+    providers: [provideRecordingSession()],
 })
 export class RecordPageComponent {
     private readonly session = inject(RecordingSession);

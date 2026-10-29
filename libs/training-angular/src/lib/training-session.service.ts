@@ -1,6 +1,6 @@
 import {computed, DestroyRef, inject, Injectable, signal} from '@angular/core';
 import {type TrainingScenario} from '@training-observer/contracts';
-import {type ObservationUpdate, readScreenState} from '@training-observer/core';
+import {type ObservationUpdate, SCREEN_ADAPTERS} from '@training-observer/core';
 import {
     ScenarioRuntime,
     type TrainingFeedback,
@@ -9,14 +9,16 @@ import {
 import {Subject} from 'rxjs';
 
 import {ObservationConnection} from './observation-connection';
+import {readSessionScreen} from './read-session-screen';
 import {TRAINING_SESSION_OPTIONS} from './training-integration-options';
 
 /** Владелец попытки. UI вызывает бизнес-действия и получает readonly signals/feedback$. */
 @Injectable()
 export class TrainingSession {
     private readonly options = inject(TRAINING_SESSION_OPTIONS);
+    private readonly screenAdapters = inject(SCREEN_ADAPTERS);
     private readonly currentScreen = signal(
-        readScreenState(null, [], this.options.screen),
+        readSessionScreen(null, [], this.options.screen, this.screenAdapters),
     );
 
     private readonly currentProgress = signal<TrainingProgress | null>(null);
@@ -68,10 +70,11 @@ export class TrainingSession {
     }
 
     private accept(update: ObservationUpdate): void {
-        const screen = readScreenState(
+        const screen = readSessionScreen(
             update.snapshot,
             update.controls,
             this.options.screen,
+            this.screenAdapters,
         );
 
         this.currentScreen.set(screen);

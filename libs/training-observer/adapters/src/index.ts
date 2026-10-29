@@ -13,6 +13,12 @@ export type {
     ControlCandidate,
 } from './control-adapter';
 export {nativeControlKind} from './control-adapters';
+export {
+    readAdaptedScreen,
+    resolveScreenAdapters,
+    type ScreenAdapter,
+} from './screen-adapter';
+export {readScreenState} from './screen-state-reader';
 export {normalizeText, SnapshotReader} from './snapshot-reader';
 
 /** Projects a saved DOM graph without Angular or any live browser API. */

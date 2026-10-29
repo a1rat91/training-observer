@@ -17,9 +17,10 @@ const packages = [
     ['@training-observer/runtime', 'training-runtime'],
     ['@training-observer/angular', 'training-angular'],
     ['@training-observer/taiga-ui', 'training-taiga-ui'],
+    ['@training-observer/procedure-player', 'training-procedure-player'],
 ];
 const purePackages = packages.filter(([name]) =>
-    ['core', 'contracts', 'recording', 'runtime', 'taiga-ui'].includes(name.split('/')[1]),
+    ['core', 'contracts', 'recording', 'runtime', 'taiga-ui', 'procedure-player'].includes(name.split('/')[1]),
 );
 
 assert.ok(
@@ -84,6 +85,7 @@ async function verifyPureConsumer(directory) {
     assert.deepEqual((await readdir(join(directory, 'node_modules', '@training-observer'))).sort(), [
         'contracts',
         'core',
+        'procedure-player',
         'recording',
         'runtime',
         'taiga-ui',
@@ -91,9 +93,10 @@ async function verifyPureConsumer(directory) {
     await writeFile(
         join(directory, 'verify.mjs'),
         `import assert from 'node:assert/strict';
-import {projectControls, nativeControlKind} from '@training-observer/core/adapters';
+import {projectControls, nativeControlKind, readAdaptedScreen} from '@training-observer/core/adapters';
 import {ControlType, ScreenStatus} from '@training-observer/core/models';
 import {taigaUiAdapter} from '@training-observer/taiga-ui';
+import {procedurePlayerScreenAdapter, ProcedurePlayerBlockTracker, readProcedurePlayers} from '@training-observer/procedure-player';
 import {parseScenario, parseStateRecording} from '@training-observer/contracts';
 import {StateRecorder, compileScenario, removeRecordedEvent} from '@training-observer/recording';
 import {ScenarioRuntime, matchControl} from '@training-observer/runtime';
@@ -127,6 +130,33 @@ assert.equal(projected[0].state.value, '1 500 ₽');
 assert.equal(JSON.stringify(savedSnapshot), savedJson);
 assert.deepEqual(projectControls(JSON.parse(savedJson), [taigaUiAdapter]), projected);
 
+const player = node('player', 'procedure-player', {}, ['block']);
+const block = node('block', 'section', {'block-id': 'A'}, ['field'], 'player');
+const procedureSnapshot = {
+    ...savedSnapshot,
+    rootId: 'player',
+    nodes: {player, block, field: {...field, parentId: 'block'}, amount},
+    stats: {...savedSnapshot.stats, nodeCount: 4, elementCount: 4},
+};
+const procedureJson = JSON.stringify(procedureSnapshot);
+const procedureScreen = readAdaptedScreen(procedureSnapshot, projected, [procedurePlayerScreenAdapter]);
+assert.equal(procedureScreen.key, 'A');
+assert.equal(procedureScreen.status, ScreenStatus.Ready);
+assert.deepEqual(procedureScreen.controls, projected);
+assert.equal(JSON.stringify(procedureSnapshot), procedureJson);
+const tracker = new ProcedurePlayerBlockTracker();
+const area = {id: 'player-instance', snapshot: procedureSnapshot, logicalControls: projected};
+assert.deepEqual(tracker.update(readProcedurePlayers([area])), []);
+procedureSnapshot.nodes.block.attributes['block-id'] = 'B';
+assert.deepEqual(tracker.update(readProcedurePlayers([area])), [{
+    kind: 'block-change',
+    source: 'procedure-player',
+    microfrontendId: 'player-instance',
+    previousBlockId: 'A',
+    blockId: 'B',
+}]);
+assert.deepEqual(tracker.update(readProcedurePlayers([area])), []);
+
 const descriptor = {
     kind: ControlType.Textbox,
     label: 'Имя',
@@ -151,7 +181,7 @@ const scenario = parseScenario(JSON.stringify(compileScenario(recording)));
 assert.equal(new ScenarioRuntime(scenario).update(screen, {}).status, 'complete');
 assert.equal(matchControl(descriptor, [control]).status, 'matched');
 assert.equal(removeRecordedEvent(recording, 2).events.length, 1);
-console.log('PASS: pure ESM consumer imports core/models, core/adapters and taiga-ui; saved snapshots project without Angular, Taiga UI, RxJS or workspace aliases.');
+console.log('PASS: pure ESM consumer imports core/models, core/adapters, taiga-ui and procedure-player; snapshots and block-change events project without Angular, Taiga UI, RxJS or workspace aliases.');
 `,
     );
     run([join(directory, 'verify.mjs')], directory);
@@ -199,9 +229,10 @@ async function verifyAngularConsumer(parent, cli) {
         join(directory, 'src', 'app', 'app.config.ts'),
         `import {type ApplicationConfig, provideZoneChangeDetection} from '@angular/core';
 import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideProcedurePlayerAdapter} from '@training-observer/procedure-player/angular';
 
 export const appConfig: ApplicationConfig = {
-    providers: [provideZoneChangeDetection({eventCoalescing: true}), provideTaigaUiAdapter()],
+    providers: [provideZoneChangeDetection({eventCoalescing: true}), provideTaigaUiAdapter(), provideProcedurePlayerAdapter()],
 };
 `,
     );
@@ -214,6 +245,7 @@ import {provideControlAdapters, provideDomObservation, TrainingObserver} from '@
 import {type ControlAdapter} from '@training-observer/core/adapters';
 import {ControlType, type DomSnapshot} from '@training-observer/core/models';
 import {compileScenario} from '@training-observer/recording';
+import {ProcedurePlayerObserver} from '@training-observer/procedure-player/angular';
 import {firstValueFrom} from 'rxjs';
 
 const contenteditableAdapter: ControlAdapter = {
@@ -251,16 +283,29 @@ class ObservationProbeComponent {
 }
 
 @Component({
+    selector: 'procedure-player',
+    standalone: true,
+    providers: [provideRecordingSession(), provideTrainingSession()],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: '<section block-id="package-block" aria-busy="false"><input tuiinputnumber aria-label="Сумма блока" /></section><p>Блок: {{ recording.screen().key }}; прохождение: {{ training.screen().status }}; микрофронтов: {{ players().length }}</p>',
+})
+class ProcedurePlayerProbeComponent {
+    protected readonly recording = inject(RecordingSession);
+    protected readonly training = inject(TrainingSession);
+    protected readonly players = inject(ProcedurePlayerObserver).players;
+}
+
+@Component({
     selector: 'app-root',
     standalone: true,
-    imports: [ObservationProbeComponent],
+    imports: [ObservationProbeComponent, ProcedurePlayerProbeComponent],
     providers: [
         provideControlAdapters(contenteditableAdapter),
         provideRecordingSession({root: '#procedure', screen}),
         provideTrainingSession({root: '#procedure', screen}),
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: '<observation-probe /><p>Запись: {{ recording.controls().length }}; прохождение: {{ training.progress()?.status }}; снимок: {{ snapshot()?.rootId }}</p><button (click)="recording.start()">Записать</button><button (click)="finish()">Пройти</button>',
+    template: '<observation-probe /><procedure-player /><p>Запись: {{ recording.controls().length }}; прохождение: {{ training.progress()?.status }}; снимок: {{ snapshot()?.rootId }}</p><button (click)="recording.start()">Записать</button><button (click)="finish()">Пройти</button>',
 })
 export class AppComponent {
     protected readonly recording = inject(RecordingSession);
@@ -280,7 +325,7 @@ export class AppComponent {
     );
     run([cli, 'build', '--configuration=production', '--progress=false'], directory);
     console.log(
-        'PASS: Angular 19 CLI AOT compilation and linking consumed copied artifacts, global Taiga registration, owner-local custom adapters and public observation/recording/training providers.',
+        'PASS: Angular 19 CLI AOT compilation and linking consumed copied artifacts, global Taiga/procedure-player registration, configless and explicit-screen sessions, owner-local custom adapters and public observation/recording/training providers.',
     );
 }
 
@@ -317,32 +362,28 @@ try {
                     `Core must keep ${dependency} optional for pure consumers.`,
                 );
             }
-        } else if (name === '@training-observer/taiga-ui') {
-            assert.ok(manifest.exports?.['./angular'], 'Taiga adapter is missing its Angular provider entry point.');
+        } else if (name === '@training-observer/taiga-ui' || name === '@training-observer/procedure-player') {
+            assert.ok(manifest.exports?.['./angular'], `${name} is missing its Angular provider entry point.`);
 
             for (const dependency of ['@angular/common', '@angular/core', 'rxjs']) {
                 assert.equal(
                     manifest.dependencies?.[dependency],
                     undefined,
-                    `Taiga adapter must not require ${dependency} as a runtime dependency.`,
+                    `${name} must not require ${dependency} as a runtime dependency.`,
                 );
                 assert.equal(
                     manifest.peerDependenciesMeta?.[dependency]?.optional,
                     true,
-                    `Taiga adapter must keep ${dependency} optional for pure consumers.`,
+                    `${name} must keep ${dependency} optional for pure consumers.`,
                 );
             }
 
             for (const dependency of ['@taiga-ui/core', '@taiga-ui/kit']) {
-                assert.equal(
-                    manifest.dependencies?.[dependency],
-                    undefined,
-                    `Taiga adapter must not load ${dependency}.`,
-                );
+                assert.equal(manifest.dependencies?.[dependency], undefined, `${name} must not load ${dependency}.`);
                 assert.equal(
                     manifest.peerDependencies?.[dependency],
                     undefined,
-                    `Taiga adapter must not require ${dependency}.`,
+                    `${name} must not require ${dependency}.`,
                 );
             }
         } else if (name === '@training-observer/angular') {

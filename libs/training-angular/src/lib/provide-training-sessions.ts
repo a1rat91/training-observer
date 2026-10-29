@@ -8,10 +8,14 @@ import {
 } from './training-integration-options';
 import {TrainingSession} from './training-session.service';
 
-export function provideRecordingSession(options: TrainingIntegrationOptions): Provider[] {
+export function provideRecordingSession(
+    options: TrainingIntegrationOptions = {},
+): Provider[] {
     return [{provide: RECORDING_SESSION_OPTIONS, useValue: options}, RecordingSession];
 }
 
-export function provideTrainingSession(options: TrainingIntegrationOptions): Provider[] {
+export function provideTrainingSession(
+    options: TrainingIntegrationOptions = {},
+): Provider[] {
     return [{provide: TRAINING_SESSION_OPTIONS, useValue: options}, TrainingSession];
 }
