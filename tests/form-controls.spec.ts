@@ -204,7 +204,11 @@ test('a radio group split across microfrontends updates peers and resets through
 
     await expect.poll(async () => (await field('peer-a'))?.state.checked).toBe(true);
     await page.waitForTimeout(800);
-    const other = (await areas()).find((area) => area.name === 'address')!;
+    const other = (await areas()).find((area) =>
+        area.logicalControls.some((item) => item.locatorHints.id === 'peer-other'),
+    )!;
+
+    expect(other).toBeDefined();
 
     await page.locator('#peer-b').check();
     await expect.poll(async () => (await field('peer-b'))?.state.checked).toBe(true);

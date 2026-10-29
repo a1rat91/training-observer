@@ -1,0 +1,73 @@
+<h1>Значения Taiga UI</h1>
+<div
+    data-training-observer-ignore
+    class="actions"
+>
+    <button
+        type="button"
+        (click)="replace()"
+    >
+        Обновить значения
+    </button>
+    <button
+        type="button"
+        (click)="clear()"
+    >
+        Очистить значения
+    </button>
+    <button
+        type="button"
+        (click)="disabled = !disabled"
+    >
+        Переключить блокировку
+    </button>
+</div>
+<section
+    #observed
+    aria-label="Поля Taiga UI"
+    class="fields"
+>
+    <tui-input-date
+        nativeId="taiga-date"
+        [(ngModel)]="date"
+    >
+        Дата
+    </tui-input-date>
+    <tui-input-time
+        nativeId="taiga-time"
+        [readOnly]="true"
+        [(ngModel)]="time"
+    >
+        Время
+    </tui-input-time>
+    <tui-multi-select
+        nativeId="taiga-multiple"
+        [disabled]="disabled"
+        [tuiTextfieldLabelOutside]="false"
+        [(ngModel)]="selected"
+    >
+        Выбор значений
+    </tui-multi-select>
+    <tui-multi-select
+        nativeId="taiga-tags"
+        [tuiTextfieldLabelOutside]="true"
+        [(ngModel)]="tagged"
+    >
+        Выбор с тегами
+    </tui-multi-select>
+    <label for="taiga-password">Пароль</label>
+    <input
+        id="taiga-password"
+        type="password"
+        value="not-for-snapshots"
+    />
+</section>
+<section
+    aria-label="Диагностика значений"
+    data-training-observer-ignore
+>
+    <h2>Распознанные контролы</h2>
+    <pre data-testid="taiga-controls-json">{{ observer.logicalControls() | json }}</pre>
+    <h2>Подтверждено после blur</h2>
+    <pre data-testid="taiga-confirmed-json">{{ observer.confirmedControls() | json }}</pre>
+</section>

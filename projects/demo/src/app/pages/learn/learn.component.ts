@@ -11,7 +11,6 @@ import {
 import {mergeMap} from 'rxjs';
 
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
-import {PROCEDURE_SCREEN} from '../../shared/demo-form/procedure-screen';
 import {ScenarioStore} from '../../shared/scenarios/scenario-store';
 
 @Component({
@@ -20,7 +19,7 @@ import {ScenarioStore} from '../../shared/scenarios/scenario-store';
     templateUrl: './learn.component.html',
     styleUrl: './learn.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [provideTrainingSession({screen: PROCEDURE_SCREEN})],
+    providers: [provideTrainingSession()],
 })
 export class LearnComponent {
     private readonly session = inject(TrainingSession);

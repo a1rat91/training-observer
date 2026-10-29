@@ -1,5 +1,5 @@
 {
-    "extends": "../../../tsconfig.base.json",
+    "extends": "../../../tsconfig.json",
     "compilerOptions": {
         "forceConsistentCasingInFileNames": true,
         "strict": true,
@@ -8,7 +8,7 @@
         "target": "es2020",
         "module": "preserve",
         "moduleResolution": "bundler",
-        "lib": ["dom", "es2022"]
+        "lib": ["dom", "dom.iterable", "es2022"]
     },
     "include": ["src/**/*.ts"]
 }

@@ -2,7 +2,7 @@ import {computed, inject, Injectable, signal} from '@angular/core';
 import {type StateRecording} from '@training-observer/contracts';
 import {
     type ObservationUpdate,
-    readScreenState,
+    SCREEN_ADAPTERS,
     ScreenVisitTracker,
 } from '@training-observer/core';
 import {type ScreenVisit} from '@training-observer/core/models';
@@ -20,16 +20,18 @@ import {
 } from 'rxjs';
 
 import {ObservationConnection} from './observation-connection';
+import {readSessionScreen} from './read-session-screen';
 import {RECORDING_SESSION_OPTIONS} from './training-integration-options';
 
 /** Одна запись на владельца DI. Наблюдение готовится после рендера и живёт до DestroyRef. */
 @Injectable()
 export class RecordingSession {
     private readonly options = inject(RECORDING_SESSION_OPTIONS);
+    private readonly screenAdapters = inject(SCREEN_ADAPTERS);
     private readonly recorder = new StateRecorder();
     private readonly visits = new ScreenVisitTracker();
     private readonly currentScreen = signal(
-        readScreenState(null, [], this.options.screen),
+        readSessionScreen(null, [], this.options.screen, this.screenAdapters),
     );
 
     private readonly currentVisit = signal<ScreenVisit | null>(null);
@@ -130,10 +132,11 @@ export class RecordingSession {
     }
 
     private accept(update: ObservationUpdate): void {
-        const screen = readScreenState(
+        const screen = readSessionScreen(
             update.snapshot,
             update.controls,
             this.options.screen,
+            this.screenAdapters,
         );
 
         this.currentScreen.set(screen);

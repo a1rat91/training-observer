@@ -53,6 +53,11 @@ export default [
                             bannedExternalImports: ['@taiga-ui/*'],
                         },
                         {
+                            sourceTag: 'layer:procedure-player',
+                            onlyDependOnLibsWithTags: ['layer:core'],
+                            bannedExternalImports: ['@taiga-ui/*'],
+                        },
+                        {
                             sourceTag: 'layer:app',
                             onlyDependOnLibsWithTags: [
                                 'layer:core',
@@ -61,6 +66,7 @@ export default [
                                 'layer:runtime',
                                 'layer:angular',
                                 'layer:taiga-ui',
+                                'layer:procedure-player',
                             ],
                         },
                     ],
@@ -104,7 +110,10 @@ export default [
         },
     },
     {
-        files: ['libs/training-taiga-ui/src/**/*.ts'],
+        files: [
+            'libs/training-taiga-ui/src/**/*.ts',
+            'libs/training-procedure-player/src/**/*.ts',
+        ],
         rules: {
             'no-restricted-imports': [
                 'error',
@@ -113,7 +122,7 @@ export default [
                         {
                             regex: '^(?!@training-observer/core/(?:models|adapters)$)[^.]',
                             message:
-                                'Taiga adapter использует только чистые core/models, core/adapters и локальные файлы.',
+                                'Адаптер использует только чистые core/models, core/adapters и локальные файлы.',
                         },
                     ],
                 },

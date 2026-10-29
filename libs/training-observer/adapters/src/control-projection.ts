@@ -27,7 +27,7 @@ export function projectControl(
 
     const label = controlLabel(reader, control, targets);
     const hosts = controlHosts(control);
-    const state = controlState(reader, control, hosts, members);
+    const state = controlState(reader, control, hosts, targets);
 
     return {
         schemaVersion: 1,
@@ -123,7 +123,7 @@ function controlState(
     reader: SnapshotReader,
     control: ControlCandidate,
     hosts: readonly DomElementSnapshot[],
-    members: ReadonlySet<DomNodeId>,
+    targets: ReadonlySet<DomNodeId>,
 ): DomControlState {
     const {target, kind} = control;
 
@@ -132,23 +132,12 @@ function controlState(
         kind,
     );
 
-    let value = carriesValue && !target.state.redacted ? target.state.value : undefined;
-
-    if (control.adapter?.resolveValue) {
-        const resolved = control.adapter.resolveValue({
-            reader,
-            candidate: control,
-            members,
-        });
-
-        if (resolved !== undefined) {
-            value = resolved;
-        }
-    }
-
     return {
         ...target.state,
-        value,
+        value:
+            carriesValue && !target.state.redacted
+                ? controlValue(reader, control, targets)
+                : undefined,
         indeterminate: kind === 'switch' ? undefined : target.state.indeterminate,
         expanded:
             target.state.expanded ??
@@ -159,6 +148,45 @@ function controlState(
         required: target.state.required || hosts.some((host) => host.state.required),
         invalid: target.state.invalid || hosts.some((host) => host.state.invalid),
     };
+}
+
+function controlValue(
+    reader: SnapshotReader,
+    control: ControlCandidate,
+    targets: ReadonlySet<DomNodeId>,
+): DomControlState['value'] {
+    let layer: ControlCandidate | undefined = control;
+
+    while (layer) {
+        if (layer.adapter?.resolveValue) {
+            const labels = reader.relatedLabels(layer.target, layer.ancestors);
+            const members = reader.members(
+                [layer.host.id, ...labels.map((label) => label.id)],
+                layer.target.id,
+                targets,
+            );
+
+            const value = layer.adapter.resolveValue({reader, candidate: layer, members});
+
+            if (value !== undefined) {
+                if (
+                    typeof value !== 'string' &&
+                    (!Array.isArray(value) ||
+                        ![...value].every((item) => typeof item === 'string'))
+                ) {
+                    throw new Error(
+                        `Invalid value returned by control adapter ${layer.adapter.id}.`,
+                    );
+                }
+
+                return typeof value === 'string' ? value : [...value];
+            }
+        }
+
+        layer = layer.base;
+    }
+
+    return control.target.state.value;
 }
 
 function locatorHints(

@@ -144,23 +144,23 @@ export const taigaUiAdapter: ControlAdapter = {
 
         if (candidate.ancestors.some((parent) => parent.tagName === 'tui-multi-select')) {
             // Выбранные элементы живут в тегах .t-tags .t-text, а не в нативном input.
+            const tags = candidate.ancestors.find((node) => hasClass(node, 't-tags'));
+
+            if (!tags) {
+                return;
+            }
+
             const tagIds = [...members].filter((id) => {
                 const node = reader.snapshot.nodes[id];
 
                 return (
                     node?.kind === 'element' &&
-                    (node.attributes['class'] ?? '').split(/\s+/).includes('t-text')
+                    hasClass(node, 't-text') &&
+                    reader.ancestors(node).some((parent) => parent.id === tags.id)
                 );
             });
 
-            if (!tagIds.length) {
-                return;
-            }
-
-            return tagIds
-                .map((id) => normalizeText(reader.text(id)))
-                .filter(Boolean)
-                .join(', ');
+            return tagIds.map((id) => normalizeText(reader.text(id))).filter(Boolean);
         }
 
         if (
@@ -184,6 +184,10 @@ export const taigaUiAdapter: ControlAdapter = {
         return;
     },
 };
+
+function hasClass(node: DomElementSnapshot, name: string): boolean {
+    return (node.attributes['class'] ?? '').split(/\s+/).includes(name);
+}
 
 function taigaFieldHosts(
     candidates: readonly ControlCandidate[],
@@ -272,6 +276,13 @@ function matchTaigaControl(
     ) {
         // A generic dropdown does not imply selection semantics.
         kind = 'textbox';
+    } else if (
+        node.tagName === 'input' &&
+        attributes['role'] === 'combobox' &&
+        ancestors.some((parent) => parent.tagName === 'tui-combo-box')
+    ) {
+        // Combo-box: выбор из дропдауна, значение живёт в нативном input/ghost.
+        kind = 'combobox';
     } else if (
         node.tagName === 'input' &&
         attributes['role'] === 'combobox' &&

@@ -1,11 +1,15 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        "outDir": "../../dist/out-tsc",
+        "outDir": "../../dist/out-tsc/training-runtime",
         "declaration": true,
         "declarationMap": true,
         "inlineSources": true,
-        "types": ["node"]
+        "types": []
     },
-    "include": ["src/**/*.ts"]
+    "include": ["src/**/*.ts"],
+    "exclude": ["**/*.spec.ts", "**/*.test.ts", "jest.config.ts"],
+    "angularCompilerOptions": {
+        "compilationMode": "partial"
+    }
 }

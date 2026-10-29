@@ -4,14 +4,30 @@
     "projectType": "library",
     "sourceRoot": "libs/training-runtime/src",
     "prefix": "observer",
-    "tags": [],
+    "tags": ["type:library", "layer:runtime"],
     "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-runtime"],
+            "options": {
+                "project": "libs/training-runtime/ng-package.json"
+            },
+            "configurations": {
+                "production": {
+                    "tsConfig": "libs/training-runtime/tsconfig.lib.prod.json"
+                },
+                "development": {
+                    "tsConfig": "libs/training-runtime/tsconfig.lib.json"
+                }
+            },
+            "defaultConfiguration": "production"
+        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "options": {
                 "quiet": true,
                 "eslintConfig": "libs/training-runtime/eslint.config.mjs",
-                "lintFilePatterns": ["libs/training-runtime/src/**/*.ts", "libs/training-runtime/src/**/*.html"]
+                "lintFilePatterns": ["libs/training-runtime/**/*.ts", "libs/training-runtime/**/*.html"]
             },
             "configurations": {
                 "fix": {

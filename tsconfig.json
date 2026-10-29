@@ -29,7 +29,9 @@
             "@training-observer/runtime": ["libs/training-runtime/src/index.ts"],
             "@training-observer/angular": ["libs/training-angular/src/index.ts"],
             "@training-observer/taiga-ui": ["libs/training-taiga-ui/src/index.ts"],
-            "@training-observer/taiga-ui/angular": ["libs/training-taiga-ui/angular/src/index.ts"]
+            "@training-observer/taiga-ui/angular": ["libs/training-taiga-ui/angular/src/index.ts"],
+            "@training-observer/procedure-player": ["libs/training-procedure-player/src/index.ts"],
+            "@training-observer/procedure-player/angular": ["libs/training-procedure-player/angular/src/index.ts"]
         },
         "types": ["node", "ng-dev-mode"],
         "lib": ["ES2022", "DOM", "DOM.Iterable"]

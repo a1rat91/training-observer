@@ -4,7 +4,8 @@ import {type ScreenStateOptions} from '@training-observer/core/models';
 
 /** Правила предметной области; запуск, доставка обновлений и очистка принадлежат библиотеке. */
 export interface TrainingIntegrationOptions {
-    readonly screen: ScreenStateOptions;
+    /** Явные правила имеют приоритет над зарегистрированными адаптерами экрана. */
+    readonly screen?: ScreenStateOptions;
     /** CSS-селектор отслеживает позднее появление и замену корня. По умолчанию document.body. */
     readonly root?: Element | string;
     readonly observation?: Partial<DomObservationOptions>;

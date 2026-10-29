@@ -4,14 +4,30 @@
     "projectType": "library",
     "sourceRoot": "libs/training-recording/src",
     "prefix": "observer",
-    "tags": [],
+    "tags": ["type:library", "layer:recording"],
     "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-recording"],
+            "options": {
+                "project": "libs/training-recording/ng-package.json"
+            },
+            "configurations": {
+                "production": {
+                    "tsConfig": "libs/training-recording/tsconfig.lib.prod.json"
+                },
+                "development": {
+                    "tsConfig": "libs/training-recording/tsconfig.lib.json"
+                }
+            },
+            "defaultConfiguration": "production"
+        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "options": {
                 "quiet": true,
                 "eslintConfig": "libs/training-recording/eslint.config.mjs",
-                "lintFilePatterns": ["libs/training-recording/src/**/*.ts", "libs/training-recording/src/**/*.html"]
+                "lintFilePatterns": ["libs/training-recording/**/*.ts", "libs/training-recording/**/*.html"]
             },
             "configurations": {
                 "fix": {

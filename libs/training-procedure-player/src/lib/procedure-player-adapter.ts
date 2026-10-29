@@ -38,12 +38,20 @@ export const procedurePlayerAdapter: ControlAdapter = {
 };
 
 function matchTable(context: ControlAdapterContext): ControlAdapterResult | null {
-    const {ancestors, nativeKind} = context;
-    const row = ancestors.find((parent) => parent.tagName === ROW);
+    const {ancestors, nativeKind, reader} = context;
+    const tableIndex = ancestors.findIndex((parent) => parent.tagName === TABLE_HOST);
+    const owned = ancestors.slice(0, tableIndex);
+    const row = owned.find((parent) => parent.tagName === ROW);
+    const chrome = owned.some((parent) => ['tfoot', 'thead'].includes(parent.tagName));
 
     // Radio в строке данных: выбор несёт checked, хост — строка (для label и группы).
-    if (row && nativeKind === 'radio') {
-        return {status: 'match', kind: 'radio', hostId: row.id};
+    if (row && !chrome && nativeKind === 'radio') {
+        return {
+            status: 'match',
+            kind: 'radio',
+            hostId: row.id,
+            label: normalizeText(reader.text(row.id)),
+        };
     }
 
     // Всё прочее (поиск, фильтры, сортировка, переключатель фильтров, пагинация) — chrome таблицы.

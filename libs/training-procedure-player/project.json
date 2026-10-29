@@ -4,16 +4,32 @@
     "projectType": "library",
     "sourceRoot": "libs/training-procedure-player/src",
     "prefix": "observer",
-    "tags": [],
+    "tags": ["type:library", "layer:procedure-player"],
     "targets": {
+        "build": {
+            "executor": "@nx/angular:package",
+            "outputs": ["{workspaceRoot}/dist/training-procedure-player"],
+            "options": {
+                "project": "libs/training-procedure-player/ng-package.json"
+            },
+            "configurations": {
+                "production": {
+                    "tsConfig": "libs/training-procedure-player/tsconfig.lib.prod.json"
+                },
+                "development": {
+                    "tsConfig": "libs/training-procedure-player/tsconfig.lib.json"
+                }
+            },
+            "defaultConfiguration": "production"
+        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "options": {
                 "quiet": true,
                 "eslintConfig": "libs/training-procedure-player/eslint.config.mjs",
                 "lintFilePatterns": [
-                    "libs/training-procedure-player/src/**/*.ts",
-                    "libs/training-procedure-player/src/**/*.html"
+                    "libs/training-procedure-player/**/*.ts",
+                    "libs/training-procedure-player/**/*.html"
                 ]
             },
             "configurations": {

@@ -17,13 +17,16 @@ export {
     DOM_SNAPSHOT_OPTIONS,
     type DomSnapshotOptions,
 } from './lib/tokens/dom-snapshot-options';
+export {provideScreenAdapters, SCREEN_ADAPTERS} from './lib/tokens/screen-adapters';
 export {TrainingObserver} from './lib/training-observer';
 export type {
     ControlAdapter,
     ControlAdapterContext,
     ControlAdapterResult,
     ControlCandidate,
+    ScreenAdapter,
 } from '@training-observer/core/adapters';
+export {readAdaptedScreen} from '@training-observer/core/adapters';
 export type {MicrofrontendSnapshot} from '@training-observer/core/models';
 export type {
     ChoiceSnapshot,

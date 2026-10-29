@@ -179,7 +179,10 @@ for (const {count, mixed} of [
 
         before = await counters(page);
         report['allAreasBurst'] = await measure(client, async () => {
-            await page.locator('[data-mf] input[tuiInput]').evaluateAll((inputs) => {
+            const fields = page.locator('[data-mf] input[id$="-0"]');
+
+            await expect(fields).toHaveCount(count);
+            await fields.evaluateAll((inputs) => {
                 for (const input of inputs) {
                     (input as HTMLInputElement).value = 'Массовое';
                     input.setAttribute('data-version', 'mass');
@@ -249,7 +252,10 @@ test('CPU profile of simultaneous updates in 300 areas', async ({page}, testInfo
 
     await client.send('Profiler.enable');
     await client.send('Profiler.start');
-    await page.locator('[data-mf] input[tuiInput]').evaluateAll((inputs) => {
+    const fields = page.locator('[data-mf] input[id$="-0"]');
+
+    await expect(fields).toHaveCount(300);
+    await fields.evaluateAll((inputs) => {
         for (const input of inputs) {
             (input as HTMLInputElement).value = 'Профиль CPU';
             input.setAttribute('data-version', 'profile');
