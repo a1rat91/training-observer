@@ -1,0 +1,26 @@
+{
+    "name": "training-procedure-player",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "library",
+    "sourceRoot": "libs/training-procedure-player/src",
+    "prefix": "observer",
+    "tags": [],
+    "targets": {
+        "lint": {
+            "executor": "@nx/eslint:lint",
+            "options": {
+                "quiet": true,
+                "eslintConfig": "libs/training-procedure-player/eslint.config.mjs",
+                "lintFilePatterns": [
+                    "libs/training-procedure-player/src/**/*.ts",
+                    "libs/training-procedure-player/src/**/*.html"
+                ]
+            },
+            "configurations": {
+                "fix": {
+                    "fix": true
+                }
+            }
+        }
+    }
+}

@@ -27,7 +27,7 @@ export function projectControl(
 
     const label = controlLabel(reader, control, targets);
     const hosts = controlHosts(control);
-    const state = controlState(control, hosts);
+    const state = controlState(reader, control, hosts, members);
 
     return {
         schemaVersion: 1,
@@ -120,8 +120,10 @@ function controlHosts(control: ControlCandidate): readonly DomElementSnapshot[] 
 }
 
 function controlState(
+    reader: SnapshotReader,
     control: ControlCandidate,
     hosts: readonly DomElementSnapshot[],
+    members: ReadonlySet<DomNodeId>,
 ): DomControlState {
     const {target, kind} = control;
 
@@ -130,9 +132,23 @@ function controlState(
         kind,
     );
 
+    let value = carriesValue && !target.state.redacted ? target.state.value : undefined;
+
+    if (control.adapter?.resolveValue) {
+        const resolved = control.adapter.resolveValue({
+            reader,
+            candidate: control,
+            members,
+        });
+
+        if (resolved !== undefined) {
+            value = resolved;
+        }
+    }
+
     return {
         ...target.state,
-        value: carriesValue && !target.state.redacted ? target.state.value : undefined,
+        value,
         indeterminate: kind === 'switch' ? undefined : target.state.indeterminate,
         expanded:
             target.state.expanded ??

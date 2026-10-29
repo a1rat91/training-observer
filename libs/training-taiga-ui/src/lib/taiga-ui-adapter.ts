@@ -18,14 +18,35 @@ const TAIGA_FIELD_KINDS: readonly ControlKind[] = [
     'combobox',
 ];
 
+/** Хосты текстовых полей Taiga; нативный input лежит внутри них. */
 const TAIGA_FIELD_HOSTS = new Set([
     'tui-combo-box',
     'tui-input',
+    'tui-input-date',
+    'tui-input-date-range',
+    'tui-input-date-time',
+    'tui-input-month',
+    'tui-input-month-range',
     'tui-input-number',
+    'tui-input-tag',
+    'tui-input-time',
+    'tui-input-time-range',
+    'tui-multi-select',
     'tui-primitive-textfield',
     'tui-select',
     'tui-textarea',
     'tui-textfield',
+]);
+
+/** Даты/время: нативный input пуст, значение отображается в .t-ghost. */
+const TAIGA_DATE_FIELD_HOSTS = new Set([
+    'tui-input-date',
+    'tui-input-date-range',
+    'tui-input-date-time',
+    'tui-input-month',
+    'tui-input-month-range',
+    'tui-input-time',
+    'tui-input-time-range',
 ]);
 
 // Each projection owns its candidate array; the weak key retains no snapshot graph.
@@ -38,9 +59,9 @@ const fieldHostsByCandidates = new WeakMap<
 export const taigaUiAdapter: ControlAdapter = {
     id: 'taiga-ui',
     priority: 100,
-    excludedSubtreeSelectors: ['tui-scroll-controls'],
+    excludedSubtreeSelectors: ['tui-calendar', 'tui-scroll-controls'],
     match({target, ancestors, nativeKind}) {
-        // Taiga рендерит legacy-дубликат рядом с нативным полем - это один логический контрол.
+        // Taiga рендерит legacy-дубликат рядом с нативным полем — это один логический контрол.
         if (
             'tuitextfieldlegacy' in target.attributes &&
             (target.tagName === 'input' || target.tagName === 'textarea')
@@ -60,7 +81,7 @@ export const taigaUiAdapter: ControlAdapter = {
                 ? null
                 : nativeKind;
 
-        const match = matchTaigaControl(target, field, native);
+        const match = matchTaigaControl(target, field, native, ancestors);
         const kind = match?.kind ?? native;
 
         // Multi-value fields need a dedicated adapter.
@@ -104,8 +125,8 @@ export const taigaUiAdapter: ControlAdapter = {
             return normalizeText(reader.text(labels[0].id));
         }
 
-        // Без tuiLabel меткой поля выступает плейсхолдер (t-placeholder): его for-связь
-        // указывает на исключенный legacy-input, а не нативный, поэтому generic-анализатор его не видит.
+        // Без tuilabel меткой поля выступает плейсхолдер (t-placeholder): его for-связь
+        // указывает на исключённый legacy-инпут, а не на нативный, поэтому generic-анализатор его не видит.
         const placeholders = reader.labels.filter(
             (label) =>
                 members.has(label.id) &&
@@ -115,6 +136,52 @@ export const taigaUiAdapter: ControlAdapter = {
         return placeholders.length === 1 && placeholders[0]
             ? normalizeText(reader.text(placeholders[0].id))
             : undefined;
+    },
+    resolveValue({reader, candidate, members}) {
+        if (candidate.kind !== 'textbox' || !isTaigaField(candidate)) {
+            return;
+        }
+
+        if (candidate.ancestors.some((parent) => parent.tagName === 'tui-multi-select')) {
+            // Выбранные элементы живут в тегах .t-tags .t-text, а не в нативном input.
+            const tagIds = [...members].filter((id) => {
+                const node = reader.snapshot.nodes[id];
+
+                return (
+                    node?.kind === 'element' &&
+                    (node.attributes['class'] ?? '').split(/\s+/).includes('t-text')
+                );
+            });
+
+            if (!tagIds.length) {
+                return;
+            }
+
+            return tagIds
+                .map((id) => normalizeText(reader.text(id)))
+                .filter(Boolean)
+                .join(', ');
+        }
+
+        if (
+            candidate.ancestors.some((parent) =>
+                TAIGA_DATE_FIELD_HOSTS.has(parent.tagName),
+            )
+        ) {
+            // Даты/время: нативный input пуст, значение отображается в .t-ghost.
+            const ghostId = [...members].find((id) => {
+                const node = reader.snapshot.nodes[id];
+
+                return (
+                    node?.kind === 'element' &&
+                    (node.attributes['class'] ?? '').split(/\s+/).includes('t-ghost')
+                );
+            });
+
+            return ghostId ? normalizeText(reader.text(ghostId)) : undefined;
+        }
+
+        return;
     },
 };
 
@@ -173,6 +240,7 @@ function matchTaigaControl(
     node: DomElementSnapshot,
     field: DomElementSnapshot | undefined,
     native: ControlKind | null,
+    ancestors: readonly DomElementSnapshot[],
 ): Extract<ControlAdapterResult, {status: 'match'}> | null {
     const attributes = node.attributes;
     let kind: ControlKind | undefined;
@@ -203,6 +271,18 @@ function matchTaigaControl(
         !('tuiselectlike' in attributes)
     ) {
         // A generic dropdown does not imply selection semantics.
+        kind = 'textbox';
+    } else if (
+        node.tagName === 'input' &&
+        attributes['role'] === 'combobox' &&
+        ancestors.some(
+            (parent) =>
+                parent.tagName === 'tui-multi-select' ||
+                parent.tagName === 'tui-input-tag' ||
+                TAIGA_DATE_FIELD_HOSTS.has(parent.tagName),
+        )
+    ) {
+        // Multi-select: значение в тегах; даты/время: значение в .t-ghost, нативный input пуст.
         kind = 'textbox';
     } else if (
         native === 'textbox' &&

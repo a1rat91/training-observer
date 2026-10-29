@@ -1,31 +1,22 @@
 {
     "name": "training-taiga-ui",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "library",
     "sourceRoot": "libs/training-taiga-ui/src",
     "prefix": "observer",
-    "tags": ["type:library", "layer:taiga-ui"],
-    "projectType": "library",
+    "tags": [],
     "targets": {
-        "build": {
-            "executor": "@nx/angular:package",
-            "outputs": ["{workspaceRoot}/dist/training-taiga-ui"],
-            "options": {
-                "project": "libs/training-taiga-ui/ng-package.json"
-            },
-            "configurations": {
-                "production": {
-                    "tsConfig": "libs/training-taiga-ui/tsconfig.lib.prod.json"
-                },
-                "development": {
-                    "tsConfig": "libs/training-taiga-ui/tsconfig.lib.json"
-                }
-            },
-            "defaultConfiguration": "production"
-        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "options": {
-                "lintFilePatterns": ["libs/training-taiga-ui/**/*.ts"]
+                "quiet": true,
+                "eslintConfig": "libs/training-taiga-ui/eslint.config.mjs",
+                "lintFilePatterns": ["libs/training-taiga-ui/src/**/*.ts", "libs/training-taiga-ui/src/**/*.html"]
+            },
+            "configurations": {
+                "fix": {
+                    "fix": true
+                }
             }
         }
     }

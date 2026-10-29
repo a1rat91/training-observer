@@ -1,31 +1,22 @@
 {
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "training-angular",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "projectType": "library",
     "sourceRoot": "libs/training-angular/src",
     "prefix": "observer",
-    "tags": ["type:library", "layer:angular"],
+    "tags": [],
     "targets": {
-        "build": {
-            "executor": "@nx/angular:package",
-            "outputs": ["{workspaceRoot}/dist/training-angular"],
-            "options": {
-                "project": "libs/training-angular/ng-package.json"
-            },
-            "configurations": {
-                "production": {
-                    "tsConfig": "libs/training-angular/tsconfig.lib.prod.json"
-                },
-                "development": {
-                    "tsConfig": "libs/training-angular/tsconfig.lib.json"
-                }
-            },
-            "defaultConfiguration": "production"
-        },
         "lint": {
             "executor": "@nx/eslint:lint",
             "options": {
-                "lintFilePatterns": ["libs/training-angular/**/*.ts"]
+                "quiet": true,
+                "eslintConfig": "libs/training-angular/eslint.config.mjs",
+                "lintFilePatterns": ["libs/training-angular/src/**/*.ts", "libs/training-angular/src/**/*.html"]
+            },
+            "configurations": {
+                "fix": {
+                    "fix": true
+                }
             }
         }
     }
