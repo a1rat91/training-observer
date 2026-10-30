@@ -42,14 +42,14 @@ export function provideDomObservation(): Provider[] {
             provide: DOM_OBSERVATION_SNAPSHOT_BASELINE,
             useFactory: () => inject(DOM_SNAPSHOT_OPTIONS),
         },
-        {provide: DOM_OBSERVATION_OPTIONS, useFactory: observationOptions},
+        {provide: DOM_OBSERVATION_OPTIONS, useFactory: inheritObservationOptions},
         TrainingObserver,
         MicrofrontendObserver,
         ObservationSessionFactory,
     ];
 }
 
-function observationOptions(): DomObservationOptions {
+export function inheritObservationOptions(): DomObservationOptions {
     const snapshot = inject(DOM_SNAPSHOT_OPTIONS);
     const inheritedSnapshot =
         inject(DOM_OBSERVATION_SNAPSHOT_BASELINE, {

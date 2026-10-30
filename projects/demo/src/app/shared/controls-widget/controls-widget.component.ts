@@ -18,7 +18,7 @@ import {formatControlValue} from '../format-control-value';
     templateUrl: './controls-widget.component.html',
     styleUrl: './controls-widget.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    providers: [providePageObservation()],
+    providers: [providePageObservation({boundarySelector: 'microfrontend > *'})],
     host: {'data-training-observer-ignore': ''},
 })
 export class ControlsWidgetComponent {

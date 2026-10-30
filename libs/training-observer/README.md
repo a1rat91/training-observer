@@ -114,6 +114,9 @@ aria-labelledby и aria-label по-прежнему имеют приорите�
 имени адаптера. `areas()` содержит снимки и ошибки областей, `updates$` синхронно выдаёт опубликованные кадры, `error()`
 сообщает об ошибке запуска, а `refresh(id?)` обновляет геометрию. Уничтожение DI-владельца освобождает ресурсы.
 
+`providePageObservation({boundarySelector: 'microfrontend > *'})` явно задаёт границы этой области наблюдения поверх
+унаследованных настроек. Остальные параметры capture и частоты обновлений сохраняются; настройки родителя не меняются.
+
 Общий `ObservationConnection` и `ObservationSessionOptions` находятся в core. На них опираются `RecordingSession` из
 `@training-observer/recording` и `TrainingSession` из `@training-observer/runtime`; отдельного пакета интеграции нет.
 Connection управляет корнем, after-render capture и очисткой, а feature-сеанс — записью либо попыткой обучения.

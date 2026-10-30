@@ -141,6 +141,35 @@ test('widget renders groups and blur values without a RecordingSession provider'
     expect(document.querySelector('[aria-label="Текущие контролы"]')).toBeNull();
 });
 
+test('widget observes all wrapper roots when its owner restricts observation to one component', async () => {
+    TestBed.overrideProvider(DOM_OBSERVATION_OPTIONS, {
+        useFactory: () => ({
+            ...inject(DOM_SNAPSHOT_OPTIONS),
+            boundarySelector: 'arbitrary-player-host',
+            batchDelayMs: 0,
+            propertyCheckIntervalMs: 0,
+        }),
+    });
+    fixture = createOwner();
+    await settle();
+    expect(widget().querySelector('h2')!.textContent).toContain('Контролы · 2');
+    expect(
+        [...widget().querySelectorAll('h3')].map((heading) => heading.textContent),
+    ).toEqual([
+        expect.stringContaining('arbitrary-player-host'),
+        expect.stringContaining('peer-app'),
+    ]);
+    const peer = fixture.nativeElement.querySelector('peer-app input')!;
+
+    peer.value = 'Ответ соседнего микрофронта';
+    peer.dispatchEvent(new Event('input', {bubbles: true}));
+    await settle();
+    expect(widget().textContent).toContain('Сейчас: Ответ соседнего микрофронта');
+    expect(TestBed.inject(DOM_OBSERVATION_OPTIONS).boundarySelector).toBe(
+        'arbitrary-player-host',
+    );
+});
+
 test('widget reports the error in its own microfrontend group', async () => {
     fixture = createOwner();
     await settle();
