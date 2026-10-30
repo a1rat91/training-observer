@@ -1,3 +1,4 @@
+import {UpperCasePipe} from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -14,7 +15,7 @@ import {formatControlValue} from '../format-control-value';
 
 @Component({
     selector: 'tc-controls-widget',
-    imports: [TuiDropdown, TuiPan],
+    imports: [TuiDropdown, TuiPan, UpperCasePipe],
     templateUrl: './controls-widget.component.html',
     styleUrl: './controls-widget.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,

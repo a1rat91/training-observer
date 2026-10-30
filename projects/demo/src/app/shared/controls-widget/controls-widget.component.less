@@ -47,19 +47,24 @@ h2 {
     overflow-wrap: anywhere;
 }
 
-.control {
-    border-bottom: 1px solid var(--tui-border-normal);
-    padding-block: 0.75rem;
-}
-
 .mf-group {
-    margin-block-start: 0.5rem;
+    border-bottom: 1px solid var(--tui-border-normal);
+    padding-block: 0.5rem;
 }
 
 .mf-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
     margin: 0 0 0.25rem;
     font: inherit;
     font-weight: bold;
+}
+
+.control {
+    border-bottom: 1px solid var(--tui-border-normal);
+    padding-block: 0.75rem;
 }
 
 small {
