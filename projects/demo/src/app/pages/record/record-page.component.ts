@@ -14,18 +14,23 @@ import {
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TuiButton} from '@taiga-ui/core';
-import {provideRecordingSession, RecordingSession} from '@training-observer/angular';
 import {
     type RecordedEvent,
     requiresBlur,
     type StateRecording,
 } from '@training-observer/contracts';
 import {type ControlSnapshot} from '@training-observer/core/models';
-import {recordingProblem, removeRecordedEvent} from '@training-observer/recording';
+import {
+    provideRecordingSession,
+    recordingProblem,
+    RecordingSession,
+    removeRecordedEvent,
+} from '@training-observer/recording';
 
 import {ControlsWidgetComponent} from '../../shared/controls-widget/controls-widget.component';
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
 import {formatControlValue} from '../../shared/format-control-value';
+import {MicrofrontendHostDirective} from '../../shared/microfrontend-host.directive';
 import {RecordingStore} from './recording-store';
 import {ScenarioEditorComponent} from './scenario-editor.component';
 
@@ -34,6 +39,7 @@ import {ScenarioEditorComponent} from './scenario-editor.component';
     imports: [
         ControlsWidgetComponent,
         JsonPipe,
+        MicrofrontendHostDirective,
         ProcedureFormComponent,
         ScenarioEditorComponent,
         TuiButton,

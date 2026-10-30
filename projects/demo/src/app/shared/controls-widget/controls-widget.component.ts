@@ -7,11 +7,10 @@ import {
 } from '@angular/core';
 import {TuiPan} from '@taiga-ui/cdk';
 import {TUI_DARK_MODE, TuiDropdown} from '@taiga-ui/core';
-import {RecordingSession} from '@training-observer/angular';
 import {requiresBlur} from '@training-observer/contracts';
-import {MicrofrontendObserver} from '@training-observer/core';
+import {PageObservation, providePageObservation} from '@training-observer/core';
 
-import {formatControlValue} from './format-control-value';
+import {formatControlValue} from '../format-control-value';
 
 @Component({
     selector: 'tc-controls-widget',
@@ -19,6 +18,7 @@ import {formatControlValue} from './format-control-value';
     templateUrl: './controls-widget.component.html',
     styleUrl: './controls-widget.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
+    providers: [providePageObservation()],
     host: {'data-training-observer-ignore': ''},
 })
 export class ControlsWidgetComponent {
@@ -31,8 +31,7 @@ export class ControlsWidgetComponent {
     });
 
     protected readonly darkMode = inject(TUI_DARK_MODE);
-    protected readonly session = inject(RecordingSession);
-    protected readonly observer = inject(MicrofrontendObserver);
+    protected readonly observer = inject(PageObservation);
     protected readonly areas = this.observer.areas;
     protected readonly controlsCount = computed(() =>
         this.areas().reduce((sum, area) => sum + area.logicalControls.length, 0),

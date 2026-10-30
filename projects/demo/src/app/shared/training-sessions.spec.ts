@@ -8,19 +8,21 @@ import {
     tick,
 } from '@angular/core/testing';
 import {expect} from '@jest/globals';
+import {type StateRecording, type TrainingScenario} from '@training-observer/contracts';
+import {type ObservationSessionOptions} from '@training-observer/core';
 import {
     provideRecordingSession,
-    provideTrainingSession,
     RecordingSession,
-    type TrainingIntegrationOptions,
+    StateRecorder,
+} from '@training-observer/recording';
+import {
+    provideTrainingSession,
+    type TrainingFeedback,
     TrainingSession,
-} from '@training-observer/angular';
-import {type StateRecording, type TrainingScenario} from '@training-observer/contracts';
-import {StateRecorder} from '@training-observer/recording';
-import {type TrainingFeedback} from '@training-observer/runtime';
+} from '@training-observer/runtime';
 
 const fixtures = new Set<ComponentFixture<unknown>>();
-const integration = (root: string): TrainingIntegrationOptions => ({
+const integration = (root: string): ObservationSessionOptions => ({
     root,
     screen: {
         root: {attribute: {name: 'data-procedure'}},
@@ -178,6 +180,29 @@ test('recording starts with a fresh baseline and consumes one blur without host 
         expect.objectContaining({visit: 1, screenKey: 'A', value: 'Анна'}),
     ]);
     expect(recording.error()).toBeNull();
+}));
+
+test('recording consumes every synchronous screen transition before Angular renders again', fakeAsync(() => {
+    const fixture = owner(OwnerA);
+    const {recording} = fixture.componentInstance;
+    const root = element<HTMLElement>('procedure-a');
+    const input = element<HTMLInputElement>('answer-a');
+
+    recording.start();
+
+    for (const key of ['B', 'A']) {
+        root.setAttribute('data-screen-key', key);
+        input.dispatchEvent(new Event('change', {bubbles: true}));
+        flushMicrotasks();
+        tick(1);
+        expect(recording.screen().key).toBe(key);
+    }
+
+    expect(recording.draft()?.events).toEqual([
+        expect.objectContaining({kind: 'screen', screenKey: 'A', visit: 1}),
+        expect.objectContaining({kind: 'screen', screenKey: 'B', visit: 2}),
+        expect.objectContaining({kind: 'screen', screenKey: 'A', visit: 3}),
+    ]);
 }));
 
 test('local owners and recording/training in one owner keep independent observations', async () => {

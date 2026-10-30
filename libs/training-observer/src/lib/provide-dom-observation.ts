@@ -8,6 +8,10 @@ import {DomSnapshotBuilder} from './capture/dom-snapshot-builder';
 import {ControlSnapshotBuilder} from './controls/control-snapshot-builder';
 import {DomHighlighter} from './highlight/dom-highlighter';
 import {MicrofrontendObserver} from './microfrontend-observer';
+import {
+    adaptedConfirmationContext,
+    BLUR_CONFIRMATION_CONTEXT,
+} from './observation/confirmation-context';
 import {ObservationSessionFactory} from './observation/observation-session-factory';
 import {
     CONTROL_ADAPTER_EXCLUSIONS,
@@ -26,6 +30,10 @@ export function provideDomObservation(): Provider[] {
         DomSnapshotBuilder,
         ControlSnapshotBuilder,
         DomHighlighter,
+        {
+            provide: BLUR_CONFIRMATION_CONTEXT,
+            useFactory: adaptedConfirmationContext,
+        },
         {
             provide: CONTROL_ADAPTER_EXCLUSIONS,
             useFactory: controlAdapterExclusions,

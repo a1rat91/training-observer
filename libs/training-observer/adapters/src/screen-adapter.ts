@@ -8,8 +8,6 @@ import {
 /** Application-specific screen rules over captured data. Browser lifecycle stays in core. */
 export interface ScreenAdapter {
     readonly id: string;
-    /** Existing DOM boundary used for application discovery. */
-    readonly rootSelector: string;
     /** null means this adapter does not claim a screen in this snapshot. */
     read(snapshot: DomSnapshot, controls: readonly ControlSnapshot[]): ScreenState | null;
 }
@@ -26,8 +24,6 @@ export function resolveScreenAdapters(
             typeof adapter.id !== 'string' ||
             !adapter.id.trim() ||
             adapter.id !== adapter.id.trim() ||
-            typeof adapter.rootSelector !== 'string' ||
-            !adapter.rootSelector.trim() ||
             typeof adapter.read !== 'function'
         ) {
             throw new Error('Invalid screen adapter registration.');

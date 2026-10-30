@@ -7,15 +7,16 @@ import {
     FeedbackKind,
     provideTrainingSession,
     TrainingSession,
-} from '@training-observer/angular';
+} from '@training-observer/runtime';
 import {mergeMap} from 'rxjs';
 
 import {ProcedureFormComponent} from '../../shared/demo-form/procedure-form.component';
+import {MicrofrontendHostDirective} from '../../shared/microfrontend-host.directive';
 import {ScenarioStore} from '../../shared/scenarios/scenario-store';
 
 @Component({
     selector: 'app-learn',
-    imports: [ProcedureFormComponent, RouterLink],
+    imports: [MicrofrontendHostDirective, ProcedureFormComponent, RouterLink],
     templateUrl: './learn.component.html',
     styleUrl: './learn.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,

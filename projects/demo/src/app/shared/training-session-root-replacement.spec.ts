@@ -2,14 +2,10 @@
 import {Component, inject} from '@angular/core';
 import {type ComponentFixture, TestBed} from '@angular/core/testing';
 import {expect} from '@jest/globals';
-import {
-    provideRecordingSession,
-    provideTrainingSession,
-    RecordingSession,
-    TrainingSession,
-} from '@training-observer/angular';
 import {type TrainingScenario} from '@training-observer/contracts';
 import {provideDomObservation, TrainingObserver} from '@training-observer/core';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+import {provideTrainingSession, TrainingSession} from '@training-observer/runtime';
 import {firstValueFrom} from 'rxjs';
 
 const options = {

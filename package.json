@@ -17,7 +17,7 @@
     },
     "scripts": {
         "build": "npx nx run-many --target=build --all --configuration=production",
-        "check": "npm run lint && npm run format:check && npm run test:unit && npm run build",
+        "check": "npm run lint && npm run format:check && npm test -- --runInBand && npm run build",
         "format": "npm run prettier",
         "format:check": "prettier --check . --ignore-path .prettierignore",
         "lint": "eslint .",

@@ -1,4 +1,104 @@
 import {expect, test} from '@playwright/test';
+import {type StateRecording} from '@training-observer/contracts';
+
+for (const eventName of ['blur', 'focusout'] as const) {
+    test(`a ${eventName} handler reusing the input cannot replace the departing block answer`, async ({
+        page,
+    }) => {
+        await page.goto('/record');
+        await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
+        const field = page.locator('#surname');
+
+        await field.fill('Ответ старого блока');
+        await field.evaluate((element, name) => {
+            const input = element as HTMLInputElement;
+
+            input.addEventListener(
+                name,
+                () => {
+                    input
+                        .closest('[block-id]')!
+                        .setAttribute('block-id', 'reused-input-block');
+                    input.value = 'Предзаполнение нового блока';
+                },
+                {once: true},
+            );
+        }, eventName);
+        await page.locator('#employee').focus();
+        await expect(page.getByRole('region', {name: 'Журнал записи'})).toContainText(
+            'reused-input-block',
+        );
+        await page.getByRole('button', {name: 'Завершить запись', exact: true}).click();
+        await page.getByText('JSON записи', {exact: true}).click();
+        const saved: StateRecording = JSON.parse(
+            await page.getByRole('textbox', {name: 'JSON записи'}).inputValue(),
+        );
+
+        expect(
+            saved.events.find(
+                (event) => event.kind === 'value' && event.field.id === 'surname',
+            ),
+        ).toMatchObject({
+            screenKey: 'application-profile',
+            value: 'Ответ старого блока',
+        });
+    });
+}
+
+test('autofocus into the reused input on the next block preserves the departing answer', async ({
+    page,
+}) => {
+    await page.goto('/record');
+    await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
+    await page.locator('#surname').fill('Сохранённый ответ');
+    await page.evaluate(() => {
+        const target = document.createElement('button');
+
+        target.type = 'button';
+        target.textContent = 'Внешняя цель фокуса';
+        target.addEventListener(
+            'focus',
+            () => {
+                const input = document.querySelector<HTMLInputElement>('#surname')!;
+
+                input.closest('[block-id]')!.setAttribute('block-id', 'autofocus-block');
+                input.value = 'Новое предзаполнение';
+                input.focus();
+            },
+            {once: true},
+        );
+        document.querySelector('main > header')!.append(target);
+        target.focus();
+    });
+    await expect(page.locator('#surname')).toBeFocused();
+    await expect(page.getByRole('region', {name: 'Журнал записи'})).toContainText(
+        'Фамилия — Сохранённый ответ',
+    );
+});
+
+test('refocusing and typing before the batch capture does not confirm the resumed edit', async ({
+    page,
+}) => {
+    await page.goto('/record');
+    await page.getByRole('button', {name: 'Начать запись', exact: true}).click();
+    const field = page.locator('#surname');
+    const journal = page.getByRole('region', {name: 'Журнал записи'});
+
+    await field.fill('Подтверждённый ответ');
+    await field.evaluate(async (element) => {
+        const input = element as HTMLInputElement;
+
+        input.blur();
+        await Promise.resolve();
+        input.focus();
+        input.value = 'Редактирование без нового blur';
+        input.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    await expect(journal).toContainText('Фамилия — Подтверждённый ответ');
+    await expect(journal).not.toContainText('Редактирование без нового blur');
+    await page.locator('#employee').focus();
+    await expect(journal).toContainText('Фамилия — Редактирование без нового blur');
+});
 
 test('admin records blur and transitions, Stop includes the last edit and reload keeps the journal', async ({
     page,

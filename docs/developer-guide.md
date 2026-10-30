@@ -3,14 +3,15 @@
 ## Окружение и команды
 
 Используйте Node 22.19+ ветки 22. Версии Angular/Taiga фиксируются package-lock.json. `npm ci` устанавливает
-зависимости, `npm start` открывает dev server 4200. `npm run check` проверяет зависимости, форматирование, unit tests и
-production-сборку. `npm run test:pw` запускает реальный Chrome и demo на 4301. Unit-набор лежит в `tests/unit`,
-browser-набор — в `tests/*.spec.ts`; Playwright явно исключает unit.
+зависимости, `npm start` открывает dev server 4200. `npm run check` проверяет зависимости, форматирование, все
+Jest-проекты (включая Angular TestBed) и production-сборку. `npm run test:pw` запускает реальный Chrome и demo на 4301.
+Алгоритмический unit-набор лежит в `tests/unit`, Angular-тесты и проверки основных entry points адаптеров — в
+`projects/demo/src/app/shared`, browser-набор — в `tests/*.spec.ts`; Playwright явно исключает unit.
 
-Модульные тесты запускаются Jest через Nx (`npm run test:unit`). `jest.preset.js` использует ts-jest для TypeScript и
-общие aliases из `tsconfig.json`. Старый Node runner и его регистрация импортов удалены. `npm test` запускает все
-Jest-проекты, `npm run test:pw` — отдельный набор Playwright. Тесты чистых слоёв не создают Angular TestBed.
-Интеграционные тесты проверяют реальные Angular lifecycle и Taiga.
+Модульные тесты запускаются Jest через Nx (`npm run test:unit`). Jest использует Angular preset с поддержкой .mjs и
+общие aliases из `tsconfig.json`. `npm test` запускает все Jest-проекты, `npm run test:pw` — отдельный набор Playwright.
+Алгоритмические тесты могут обходиться без TestBed, но основные package imports остаются настоящим Angular API.
+Интеграционные тесты проверяют DI, lifecycle, порталы и реальную разметку Taiga.
 
 `npm run format` и `npm run format:check` используют `@taiga-ui/prettier-config` из package.json. ESLint наследует
 `@taiga-ui/eslint-plugin-experience-next`; поверх него добавлены границы Nx. `tsconfig.json` наследует
@@ -18,10 +19,9 @@ Jest-проекты, `npm run test:pw` — отдельный набор Playwri
 core → обучение или recording ↔ runtime. `npm run test:load` — отдельный benchmark; численные улучшения
 производительности этим рефакторингом не заявляются.
 
-После production-сборки `node scripts/verify-packages.mjs` проверяет собранные артефакты в независимых Node ESM и
-Angular CLI consumers без source aliases. Чистый consumer импортирует `core/models`, `core/adapters` и `taiga-ui`,
-проецирует сохранённый JSON и не содержит Angular, Taiga UI или RxJS. Это офлайн-проверка артефактов, не установка из
-npm registry; `--keep` сохраняет временные проекты для диагностики.
+После production-сборки `node scripts/verify-packages.mjs` проверяет собранные артефакты в независимом Angular CLI
+consumer без source aliases. Проверяются основные импорты библиотек, provider helpers и AOT-компиляция приложения. Это
+офлайн-проверка артефактов, не установка из npm registry; `--keep` сохраняет временный проект для диагностики.
 
 ## Где внести изменение
 
@@ -39,17 +39,13 @@ npm registry; `--keep` сохраняет временные проекты дл
 
 ## Запись и прохождение в Angular
 
-Готовая интеграция находится в `@training-observer/angular`:
+Сеансы находятся в feature-библиотеках записи и прохождения:
 
 ```ts
 import {inject} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {
-  provideRecordingSession,
-  RecordingSession,
-  provideTrainingSession,
-  TrainingSession,
-} from '@training-observer/angular';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+import {provideTrainingSession, TrainingSession} from '@training-observer/runtime';
 
 // providers: [provideRecordingSession({root: 'main', screen: screenOptions})]
 const recording = inject(RecordingSession);
@@ -68,8 +64,8 @@ training.start(validatedScenario);
 Provider подключает core-сервисы, запускает наблюдение после рендера, доставляет атомарные обновления движку и
 освобождает ресурсы через DestroyRef. Потребитель задаёт признаки существующего экрана, вызывает бизнес-действия и
 читает readonly signals. CSS-селектор `root` отслеживает позднее появление и замену области. Запись и прохождение
-изолированы даже в одном владельце. Примеры и lifecycle — [README Angular-пакета](../libs/training-angular/README.md).
-UI приложения хранит/редактирует документы и оформляет уведомления.
+изолированы даже в одном владельце. Примеры и lifecycle — [recording](../libs/training-recording/README.md) и
+[runtime](../libs/training-runtime/README.md). UI приложения хранит/редактирует документы и оформляет уведомления.
 
 Ниже описан низкоуровневый API для собственной интеграции.
 
@@ -79,7 +75,7 @@ Native/ARIA-контролы работают без регистрации. П�
 
 ```ts
 import {type ApplicationConfig} from '@angular/core';
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
 
 export const appConfig: ApplicationConfig = {
   providers: [provideTaigaUiAdapter()],
@@ -146,7 +142,7 @@ export const addressAdapter: ControlAdapter = {
 оба адаптера: глобальный `provideTaigaUiAdapter()` и локальный `provideControlAdapters(addressAdapter)` дополняют друг
 друга.
 
-Для сохранённого снимка Angular и DI не нужны:
+Проекция сохранённого снимка остаётся обычной функцией:
 
 ```ts
 import {projectControls} from '@training-observer/core/adapters';
@@ -157,8 +153,42 @@ const snapshot: DomSnapshot = savedSnapshot;
 const controls = projectControls(snapshot, [taigaUiAdapter, appTextAdapter]);
 ```
 
-`projectControls()` не изменяет входной граф. Импорты `core/adapters` и основной `taiga-ui` не загружают Angular, RxJS
-или компоненты Taiga UI; Angular helper находится отдельно в `taiga-ui/angular`.
+`projectControls()` не изменяет входной граф. Сам SDK `core/adapters` не загружает Angular. Основные точки входа
+`taiga-ui` и `procedure-player` экспортируют и функции проекции, и Angular-провайдеры, поэтому требуют Angular и RxJS.
+Они не читают Angular-модель целевого приложения. Провайдеры и функции распознавания импортируются из одной основной
+точки входа каждой библиотеки.
+
+## Автоматическая диагностика страницы
+
+```ts
+import {inject} from '@angular/core';
+import {PageObservation, providePageObservation} from '@training-observer/core';
+
+// providers компонента-владельца: [providePageObservation()]
+const page = inject(PageObservation);
+page.areas();
+page.isObserving();
+page.refresh();
+```
+
+`PageObservation` создаётся в локальном injector. После рендера он запускает `MicrofrontendObserver` с
+`boundarySelector` из настроек (по умолчанию `microfrontend > *`). Известная граница — обёртка `<microfrontend>`;
+корневой тег вложенного приложения заранее неизвестен. ScreenAdapter читает уже полученный снимок, не управляя
+discovery. Поздние области обнаруживаются автоматически. Удаление владельца уничтожает наблюдение; глобальная
+регистрация остаётся ленивой до первой инъекции сервиса.
+
+Непосредственный дочерний элемент `<microfrontend>` — корневой компонент; его `localName` является именем области. Для
+общего discovery core не нужен `block-id`. Этот атрибут читает только адаптер процедур и передаёт результат как
+`ScreenState.key`; recording/runtime используют общий контракт экрана. Другие микрофронты не обязаны иметь такой
+атрибут.
+
+Demo-компонент `ControlsWidgetComponent` использует этот helper внутри собственных providers. После импорта компонента
+достаточно `<tc-controls-widget />`: он показывает контролы и blur-подтверждения по областям и ошибки наблюдения. Виджет
+не требует `RecordingSession`, запуска записи или конфигурации конкретного экрана. Его собственный UI исключён из
+capture. Сеансы записи и тренировки сохраняют свои изолированные источники и бизнес-действия.
+
+Для событий переходов используйте синхронные `updates$`/`ProcedurePlayerObserver.blockChanges$`. Computed signals
+предназначены для отображения последнего состояния: Angular effect не является журналом всех кадров между рендерами.
 
 ## Подключение наблюдения к Angular
 
@@ -321,10 +351,13 @@ DOCUMENT и сервисов capture/projection передаются из inject
 
 Сеанс синхронно выполняет capture → projection → settle blur, затем выдаёт результат через RxJS Observable. Здесь нет
 effect или scheduler: фасад получает готовое состояние в том же вызове. Потоки завершаются при уничтожении сеанса.
-`TrainingObserver.updates$` синхронно отдаёт атомарный tuple snapshot/controls/confirmedControls, включая текущее
-состояние новому подписчику и очистку. Он завершается по DestroyRef. Signals остаются публичным способом чтения
-состояния. Разовый `capture(B)` во время наблюдения A сохраняет состояние A; переключение — `start(B)`. DomCapture,
-DomGeometry и SnapshotReader остаются короткоживущими объектами конкретного обхода/снимка.
+`TrainingObserver.state()` содержит единый `ObservationState`: snapshot, controls, confirmedControls, статус, ошибку и
+счётчики. Прежние readonly signals вычисляются из него; кадр заменяется целиком. `updates$` синхронно отдаёт атомарный
+tuple snapshot/controls/confirmedControls, включая текущее состояние новому подписчику и очистку.
+`MicrofrontendObserver.updates$` и `PageObservation.updates$` синхронно публикуют массив областей после обновления
+signal. Потоки завершаются по DestroyRef. Изменение только blur-подтверждений тоже увеличивает revision; оно не обязано
+менять DOM fingerprint. Разовый `capture(B)` во время наблюдения A сохраняет состояние A; переключение — `start(B)`.
+DomCapture, DomGeometry и SnapshotReader остаются короткоживущими объектами конкретного обхода/снимка.
 
 `npm test` включает чистые Jest-тесты и Angular DI-проверки в demo. Последние используют TestBed,
 createEnvironmentInjector и fakeAsync: изоляция владельцев, stop/start, уничтожение с ожидающим blur. Для них настроен
@@ -343,7 +376,8 @@ JSON-границе это явно допускают.
 
 ## Добавление теста
 
-1. Для правила значений, compiler, matching или runtime добавьте unit в `tests/unit`.
+1. Для правила значений, compiler, matching или runtime добавьте unit в `tests/unit`. Проверки публичных Angular entry
+   points адаптеров находятся в `demo/src/app/shared/adapter-rules` и выполняются Angular Jest preset.
 2. Для capture, фокуса, popup, Angular rendering или remount нужен Playwright тест реальной страницы.
 3. Ожидайте наблюдаемое состояние, а не произвольную задержку. Наличие формы ещё не означает, что runtime успел получить
    ready-снимок. Перед переходом проверяйте готовность наблюдения.

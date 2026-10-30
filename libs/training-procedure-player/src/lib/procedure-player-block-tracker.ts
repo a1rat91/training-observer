@@ -32,14 +32,14 @@ export function readProcedurePlayers(
     });
 }
 
-/** Начальное состояние — точка отсчёта. Loading и повторы того же ID не создают переходов. */
+/** Точка отсчёта живёт до удаления MF из кадра, включая loading и временное отсутствие block-id. */
 export class ProcedurePlayerBlockTracker {
     private readonly previous = new Map<string, string>();
 
     public update(
-        players: readonly ProcedurePlayerSnapshot[],
+        areas: readonly MicrofrontendSnapshot[],
     ): readonly ProcedurePlayerBlockChange[] {
-        const mounted = new Set(players.map((player) => player.microfrontendId));
+        const mounted = new Set(areas.map((area) => area.id));
         const events: ProcedurePlayerBlockChange[] = [];
 
         for (const id of this.previous.keys()) {
@@ -48,7 +48,7 @@ export class ProcedurePlayerBlockTracker {
             }
         }
 
-        for (const {microfrontendId, state} of players) {
+        for (const {microfrontendId, state} of readProcedurePlayers(areas)) {
             if (state.status !== ScreenStatus.Ready || !state.key) {
                 continue;
             }

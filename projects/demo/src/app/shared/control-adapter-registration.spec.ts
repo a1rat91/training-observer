@@ -10,19 +10,15 @@ import {
 import {type ComponentFixture, TestBed} from '@angular/core/testing';
 import {expect} from '@jest/globals';
 import {
-    provideRecordingSession,
-    provideTrainingSession,
-    RecordingSession,
-    TrainingSession,
-} from '@training-observer/angular';
-import {
     provideControlAdapters,
     provideDomObservation,
     TrainingObserver,
 } from '@training-observer/core';
 import {type ControlAdapter} from '@training-observer/core/adapters';
 import {ControlType} from '@training-observer/core/models';
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+import {provideTrainingSession, TrainingSession} from '@training-observer/runtime';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
 
 const contenteditableAdapter: ControlAdapter = {
     id: 'demo-contenteditable',

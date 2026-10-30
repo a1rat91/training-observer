@@ -29,135 +29,137 @@
             Сменить блок таблицы
         </button>
     </header>
-    <player-procedure class="player">
-        <section
-            aria-label="Блок с таблицей"
-            [attr.block-id]="blockId()"
-        >
-            <procedure-player-table class="procedure-table">
+    <microfrontend>
+        <player-procedure class="player">
+            <section
+                aria-label="Блок с таблицей"
+                [attr.block-id]="blockId()"
+            >
+                <procedure-player-table class="procedure-table">
+                    <tui-textfield>
+                        <label
+                            for="table-search"
+                            tuiLabel
+                        >
+                            Поиск в таблице
+                        </label>
+                        <input
+                            id="table-search"
+                            tuiTextfield
+                            [(ngModel)]="search"
+                        />
+                    </tui-textfield>
+                    <table aria-label="Сотрудники">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input
+                                        id="header-choice"
+                                        aria-label="Настройка выбора таблицы"
+                                        type="radio"
+                                    />
+                                </th>
+                                <th>
+                                    <button
+                                        id="table-sort"
+                                        type="button"
+                                    >
+                                        Сортировать по имени
+                                    </button>
+                                </th>
+                                <th>Должность</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (row of rows; track row.id) {
+                                <tr>
+                                    <td>
+                                        <input
+                                            name="employees"
+                                            tuiRadio
+                                            type="radio"
+                                            [attr.aria-label]="'Выбрать ' + row.name"
+                                            [disabled]="row.disabled"
+                                            [id]="'row-' + row.id"
+                                            [value]="row.id"
+                                            [(ngModel)]="selected"
+                                        />
+                                    </td>
+                                    <td>{{ row.name }}</td>
+                                    <td>{{ row.role }}</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td colspan="3">
+                                    <procedure-player-table class="procedure-table">
+                                        <table aria-label="Вложенная таблица">
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <input
+                                                            id="nested-choice"
+                                                            aria-label="Выбрать вложенную строку"
+                                                            name="nested"
+                                                            tuiRadio
+                                                            type="radio"
+                                                            value="nested"
+                                                            [(ngModel)]="nested"
+                                                        />
+                                                    </td>
+                                                    <td>Вложенная строка</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </procedure-player-table>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3">
+                                    <input
+                                        id="footer-choice"
+                                        aria-label="Настройка страницы"
+                                        type="radio"
+                                    />
+                                    <select
+                                        id="table-page-size"
+                                        aria-label="Строк на странице"
+                                    >
+                                        <option>10</option>
+                                        <option>20</option>
+                                    </select>
+                                    <button
+                                        id="table-next"
+                                        type="button"
+                                        (click)="page = page + 1"
+                                    >
+                                        Следующая страница
+                                    </button>
+                                    Страница {{ page }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </procedure-player-table>
+                <label for="native-note">Комментарий вне таблицы</label>
+                <input id="native-note" />
                 <tui-textfield>
                     <label
-                        for="table-search"
+                        for="external-amount"
                         tuiLabel
                     >
-                        Поиск в таблице
+                        Сумма вне таблицы
                     </label>
                     <input
-                        id="table-search"
-                        tuiTextfield
-                        [(ngModel)]="search"
+                        id="external-amount"
+                        tuiInputNumber
+                        [(ngModel)]="amount"
                     />
                 </tui-textfield>
-                <table aria-label="Сотрудники">
-                    <thead>
-                        <tr>
-                            <th>
-                                <input
-                                    id="header-choice"
-                                    aria-label="Настройка выбора таблицы"
-                                    type="radio"
-                                />
-                            </th>
-                            <th>
-                                <button
-                                    id="table-sort"
-                                    type="button"
-                                >
-                                    Сортировать по имени
-                                </button>
-                            </th>
-                            <th>Должность</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (row of rows; track row.id) {
-                            <tr>
-                                <td>
-                                    <input
-                                        name="employees"
-                                        tuiRadio
-                                        type="radio"
-                                        [attr.aria-label]="'Выбрать ' + row.name"
-                                        [disabled]="row.disabled"
-                                        [id]="'row-' + row.id"
-                                        [value]="row.id"
-                                        [(ngModel)]="selected"
-                                    />
-                                </td>
-                                <td>{{ row.name }}</td>
-                                <td>{{ row.role }}</td>
-                            </tr>
-                        }
-                        <tr>
-                            <td colspan="3">
-                                <procedure-player-table class="procedure-table">
-                                    <table aria-label="Вложенная таблица">
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <input
-                                                        id="nested-choice"
-                                                        aria-label="Выбрать вложенную строку"
-                                                        name="nested"
-                                                        tuiRadio
-                                                        type="radio"
-                                                        value="nested"
-                                                        [(ngModel)]="nested"
-                                                    />
-                                                </td>
-                                                <td>Вложенная строка</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </procedure-player-table>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3">
-                                <input
-                                    id="footer-choice"
-                                    aria-label="Настройка страницы"
-                                    type="radio"
-                                />
-                                <select
-                                    id="table-page-size"
-                                    aria-label="Строк на странице"
-                                >
-                                    <option>10</option>
-                                    <option>20</option>
-                                </select>
-                                <button
-                                    id="table-next"
-                                    type="button"
-                                    (click)="page = page + 1"
-                                >
-                                    Следующая страница
-                                </button>
-                                Страница {{ page }}
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </procedure-player-table>
-            <label for="native-note">Комментарий вне таблицы</label>
-            <input id="native-note" />
-            <tui-textfield>
-                <label
-                    for="external-amount"
-                    tuiLabel
-                >
-                    Сумма вне таблицы
-                </label>
-                <input
-                    id="external-amount"
-                    tuiInputNumber
-                    [(ngModel)]="amount"
-                />
-            </tui-textfield>
-        </section>
-    </player-procedure>
+            </section>
+        </player-procedure>
+    </microfrontend>
     <section
         aria-label="Диагностика таблицы"
         data-training-observer-ignore

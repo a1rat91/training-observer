@@ -3,12 +3,14 @@ import {type ComponentFixture, TestBed} from '@angular/core/testing';
 import {expect} from '@jest/globals';
 import {CONTROL_ADAPTERS, DOM_OBSERVATION_OPTIONS} from '@training-observer/core';
 import {type ControlAdapter} from '@training-observer/core/adapters';
-import {type ProcedurePlayerBlockChange} from '@training-observer/procedure-player';
 import {
+    type ProcedurePlayerBlockChange,
     ProcedurePlayerObserver,
     provideProcedurePlayerAdapter,
-} from '@training-observer/procedure-player/angular';
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+} from '@training-observer/procedure-player';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
+
+import {MicrofrontendHostDirective} from './microfrontend-host.directive';
 
 const wrapperAdapter: ControlAdapter = {
     id: 'test-procedure-field',
@@ -30,18 +32,26 @@ const wrapperAdapter: ControlAdapter = {
 };
 
 @Component({
+    imports: [MicrofrontendHostDirective],
     template: `
-        <procedure-player id="first-player">
-            <section block-id="A">
-                <input aria-label="First answer" />
-            </section>
-        </procedure-player>
-        <procedure-player
-            id="second-player"
-            block-id="X"
-        >
-            <input aria-label="Second answer" />
-        </procedure-player>
+        <microfrontend>
+            <workflow-shell id="first-player">
+                <section block-id="A">
+                    <input aria-label="First answer" />
+                </section>
+            </workflow-shell>
+        </microfrontend>
+        <microfrontend>
+            <article
+                id="second-player"
+                block-id="X"
+            >
+                <input aria-label="Second answer" />
+            </article>
+        </microfrontend>
+        <microfrontend>
+            <employee-card><input aria-label="Unrelated native field" /></employee-card>
+        </microfrontend>
     `,
     providers: [provideProcedurePlayerAdapter()],
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -51,28 +61,31 @@ class ObserverOwner {
 }
 
 @Component({
+    imports: [MicrofrontendHostDirective],
     template: `
-        <procedure-player block-id="Custom fields">
-            <section data-procedure-field="Wrapped Taiga">
+        <microfrontend>
+            <account-settings block-id="Custom fields">
+                <section data-procedure-field="Wrapped Taiga">
+                    <input
+                        aria-label="Base number"
+                        tuiinputnumber
+                        value="42"
+                    />
+                </section>
+                <section data-procedure-field="Wrapped native">
+                    <input
+                        aria-label="Base text"
+                        value="Text"
+                    />
+                </section>
                 <input
-                    aria-label="Base number"
+                    aria-label="Inherited Taiga"
                     tuiinputnumber
-                    value="42"
+                    value="10"
                 />
-            </section>
-            <section data-procedure-field="Wrapped native">
-                <input
-                    aria-label="Base text"
-                    value="Text"
-                />
-            </section>
-            <input
-                aria-label="Inherited Taiga"
-                tuiinputnumber
-                value="10"
-            />
-            <input aria-label="Native fallback" />
-        </procedure-player>
+                <input aria-label="Native fallback" />
+            </account-settings>
+        </microfrontend>
     `,
     providers: [provideProcedurePlayerAdapter(wrapperAdapter)],
     schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -145,7 +158,7 @@ afterEach(() => {
     jest.restoreAllMocks();
 });
 
-test('discovers simultaneous players and emits block changes without a recording session', async () => {
+test('recognizes block owners with arbitrary tags among unrelated microfrontends without a recording session', async () => {
     const {observer} = fixture.componentInstance;
     const events: ProcedurePlayerBlockChange[] = [];
 
@@ -153,6 +166,7 @@ test('discovers simultaneous players and emits block changes without a recording
         events.push(event);
     });
     await settle();
+    expect(observer.areas()).toHaveLength(3);
     expect(observer.players().map(({state}) => state.key)).toEqual(['A', 'X']);
     expect(events).toEqual([]);
     const [first, second] = observer.players();
@@ -201,6 +215,31 @@ test('does not interpret a loading block as a completed transition', async () =>
     ]);
 });
 
+test('retains the last block while a mounted microfrontend temporarily removes its marker during loading', async () => {
+    const {observer} = fixture.componentInstance;
+    const events: ProcedurePlayerBlockChange[] = [];
+
+    observer.blockChanges$.subscribe((event) => {
+        events.push(event);
+    });
+    await settle();
+    const block = element('#first-player [block-id]');
+
+    element('#first-player').setAttribute('aria-busy', 'true');
+    block.removeAttribute('block-id');
+    await settle();
+    expect(observer.players().map(({state}) => state.key)).toEqual(['X']);
+    expect(events).toEqual([]);
+    block.setAttribute('block-id', 'B');
+    await settle();
+    expect(events).toEqual([]);
+    element('#first-player').removeAttribute('aria-busy');
+    await settle();
+    expect(events).toEqual([
+        expect.objectContaining({previousBlockId: 'A', blockId: 'B'}),
+    ]);
+});
+
 test('keeps nested foreign microfrontends outside the procedure block scope', async () => {
     const {observer} = fixture.componentInstance;
 
@@ -217,14 +256,14 @@ test('keeps nested foreign microfrontends outside the procedure block scope', as
     ]);
 });
 
-test('discovers nested players independently without adding their controls to the parent', async () => {
+test('discovers nested microfrontends independently without adding their controls to the parent', async () => {
     const {observer} = fixture.componentInstance;
 
     await settle();
-    const nested = document.createElement('procedure-player');
+    const nested = document.createElement('microfrontend');
 
-    nested.setAttribute('block-id', 'Nested');
-    nested.innerHTML = '<input aria-label="Nested answer">';
+    nested.innerHTML =
+        '<section block-id="Nested"><input aria-label="Nested answer"></section>';
     element('#first-player [block-id]').append(nested);
     await settle();
     expect(observer.players()).toHaveLength(3);
@@ -236,7 +275,7 @@ test('discovers nested players independently without adding their controls to th
     expect(child?.state.controls.map(({label}) => label)).toEqual(['Nested answer']);
 });
 
-test('observes player-procedure nested in another microfrontend without claiming the foreign area', async () => {
+test('limits an arbitrary microfrontend to controls inside its block marker', async () => {
     const {observer} = fixture.componentInstance;
     const events: ProcedurePlayerBlockChange[] = [];
 
@@ -247,7 +286,7 @@ test('observes player-procedure nested in another microfrontend without claiming
     const foreign = document.createElement('microfrontend');
 
     foreign.innerHTML =
-        '<employee-card><input aria-label="Foreign field"><player-procedure block-id="Nested"><input aria-label="Nested field"></player-procedure></employee-card>';
+        '<employee-card><input aria-label="Foreign field"><div block-id="Nested"><input aria-label="Nested field"></div></employee-card>';
     fixture.nativeElement.append(foreign);
     await settle();
     expect(
@@ -260,7 +299,7 @@ test('observes player-procedure nested in another microfrontend without claiming
 
     expect(nested?.state.controls.map(({label}) => label)).toEqual(['Nested field']);
     expect(events).toEqual([]);
-    foreign.querySelector('player-procedure')!.setAttribute('block-id', 'Next');
+    foreign.querySelector('[block-id]')!.setAttribute('block-id', 'Next');
     await settle();
     expect(events).toEqual([
         expect.objectContaining({
@@ -284,11 +323,14 @@ test('a replacement player establishes a new baseline after the old area unmount
     element('#first-player').remove();
     await settle();
     expect(observer.players().map(({state}) => state.key)).toEqual(['X']);
-    const replacement = document.createElement('procedure-player');
+    const replacement = document.createElement('section');
 
     replacement.id = 'replacement-player';
     replacement.setAttribute('block-id', 'New');
-    fixture.nativeElement.append(replacement);
+    const wrapper = document.createElement('microfrontend');
+
+    wrapper.append(replacement);
+    fixture.nativeElement.append(wrapper);
     await settle();
     const current = observer.players().find(({state}) => state.key === 'New');
 

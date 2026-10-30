@@ -36,6 +36,59 @@ const upload = (value: unknown): {name: string; mimeType: string; buffer: Buffer
     buffer: Buffer.from(JSON.stringify(value)),
 });
 
+test('array expectations preserve punctuation and whitespace through editing, export and reload', async ({
+    page,
+}) => {
+    const document = {
+        ...scenario,
+        steps: [
+            {
+                ...scenario.steps[0]!,
+                fields: [
+                    {
+                        ...scenario.steps[0]!.fields[0]!,
+                        expected: ['A; B', ' Second, value '],
+                    },
+                ],
+            },
+        ],
+    };
+
+    await page.goto('/record');
+    await page.getByText('Настроить тренировку', {exact: true}).click();
+    await page.getByLabel('Файл сценария', {exact: true}).setInputFiles(upload(document));
+    await page
+        .getByRole('button', {name: 'Импортировать и заменить сценарий', exact: true})
+        .click();
+    const first = page.getByRole('textbox', {name: 'Ожидание: Фамилия', exact: true});
+    const second = page.getByRole('textbox', {name: 'Ожидание 2: Фамилия', exact: true});
+
+    await expect(first).toHaveValue('A; B');
+    await expect(second).toHaveValue(' Second, value ');
+    await first.fill(' Edited; value ');
+    await page.getByRole('button', {name: 'Добавить значение', exact: true}).click();
+    await page
+        .getByRole('textbox', {name: 'Ожидание 3: Фамилия', exact: true})
+        .fill('Third; value');
+    await page.getByRole('button', {name: 'Удалить значение 2', exact: true}).click();
+    await page
+        .getByRole('button', {name: 'Сохранить сценарий для ученика', exact: true})
+        .click();
+    const download = page.waitForEvent('download');
+
+    await page.getByRole('button', {name: 'Скачать сценарий', exact: true}).click();
+    const exported = JSON.parse(await readFile(await (await download).path(), 'utf8'));
+
+    expect(exported.steps[0].fields[0].expected).toEqual([
+        ' Edited; value ',
+        'Third; value',
+    ]);
+    await page.reload();
+    await page.getByText('Настроить тренировку', {exact: true}).click();
+    await expect(first).toHaveValue(' Edited; value ');
+    await expect(second).toHaveValue('Third; value');
+});
+
 test('import without a recording supports preview, editing, export and training in a fresh browser', async ({
     page,
     browser,

@@ -21,6 +21,46 @@ test.beforeEach(async ({page}) => {
     );
 });
 
+test('a display-contents microfrontend host keeps its visible block and recording transitions', async ({
+    page,
+}) => {
+    const before = (await controls(page)).map((control) => control.id);
+
+    await page.getByRole('button', {name: 'Начать запись таблицы', exact: true}).click();
+    await page.locator('player-procedure').evaluate((element) => {
+        (element as HTMLElement).style.display = 'contents';
+    });
+    await expect
+        .poll(async () => {
+            const snapshot: DomSnapshot = JSON.parse(
+                (await page.getByTestId('procedure-table-snapshot').textContent())!,
+            );
+
+            return Object.values(snapshot.nodes).find(
+                (node) => node.kind === 'element' && node.tagName === 'player-procedure',
+            )?.visible;
+        })
+        .toBe(false);
+    await expect(page.getByTestId('procedure-table-status')).toHaveText(
+        'ready · table-A',
+    );
+    expect((await controls(page)).map((control) => control.id)).toEqual(before);
+    await page.getByRole('button', {name: 'Сменить блок таблицы', exact: true}).click();
+    await expect(page.getByTestId('procedure-table-status')).toHaveText(
+        'ready · table-B',
+    );
+    await page
+        .getByRole('button', {name: 'Завершить запись таблицы', exact: true})
+        .click();
+    await expect
+        .poll(async () =>
+            (await recording(page))?.events
+                .filter((event) => event.kind === 'screen')
+                .map((event) => event.screenKey),
+        )
+        .toEqual(['table-A', 'table-B']);
+});
+
 test('real table rows expose business labels and table chrome stays outside the data controls', async ({
     page,
 }) => {

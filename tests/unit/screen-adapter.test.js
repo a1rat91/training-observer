@@ -22,7 +22,6 @@ const snapshot = {
 };
 const adapter = (id, read = () => screen) => ({
     id,
-    rootSelector: 'example-player',
     read,
 });
 
@@ -106,7 +105,6 @@ test('invalid registrations fail before observation starts', () => {
         null,
         adapter(''),
         adapter(' example '),
-        {...adapter('example'), rootSelector: ' '},
         {...adapter('example'), read: null},
     ]) {
         expect(() => resolveScreenAdapters([invalid])).toThrow(

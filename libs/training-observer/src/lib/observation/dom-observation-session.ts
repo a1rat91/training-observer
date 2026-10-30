@@ -33,6 +33,7 @@ export const PAGE_EVENTS = [
     'reset',
     'toggle',
     'focusin',
+    'blur',
     'focusout',
     'load',
     'transitionend',
@@ -204,12 +205,20 @@ export class DomObservationSession {
                     );
                 }
 
-                if (event.type === 'focusout') {
+                if (event.type === 'focusin') {
+                    this.confirmations.onFocusIn(
+                        event as FocusEvent,
+                        this.current.snapshot,
+                    );
+                }
+
+                if (event.type === 'blur' || event.type === 'focusout') {
                     this.confirmations.onFocusOut(
                         event as FocusEvent,
                         this.current.snapshot,
                         this.current.controls,
                         this.context,
+                        this.scope,
                     );
                 }
             } catch (error: unknown) {

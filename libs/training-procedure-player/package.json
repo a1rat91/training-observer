@@ -1,7 +1,7 @@
 {
     "name": "@training-observer/procedure-player",
     "version": "0.0.0",
-    "description": "Pure procedure-player block and component adapters with optional Angular integration",
+    "description": "Angular observation and block recognition for procedure-player microfrontends",
     "repository": {
         "type": "git",
         "url": "https://github.com/a1rat91/training-observer.git"
@@ -20,16 +20,5 @@
         "@angular/core": "^19.2.0",
         "@training-observer/core": "0.0.0",
         "rxjs": "^7.8.0"
-    },
-    "peerDependenciesMeta": {
-        "@angular/common": {
-            "optional": true
-        },
-        "@angular/core": {
-            "optional": true
-        },
-        "rxjs": {
-            "optional": true
-        }
     }
 }

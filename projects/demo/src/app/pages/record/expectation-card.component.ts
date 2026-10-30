@@ -2,12 +2,22 @@
  * Получает готовую модель и выдаёт частичные изменения; не наблюдает DOM и не сохраняет сценарий.
  * Преобразует ввод в исходный тип значения, а предпросмотр отображает текст без выполнения HTML.
  */
-import {ChangeDetectionStrategy, Component, computed, input, output} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {TuiTextfield} from '@taiga-ui/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+    input,
+    type OnChanges,
+    output,
+} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {NonNullableFormBuilder, ReactiveFormsModule} from '@angular/forms';
+import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiCheckbox} from '@taiga-ui/kit';
 import {type FieldExpectation} from '@training-observer/contracts';
 import {ControlType} from '@training-observer/core/models';
+import {map, merge} from 'rxjs';
 
 const TYPE_NAMES: Record<ControlType, string> = {
     [ControlType.Textbox]: 'Input',
@@ -22,14 +32,25 @@ const TYPE_NAMES: Record<ControlType, string> = {
 
 @Component({
     selector: 'app-expectation-card',
-    imports: [FormsModule, TuiCheckbox, TuiTextfield],
+    imports: [ReactiveFormsModule, TuiButton, TuiCheckbox, TuiTextfield],
     templateUrl: './expectation-card.component.html',
     styleUrl: './expectation-card.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExpectationCardComponent {
+export class ExpectationCardComponent implements OnChanges {
+    private readonly builder = inject(NonNullableFormBuilder);
+
     public readonly field = input.required<FieldExpectation>();
     public readonly changed = output<Partial<FieldExpectation>>();
+
+    protected readonly form = this.builder.group({
+        expectedBoolean: false,
+        expectedText: '',
+        expectedItems: this.builder.array<string>([]),
+        message: '',
+        successMessage: '',
+        optional: false,
+    });
 
     protected readonly label = computed(
         () => this.field().descriptor.label || 'Без подписи',
@@ -56,21 +77,77 @@ export class ExpectationCardComponent {
             Array.isArray(this.field().expected),
     );
 
-    protected readonly textValue = computed(() => {
-        const value = this.field().expected;
+    constructor() {
+        const {
+            expectedBoolean,
+            expectedText,
+            expectedItems,
+            message,
+            successMessage,
+            optional,
+        } = this.form.controls;
 
-        return Array.isArray(value) ? value.join('; ') : String(value);
-    });
+        merge(
+            expectedBoolean.valueChanges.pipe(map((expected) => ({expected}))),
+            expectedText.valueChanges.pipe(
+                map((value) => ({expected: this.expectedValue(value)})),
+            ),
+            expectedItems.valueChanges.pipe(
+                map((expected) => ({expected: [...expected]})),
+            ),
+            message.valueChanges.pipe(map((message) => ({message}))),
+            successMessage.valueChanges.pipe(map((successMessage) => ({successMessage}))),
+            optional.valueChanges.pipe(map((optional) => ({optional}))),
+        )
+            .pipe(takeUntilDestroyed())
+            .subscribe((patch) => this.changed.emit(patch));
+    }
 
-    protected setValue(value: string): void {
+    public ngOnChanges(): void {
+        const field = this.field();
+        const expected = field.expected;
+        const items = this.isArray() && Array.isArray(expected) ? [...expected] : [];
+        const controls = this.form.controls.expectedItems;
+
+        // Сохраняем controls при возврате patch из редактора, чтобы строка не теряла фокус.
+        while (controls.length > items.length) {
+            controls.removeAt(controls.length - 1, {emitEvent: false});
+        }
+
+        while (controls.length < items.length) {
+            controls.push(this.builder.control(''), {emitEvent: false});
+        }
+
+        this.form.setValue(
+            {
+                expectedBoolean: expected === true,
+                expectedText: Array.isArray(expected)
+                    ? (expected[0] ?? '')
+                    : String(expected),
+                expectedItems: items,
+                message: field.message,
+                successMessage: field.successMessage ?? '',
+                optional: field.optional,
+            },
+            {emitEvent: false},
+        );
+    }
+
+    protected addExpected(): void {
+        this.form.controls.expectedItems.push(this.builder.control(''));
+    }
+
+    protected removeExpected(index: number): void {
+        this.form.controls.expectedItems.removeAt(index);
+    }
+
+    private expectedValue(value: string): FieldExpectation['expected'] {
         let expected: FieldExpectation['expected'] = value;
 
         if (this.field().descriptor.kind === 'combobox') {
             expected = value ? [value] : [];
-        } else if (Array.isArray(this.field().expected)) {
-            expected = value ? value.split(';').map((item) => item.trim()) : [];
         }
 
-        this.changed.emit({expected});
+        return expected;
     }
 }

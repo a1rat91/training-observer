@@ -13,24 +13,61 @@
                 tuiCheckbox
                 type="checkbox"
                 [attr.aria-label]="'Ожидание: ' + label()"
-                [ngModel]="field().expected"
-                (ngModelChange)="changed.emit({expected: $event})"
+                [formControl]="form.controls.expectedBoolean"
             />
             {{ field().expected ? 'Отметка должна быть установлена' : 'Отметка должна быть снята' }}
         </label>
+    } @else if (isArray()) {
+        <div
+            role="group"
+            [attr.aria-label]="'Выбранные варианты: ' + label()"
+        >
+            <small>Каждый выбранный вариант — отдельная строка.</small>
+            @for (control of form.controls.expectedItems.controls; track control; let index = $index) {
+                <div>
+                    <tui-textfield>
+                        <label tuiLabel>Ожидание {{ index + 1 }}: {{ label() }}</label>
+                        <input
+                            tuiTextfield
+                            [attr.aria-label]="
+                                index === 0 ? 'Ожидание: ' + label() : 'Ожидание ' + (index + 1) + ': ' + label()
+                            "
+                            [formControl]="control"
+                        />
+                    </tui-textfield>
+                    <button
+                        appearance="secondary"
+                        size="s"
+                        tuiButton
+                        type="button"
+                        [attr.aria-label]="'Удалить значение ' + (index + 1)"
+                        (click)="removeExpected(index)"
+                    >
+                        Удалить значение {{ index + 1 }}
+                    </button>
+                </div>
+            } @empty {
+                <p>Ни один вариант не выбран.</p>
+            }
+            <button
+                appearance="secondary"
+                size="s"
+                tuiButton
+                type="button"
+                (click)="addExpected()"
+            >
+                Добавить значение
+            </button>
+        </div>
     } @else {
         <tui-textfield>
             <label tuiLabel>Ожидание: {{ label() }}</label>
             <input
                 tuiTextfield
                 [attr.aria-label]="'Ожидание: ' + label()"
-                [ngModel]="textValue()"
-                (ngModelChange)="setValue($event)"
+                [formControl]="form.controls.expectedText"
             />
         </tui-textfield>
-        @if (isArray()) {
-            <small>Названия выбранных вариантов разделяются точкой с запятой.</small>
-        }
     }
     <div class="messages">
         <tui-textfield>
@@ -38,8 +75,7 @@
             <input
                 tuiTextfield
                 [attr.aria-label]="'Ошибка: ' + label()"
-                [ngModel]="field().message"
-                (ngModelChange)="changed.emit({message: $event})"
+                [formControl]="form.controls.message"
             />
         </tui-textfield>
         <tui-textfield>
@@ -47,8 +83,7 @@
             <input
                 tuiTextfield
                 [attr.aria-label]="'Успех: ' + label()"
-                [ngModel]="field().successMessage ?? ''"
-                (ngModelChange)="changed.emit({successMessage: $event})"
+                [formControl]="form.controls.successMessage"
             />
         </tui-textfield>
     </div>
@@ -74,8 +109,7 @@
         <input
             tuiCheckbox
             type="checkbox"
-            [ngModel]="field().optional"
-            (ngModelChange)="changed.emit({optional: $event})"
+            [formControl]="form.controls.optional"
         />
         Не проверять это поле
     </label>

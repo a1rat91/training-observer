@@ -1,21 +1,47 @@
-# Runtime: прохождение сценария без UI
+# Runtime: Angular-сеанс тренировки и проверка сценария
 
-`@training-observer/runtime` получает готовый сценарий и состояния страницы, возвращает прогресс и новые сообщения. Не
-запускает DOM-наблюдение, не записывает сценарии, не читает storage, не показывает Taiga Alerts. Зависит только от
-contracts и core/models. Интеграция demo — `projects/demo/src/app/pages/learn`.
+`@training-observer/runtime` предоставляет `TrainingSession` для Angular и алгоритмы проверки готового сценария. Сеанс
+управляет попыткой и наблюдением через общий `ObservationConnection` из core. `ScenarioRuntime` получает наблюдаемые
+состояния и возвращает прогресс и новые сообщения; сам движок не читает DOM. Пакет не записывает сценарии, не читает
+storage и не показывает Taiga Alerts. UI-интеграция demo — `projects/demo/src/app/pages/learn`.
+
+Переходы сравниваются по общему `ScreenState.key`. Имена DOM-тегов и атрибутов приложения, включая `block-id`,
+интерпретируют адаптеры приложения; движок прохождения их не читает.
 
 ## Структура
 
-| Модуль                 | Ответственность                                                         |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `scenario-runtime.ts`  | координация готовности, переходов и результата                          |
-| `field-evaluator.ts`   | сопоставление обязательных полей, выбор исходного/blur значения, оценка |
-| `feedback-tracker.ts`  | память обратной связи и подавление повторов                             |
-| `control-matcher.ts`   | детерминированный поиск цели по descriptor                              |
-| `training-progress.ts` | выходная модель обновления                                              |
+| Модуль                        | Ответственность                                                         |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `scenario-runtime.ts`         | координация готовности, переходов и результата                          |
+| `field-evaluator.ts`          | сопоставление обязательных полей, выбор исходного/blur значения, оценка |
+| `feedback-tracker.ts`         | память обратной связи и подавление повторов                             |
+| `control-matcher.ts`          | детерминированный поиск цели по descriptor                              |
+| `training-progress.ts`        | выходная модель обновления                                              |
+| `training-session.service.ts` | Angular-владелец попытки и доставка наблюдаемых кадров                  |
+| `provide-training-session.ts` | регистрация Angular-сеанса                                              |
 
-Публичны ScenarioRuntime, TrainingProgress, matchControl/ControlMatch. Остальные классы — детали композиции, не сервисы
-Angular и не точки расширения приложения. Начните чтение с update → tryTransition → FieldEvaluator.
+Публичны TrainingSession, provideTrainingSession, ScenarioRuntime, TrainingProgress и matchControl/ControlMatch.
+Внутренние evaluator и tracker — обычные классы композиции алгоритма. Начните чтение движка с update → tryTransition →
+FieldEvaluator; его Angular-владелец описан ниже.
+
+## Angular API
+
+```ts
+import {inject} from '@angular/core';
+import {provideTrainingSession, TrainingSession} from '@training-observer/runtime';
+
+// providers компонента: [provideTrainingSession({root: '#main-area'})]
+const session = inject(TrainingSession);
+session.feedback$.subscribe((feedback) => showMessage(feedback.message, feedback.kind));
+session.start(validatedScenario);
+// session.progress(), session.screen(), session.error()
+```
+
+Передавайте сценарий, проверенный `parseScenario` из contracts. `start(scenario)` создаёт новую попытку, сбрасывает
+подтверждения прежней попытки и получает исходное состояние после рендера. `stop()` отменяет попытку и останавливает
+наблюдение. DestroyRef владельца освобождает ресурсы и завершает `feedback$`; подписку UI также ограничивайте своим
+DestroyRef. Настройки `root`, `observation` и необязательный `screen` определяют область; без явного `screen` работают
+зарегистрированные адаптеры. Сеанс записи и сеанс тренировки одного компонента остаются независимыми.
 
 ## Алгоритм обновления
 
@@ -64,8 +90,8 @@ checkbox/radio, как и сообщение ошибки. Память учит
 
 ## Жизненный цикл и ограничения
 
-В Angular используйте [TrainingSession](../training-angular/README.md), который владеет попыткой, наблюдением и
-доставкой обратной связи. Ниже — правила самостоятельного использования чистого runtime.
+`TrainingSession` владеет попыткой, наблюдением и доставкой обратной связи. Ниже — правила непосредственного
+использования `ScenarioRuntime` внутри своей интеграции.
 
 Создайте новый runtime на новую попытку, передав результат parseScenario. Конструктор копирует документ. Вызывайте
 update при публикациях screen и confirmedControls. Не переиспользуйте подтверждения старого сеанса. Runtime не
@@ -78,4 +104,5 @@ update при публикациях screen и confirmedControls. Не пере�
 ## Проверка
 
 `npx nx build training-runtime`; unit tests — `tests/unit/scenario.test.js`, browser tests — `tests/training.spec.ts`.
-`npm run lint` запрещает импорт recording, Angular и core-фасада.
+`npm run lint` запрещает зависимость runtime → recording. Angular-сеанс и публичный package import проверяются в TestBed
+и независимом Angular consumer.

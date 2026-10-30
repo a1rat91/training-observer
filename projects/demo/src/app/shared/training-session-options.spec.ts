@@ -14,8 +14,8 @@ import {
     tick,
 } from '@angular/core/testing';
 import {expect} from '@jest/globals';
-import {provideRecordingSession, RecordingSession} from '@training-observer/angular';
 import {DOM_OBSERVATION_OPTIONS, DOM_SNAPSHOT_OPTIONS} from '@training-observer/core';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
 
 const fixtures = new Set<ComponentFixture<unknown>>();
 const scopes = new Set<EnvironmentInjector>();
