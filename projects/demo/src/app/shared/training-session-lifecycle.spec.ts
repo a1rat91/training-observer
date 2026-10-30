@@ -10,17 +10,13 @@ import {
 import {bootstrapApplication} from '@angular/platform-browser';
 import {provideServerRendering, renderApplication} from '@angular/platform-server';
 import {expect} from '@jest/globals';
-import {
-    provideRecordingSession,
-    provideTrainingSession,
-    RecordingSession,
-    type TrainingIntegrationOptions,
-    TrainingSession,
-} from '@training-observer/angular';
 import {type StateRecording, type TrainingScenario} from '@training-observer/contracts';
+import {type ObservationSessionOptions} from '@training-observer/core';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+import {provideTrainingSession, TrainingSession} from '@training-observer/runtime';
 
 const fixtures = new Set<ComponentFixture<LifecycleOwner>>();
-const integration: TrainingIntegrationOptions = {
+const integration: ObservationSessionOptions = {
     root: '#lifecycle-procedure',
     screen: {
         root: {attribute: {name: 'data-procedure'}},
@@ -120,6 +116,26 @@ test('stop before the first render cancels automatic observation until explicit 
         expect.objectContaining({status: 'ready', key: 'A'}),
     );
     expect(training.progress()?.status).toBe('complete');
+}));
+
+test('destroy disconnects session updates before the child observer clears its snapshot', fakeAsync(() => {
+    const fixture = createOwner();
+
+    fixture.detectChanges();
+    const {recording} = fixture.componentInstance;
+
+    recording.start();
+    const draft = recording.draft();
+    const screen = recording.screen();
+
+    destroyOwner(fixture);
+    flushMicrotasks();
+    tick(20);
+    expect(recording.draft()).toBe(draft);
+    expect(recording.screen()).toBe(screen);
+    expect(recording.draft()?.events).toEqual([
+        expect.objectContaining({kind: 'screen', screenKey: 'A'}),
+    ]);
 }));
 
 test('destroy rejects a pending recording stop and cancels the queued blur and render', fakeAsync(() => {

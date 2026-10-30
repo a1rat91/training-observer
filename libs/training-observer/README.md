@@ -6,7 +6,7 @@
 ## Точки входа
 
 - `@training-observer/core` — Angular-фасады и сервисы.
-- `@training-observer/core/models` — модели и enum без Angular; [отдельное описание](models/README.md).
+- `@training-observer/core/models` — сериализуемые модели и enum; [отдельное описание](models/README.md).
 - `@training-observer/core/adapters` — чистый SDK и проекция сохранённого графа; [описание](adapters/README.md).
 
 `src/index.ts` — полный публичный API. Не импортируйте внутренние файлы из приложения. Пакет зависит от Angular
@@ -20,7 +20,7 @@ common/core, RxJS и tslib. На contracts/recording/runtime зависимос�
 | `src/lib/microfrontend-observer.ts` | независимые области с общими browser sources           |
 | `src/lib/capture/`                  | обход DOM, свойства, подписи, геометрия, связи popup   |
 | `src/lib/controls/`                 | Angular-обёртка чистой проекции                        |
-| `adapters/src/`                     | native/ARIA проекция и SDK расширений без Angular      |
+| `adapters/src/`                     | native/ARIA проекция и SDK расширений                  |
 | `src/lib/observation/`              | invalidation, batching, polling, blur, память выбора   |
 | `src/lib/screen/`                   | конфигурируемое чтение ID и учёт посещений             |
 | `src/lib/highlight/`                | необязательный overlay, не участвующий в распознавании |
@@ -38,12 +38,18 @@ DomSnapshotBuilder → control-projection. Затем BlurConfirmation объя�
 3. Адаптеры объединяют служебные узлы в ControlSnapshot с target, host, value и locator hints.
 4. Browser events, MutationObserver и polling native properties запускают объединённый capture.
 5. Fingerprint подавляет одинаковые публикации; время capture не считается изменением страницы.
-6. Focusout за пределы host/popup сохраняет уходящее поле; settled capture публикует confirmedControls.
+6. Native blur за пределы host/popup сохраняет уходящее поле до focusout-обработчиков приложения; settled capture
+   публикует confirmedControls.
 7. stop/clear/DestroyRef освобождают browser-ресурсы и отменяют отложенную работу.
 
 Capture выполняется вне Angular zone, публикация signals — внутри. Один локально предоставленный сервис соответствует
 lifecycle страницы. `start` на новом root заменяет сеанс, `capture` — ручное чтение, `flush` — завершение ожидающего
 capture. `stop` сохраняет результат; `clear` его очищает.
+
+Захваченное при blur значение уточняется после форматирования только в том же контексте экрана. Контекст берётся из
+общих `ScreenState.key` и `rootNodeId` через локальный DI-reader; при смене экрана остаётся уходящее значение. Capture
+не интерпретирует бизнес-атрибуты приложения: например, `block-id` читает только адаптер процедур. `focusout` также
+поддерживается, но не перезаписывает уже ожидающее blur-подтверждение.
 
 `start(root)` создаёт новый сеанс и сбрасывает прежние подтверждения. Для продолжения при замене физической области
 используйте `reconnect(root)` после microtasks focusout: он сохраняет подтверждения и захваченные уходящие значения, не
@@ -67,12 +73,12 @@ capture. `stop` сохраняет результат; `clear` его очища
 ## Ограничения
 
 Taiga-правила находятся в отдельном `@training-observer/taiga-ui` и используют DOM-признаки версии 4.98. Для Angular
-подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui/angular`. Core по умолчанию использует native/ARIA
-правила. Сессионные ID меняются при remount. Подписи — приближённый алгоритм, не полный accessible-name standard.
-Структурный path предназначен для диагностики. Core не гарантирует идентичность поля между документами. Password/file
-скрываются; произвольная политика конфиденциальных данных ещё требует отдельной настройки. Неизвестные popup, iframe и
-truncated явно отражаются в снимке. Закрытый shadow root недоступен через DOM API; его наличие и содержимое библиотека
-не определяет.
+подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui`. Core по умолчанию использует native/ARIA правила.
+Сессионные ID меняются при remount. Подписи — приближённый алгоритм, не полный accessible-name standard. Структурный
+path предназначен для диагностики. Core не гарантирует идентичность поля между документами. Password/file скрываются;
+произвольная политика конфиденциальных данных ещё требует отдельной настройки. Неизвестные popup, iframe и truncated
+явно отражаются в снимке. Закрытый shadow root недоступен через DOM API; его наличие и содержимое библиотека не
+определяет.
 
 Открытые shadow roots поддерживают capture, геометрию, события, mutations, polling native-свойств и подтверждение blur.
 В графе их потомки связаны с host; path содержит `/shadow-root`, а необязательный `treeScopeId` отделяет области HTML ID
@@ -100,12 +106,23 @@ core от учебных пакетов. Browser tests в `tests/` провер�
 aria-labelledby и aria-label по-прежнему имеют приоритет. Это не полное вычисление Accessible Name. Измерение на
 реальных Taiga/HTML-контролах: [отчёт устойчивости](../../docs/reference/matching-resilience.md).
 
+## Наблюдение страницы и feature-сеансы
+
+`providePageObservation()` предоставляет локальный `PageObservation`. При первой инъекции после рендера он запускает
+обнаружение по `boundarySelector`, по умолчанию `microfrontend > *`. Непосредственный ребёнок обёртки — корневой
+компонент микрофронта; его `localName` становится именем области. Тег приложения заранее неизвестен и не выбирается по
+имени адаптера. `areas()` содержит снимки и ошибки областей, `updates$` синхронно выдаёт опубликованные кадры, `error()`
+сообщает об ошибке запуска, а `refresh(id?)` обновляет геометрию. Уничтожение DI-владельца освобождает ресурсы.
+
+Общий `ObservationConnection` и `ObservationSessionOptions` находятся в core. На них опираются `RecordingSession` из
+`@training-observer/recording` и `TrainingSession` из `@training-observer/runtime`; отдельного пакета интеграции нет.
+Connection управляет корнем, after-render capture и очисткой, а feature-сеанс — записью либо попыткой обучения.
+
 ## Angular DI и жизненный цикл
 
-Подключение: `providers: [provideDomObservation()]` в компоненте-владельце. Helper предоставляет TrainingObserver,
-MicrofrontendObserver и фабрику сеансов. Он заменяет прежний одиночный provider фасада; providedIn root у фасадов убран.
-Сервисы построения снимков и проекции создаются для владельца, наследуя его адаптеры; состояние blur изолировано на
-сеанс.
+Подключение низкоуровневого API: `providers: [provideDomObservation()]` в компоненте-владельце. Helper предоставляет
+TrainingObserver, MicrofrontendObserver и фабрику сеансов. У фасадов нет providedIn root. Сервисы построения снимков и
+проекции создаются для владельца, наследуя его адаптеры; состояние blur изолировано на сеанс.
 
 ObservationSessionFactory создаёт EnvironmentInjector на один start/stop и сохраняет локальные overrides DOCUMENT,
 DomSnapshotBuilder, DomElementAnalyzer и ControlSnapshotBuilder. Внутри DI создаёт DomObservationSession и
@@ -114,6 +131,7 @@ BlurConfirmation. Stop уничтожает контейнер; DestroyRef оч�
 
 DomObservationSession выдаёт синхронные Observable snapshots$/errors$. Capture, проекция и подтверждение blur
 выполняются до выдачи результата; эффектов или асинхронной очереди между этими стадиями нет. Потоки завершаются при
-остановке, освобождая подписки фасада. Shared-сеансы публикуют только снимки областей, как и раньше; подтверждения
-ученика остаются контрактом TrainingObserver. Чистые объекты отдельного capture/snapshot и модели не превращены в
-DI-сервисы.
+остановке, освобождая подписки фасада. Shared-сеансы публикуют и снимки областей, и собственные blur-подтверждения.
+`MicrofrontendSnapshot.revision` меняется также при подтверждении без DOM-разницы. `TrainingObserver.state()` содержит
+единый ObservationState, а остальные readonly signals вычисляются из него. Объекты отдельного capture/snapshot и модели
+не превращены в DI-сервисы.

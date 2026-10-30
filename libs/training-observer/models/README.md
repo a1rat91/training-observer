@@ -1,11 +1,8 @@
 # Core models: сериализуемое наблюдаемое состояние
 
-Вторичная точка входа `@training-observer/core/models` пакета core. Не импортирует Angular, browser-сервисы или учебные
-контракты. Нужна чистым обработчикам снимков, записи и runtime, которым не нужен Angular-фасад.
-
-Angular и RxJS отмечены в manifest core как optional peer dependencies: при использовании только `core/models` они не
-нужны потребителю. Основная точка входа `@training-observer/core` содержит Angular-сервисы и требует Angular и RxJS в
-приложении. Импортируйте модели из вторичной точки входа, чтобы сохранить независимость чистого обработчика.
+Вторичная точка входа `@training-observer/core/models` содержит сериализуемые DTO наблюдения. Она отделяет модели от
+browser-сервисов, Angular lifecycle и учебных контрактов. Обработчики снимков, запись и runtime используют эти общие
+типы; основная точка входа core предоставляет сервисы наблюдения Angular-приложению.
 
 ```ts
 import {ControlType, type ControlSnapshot} from '@training-observer/core/models';

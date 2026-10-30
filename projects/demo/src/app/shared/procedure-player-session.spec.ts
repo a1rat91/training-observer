@@ -2,6 +2,7 @@
 import {
     Component,
     createEnvironmentInjector,
+    CUSTOM_ELEMENTS_SCHEMA,
     EnvironmentInjector,
     inject,
     signal,
@@ -14,12 +15,6 @@ import {
     tick,
 } from '@angular/core/testing';
 import {expect} from '@jest/globals';
-import {
-    provideRecordingSession,
-    provideTrainingSession,
-    RecordingSession,
-    TrainingSession,
-} from '@training-observer/angular';
 import {type TrainingScenario} from '@training-observer/contracts';
 import {
     DOM_OBSERVATION_OPTIONS,
@@ -30,6 +25,11 @@ import {
     type ScreenAdapter,
 } from '@training-observer/core';
 import {type ScreenStateOptions} from '@training-observer/core/models';
+import {provideProcedurePlayerAdapter} from '@training-observer/procedure-player';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+import {provideTrainingSession, TrainingSession} from '@training-observer/runtime';
+
+import {MicrofrontendHostDirective} from './microfrontend-host.directive';
 
 const screenOptions: ScreenStateOptions = {
     root: {attribute: {name: 'data-session-screen'}},
@@ -38,8 +38,11 @@ const screenOptions: ScreenStateOptions = {
 
 const adapter: ScreenAdapter = {
     id: 'test-procedure-player',
-    rootSelector: '[data-session-screen]',
-    read: (snapshot, controls) => readScreenState(snapshot, controls, screenOptions),
+    read(snapshot, controls) {
+        const state = readScreenState(snapshot, controls, screenOptions);
+
+        return state.reason === 'root-missing' ? null : state;
+    },
 };
 
 const fixtures = new Set<ComponentFixture<unknown>>();
@@ -75,6 +78,31 @@ class AdaptedOwner {
 class ConfiguredOwner {
     public readonly recording = inject(RecordingSession);
     public readonly training = inject(TrainingSession);
+}
+
+@Component({
+    imports: [MicrofrontendHostDirective],
+    template: `
+        <microfrontend>
+            <account-workflow>
+                <section [attr.block-id]="key()">
+                    <input
+                        id="procedure-answer"
+                        aria-label="Имя"
+                    />
+                </section>
+            </account-workflow>
+        </microfrontend>
+        <microfrontend>
+            <employee-card><input aria-label="Соседний микрофронт" /></employee-card>
+        </microfrontend>
+    `,
+    providers: [provideProcedurePlayerAdapter(), provideRecordingSession()],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+})
+class ProcedureOwner {
+    public readonly key = signal('A');
+    public readonly recording = inject(RecordingSession);
 }
 
 const scenario: TrainingScenario = {
@@ -181,6 +209,46 @@ test('a configless recording records adapted block changes as existing screen vi
         expect.objectContaining({kind: 'screen', screenKey: 'A', visit: 3}),
     ]);
     expect(recording.error()).toBeNull();
+});
+
+test('a configless procedure recording reads an arbitrary wrapped MF and diagnoses a second block owner', async () => {
+    const fixture = TestBed.createComponent(ProcedureOwner);
+
+    fixtures.add(fixture);
+    fixture.detectChanges();
+    await settle(fixture);
+    const {recording, key} = fixture.componentInstance;
+
+    expect(recording.screen()).toMatchObject({status: 'ready', key: 'A'});
+    expect(recording.screen().controls.map(({label}) => label)).toEqual(['Имя']);
+    recording.start();
+    key.set('B');
+    fixture.detectChanges();
+    await settle(fixture);
+    expect(recording.draft()?.events).toEqual([
+        expect.objectContaining({kind: 'screen', screenKey: 'A', visit: 1}),
+        expect.objectContaining({kind: 'screen', screenKey: 'B', visit: 2}),
+    ]);
+    const nested = document.createElement('microfrontend');
+
+    nested.innerHTML =
+        '<embedded-workflow block-id="Nested"><input aria-label="Nested answer"></embedded-workflow>';
+    fixture.nativeElement.querySelector('section').removeAttribute('block-id');
+    fixture.nativeElement.querySelector('account-workflow').append(nested);
+    await settle(fixture);
+    expect(recording.screen()).toMatchObject({status: 'ready', key: 'Nested'});
+    expect(recording.screen().controls.map(({label}) => label)).toEqual([
+        'Nested answer',
+    ]);
+    fixture.nativeElement
+        .querySelector('employee-card')
+        .setAttribute('block-id', 'Other');
+    await settle(fixture);
+    expect(recording.screen()).toMatchObject({
+        status: 'ambiguous',
+        reason: 'root-ambiguous',
+        controls: [],
+    });
 });
 
 test('a configless training session evaluates blur confirmations from the adapted screen', fakeAsync(() => {

@@ -1,3 +1,5 @@
+import '@angular/compiler';
+
 import {expect, test} from '@playwright/test';
 import {type ControlAdapter, projectControls} from '@training-observer/core/adapters';
 import {

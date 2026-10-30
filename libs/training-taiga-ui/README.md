@@ -1,10 +1,11 @@
 # Taiga UI: DOM-адаптер контролов
 
-`@training-observer/taiga-ui` экспортирует `taigaUiAdapter` для DOM Taiga UI 4.98. Основная точка входа использует
-только чистые `core/adapters` и `core/models`: её можно импортировать без Angular, RxJS и установленных пакетов Taiga
-UI. Распознавание опирается на сохранённые DOM-признаки, без экземпляров Angular и private-полей компонентов.
+`@training-observer/taiga-ui` — Angular-библиотека для регистрации и распознавания контролов Taiga UI 4.98. Основная
+точка входа экспортирует `provideTaigaUiAdapter()` и `taigaUiAdapter`. Angular и RxJS — обязательные peer dependencies.
+Сами пакеты Taiga UI не являются runtime-зависимостью адаптера: распознавание опирается на сохранённые DOM-признаки, без
+экземпляров и private-полей компонентов.
 
-## Использование без Angular
+## Проекция сохранённого снимка
 
 ```ts
 import {projectControls} from '@training-observer/core/adapters';
@@ -35,18 +36,25 @@ textbox и строки дат сохраняются без изменения.
 ## Регистрация в Angular
 
 ```ts
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
 
 export const appConfig = {
   providers: [provideTaigaUiAdapter()],
 };
 ```
 
-Вторичная точка входа `/angular` вызывает `provideControlAdapters(taigaUiAdapter)` из core. Регистрация действует в
-соответствующем injector scope. Для Angular-интеграции нужны optional peer dependencies `@angular/common`,
-`@angular/core` и `rxjs`; Taiga UI не является runtime-зависимостью или peer dependency адаптера.
+Провайдер вызывает `provideControlAdapters(taigaUiAdapter)` из core. Регистрация действует в соответствующем injector
+scope. Регистрация и правила распознавания находятся в одном Angular API библиотеки.
+
+## Как читать реализацию
+
+`taiga-ui-dom.ts` содержит внутренние enum DOM-признаков Taiga и общие проверки host/attribute/class.
+`taiga-ui-control-rules.ts` задаёт порядок распознавания: явные Select/ComboBox/Number, обычный dropdown, legacy-host и
+native-маркеры. `taiga-ui-adapter.ts` связывает эти правила с исключениями, метками и чтением значений. Эти enum и
+функции остаются внутренними деталями; публичный API адаптера не меняется.
 
 ## Проверка
 
-`npx nx build training-taiga-ui` собирает обе точки входа. Проверки чистых пакетов импортируют primary entry point без
-Angular и RxJS; Angular AOT-проверка импортирует provider из `/angular`.
+`npx nx build training-taiga-ui` собирает Angular-библиотеку. Проекции date/time и multi-select проверяются в Angular
+Jest и на реальных компонентах Taiga UI в Playwright. Проверка опубликованных пакетов использует основной импорт
+библиотеки в независимом Angular consumer.

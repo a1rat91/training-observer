@@ -1,17 +1,46 @@
-# Recording: административная логика без UI
+# Recording: Angular-сеанс записи и административная логика
 
-`@training-observer/recording` строит журнал примера и компилирует его в сценарий. Зависит от core/models и contracts.
-Не зависит от runtime, DOM или Angular. Angular-админка demo находится в `projects/demo/src/app/pages/record` и
-управляет кнопками, сохранением, undo и редактором.
+`@training-observer/recording` предоставляет Angular-сеанс записи, строит журнал примера и компилирует его в сценарий.
+`RecordingSession` использует общий `ObservationConnection` из core; `StateRecorder`, редактирование и компиляция
+остаются обычными функциями и классами. Пакет не зависит от runtime и не управляет UI или storage. Админка demo
+находится в `projects/demo/src/app/pages/record` и управляет кнопками, сохранением, undo и редактором.
+
+Запись получает общий `ScreenState` и его `key`. DOM-признаки конкретного приложения, включая `block-id`, принадлежат
+адаптерам приложения и не интерпретируются регистратором.
 
 ## API и структура
 
 - `src/lib/state-recorder.ts` — StateRecorder: start, observe, snapshot, stop.
 - `src/lib/recording-edit.ts` — removeRecordedEvent и recordingProblem.
 - `src/lib/scenario-compiler.ts` — compileScenario.
+- `src/lib/recording-session.service.ts` — RecordingSession: Angular lifecycle и доставка кадров регистратору.
+- `src/lib/provide-recording-session.ts` — provideRecordingSession.
 - `src/index.ts` — публичные exports; типы документов импортируются из contracts.
 
 Маршрут чтения: модели contracts → StateRecorder.observe → приватные фазы регистрации → compiler → editing.
+
+## Angular API
+
+```ts
+import {inject} from '@angular/core';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+
+// providers компонента: [provideRecordingSession({root: '#main-area'})]
+const session = inject(RecordingSession);
+session.start();
+session.stop().subscribe((document) => saveRecording(document));
+```
+
+Провайдер подключает наблюдение после рендера и освобождает его через DestroyRef владельца. Настройки `root`,
+`observation` и необязательные явные правила `screen` описывают область чтения; без `screen` применяются
+зарегистрированные адаптеры. Один сеанс работает с одним текущим логическим экраном. Для нескольких микрофронтов
+задавайте отдельные области записи, а для общей диагностики используйте `PageObservation` из core.
+
+Наблюдение работает независимо от `session.start()`: этот метод начинает именно запись. `stop()` возвращает
+`Observable<StateRecording>`; подписка дожидается следующего рендера и финального flush, сама не создавая blur для
+активного поля. После завершения записи наблюдение остаётся включённым. Readonly signals `screen`, `visit`, `draft`,
+`recording`, `stopping`, `error`, `snapshot`, `controls` и `confirmedControls` доступны UI; `highlight()` управляет
+диагностической подсветкой. Подписки UI ограничивайте своим DestroyRef.
 
 ## Запись
 
@@ -45,8 +74,8 @@ removeRecordedEvent возвращает новый документ, сохра
 
 ## Интеграция
 
-В Angular используйте [RecordingSession](../training-angular/README.md): provider сам запускает наблюдение, доставляет
-состояния и выполняет финальный flush после рендера. Ниже — низкоуровневый API.
+Используйте `RecordingSession` из этого пакета: provider сам запускает наблюдение, доставляет состояния и выполняет
+финальный flush после рендера. Ниже — низкоуровневый API.
 
 Создайте recorder на одну административную запись. Перед Stop дождитесь рендера обработчиков, вызовите observer.flush(),
 передайте последнее состояние в observe и затем stop. Отдельно отредактируйте результат compileScenario и явно
@@ -58,6 +87,6 @@ removeRecordedEvent возвращает новый документ, сохра
 
 ## Проверка
 
-`npx nx build training-recording`; unit tests в `tests/unit/state-recorder.test.mjs`, `recording-edit.test.mjs`,
-`scenario.test.mjs`; browser tests в `tests/recording*.spec.ts`, `tests/training.spec.ts`. `npm run lint` запрещает
-зависимости на runtime и Angular.
+`npx nx build training-recording`; алгоритмы проверяются в `tests/unit`, Angular-сеансы — TestBed-тестами demo,
+браузерные сценарии — в `tests/recording*.spec.ts` и `tests/training.spec.ts`. Основной package import проверяется в
+независимом Angular consumer. `npm run lint` запрещает зависимости recording → runtime.

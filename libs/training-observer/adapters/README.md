@@ -1,8 +1,8 @@
 # Расширяемая проекция контролов
 
-`@training-observer/core/adapters` — чистая точка входа без Angular и browser API. `projectControls(snapshot, adapters)`
-строит логические контролы из сохранённого DOM-графа. По умолчанию доступны native/ARIA правила; правила UI-библиотек
-подключаются отдельно.
+`@training-observer/core/adapters` — SDK правил проекции сохранённых снимков. `projectControls(snapshot, adapters)`
+строит логические контролы из сериализованного DOM-графа; самим правилам не нужны DI или живые элементы. По умолчанию
+доступны native/ARIA правила; правила UI-библиотек подключаются отдельно.
 
 Адаптер получает `SnapshotReader`, целевой узел, его предков, native kind и `baseCandidate` — результат более низких
 слоёв. `match()` возвращает:

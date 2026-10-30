@@ -11,8 +11,8 @@ import {
     withInMemoryScrolling,
 } from '@angular/router';
 import {provideEventPlugins} from '@taiga-ui/event-plugins';
-import {provideProcedurePlayerAdapter} from '@training-observer/procedure-player/angular';
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideProcedurePlayerAdapter} from '@training-observer/procedure-player';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
 import {MarkdownModule} from 'ngx-markdown';
 
 import {APP_PROVIDERS} from './app.providers';

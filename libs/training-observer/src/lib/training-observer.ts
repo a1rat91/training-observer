@@ -29,27 +29,38 @@ import {
 } from './tokens/dom-observation-options';
 import {type DomSnapshotOptions} from './tokens/dom-snapshot-options';
 
+/** Один согласованный результат наблюдения вместе с состоянием его жизненного цикла. */
+export interface ObservationState extends ObservationUpdate {
+    readonly isObserving: boolean;
+    readonly error: string | null;
+    readonly scanCount: number;
+    readonly revision: number;
+}
+
 /** Один сеанс на экземпляр сервиса. Предоставляйте локально для жизненного цикла области. */
 @Injectable()
 export class TrainingObserver {
     private readonly builder = inject(DomSnapshotBuilder);
     private readonly controlBuilder = inject(ControlSnapshotBuilder);
     private readonly zone = inject(NgZone);
-    private readonly current = signal<DomSnapshot | null>(null);
+    private readonly frame = signal<ObservationState>({
+        snapshot: null,
+        controls: [],
+        confirmedControls: {},
+        isObserving: false,
+        error: null,
+        scanCount: 0,
+        revision: 0,
+    });
+
     private readonly document = inject(DOCUMENT);
     private readonly defaults = inject(DOM_OBSERVATION_OPTIONS);
     private readonly sessions = inject(ObservationSessionFactory);
     private readonly destroyRef = inject(DestroyRef);
-    private readonly observing = signal(false);
-    private readonly failure = signal<string | null>(null);
-    private readonly scans = signal(0);
-    private readonly publications = signal(0);
-    private readonly projection = signal<readonly ControlSnapshot[]>([]);
-    private readonly confirmed = signal<Readonly<Record<string, ControlSnapshot>>>({});
     private readonly updates = new BehaviorSubject<ObservationUpdate>({
-        snapshot: this.current(),
-        controls: this.projection(),
-        confirmedControls: this.confirmed(),
+        snapshot: this.frame().snapshot,
+        controls: this.frame().controls,
+        confirmedControls: this.frame().confirmedControls,
     });
 
     private sessionRef: ObservationSessionRef | null = null;
@@ -62,13 +73,14 @@ export class TrainingObserver {
     private continuationOptions: DomObservationOptions | null = null;
     private destroyed = false;
 
-    /** Последнее значение при выходе из логического поля. Сырые снимки обновляются независимо; отсутствие означает, что подтверждения нет. */
-    public readonly confirmedControls = this.confirmed.asReadonly();
-    public readonly snapshot = this.current.asReadonly();
-    public readonly isObserving = this.observing.asReadonly();
-    public readonly error = this.failure.asReadonly();
-    public readonly scanCount = this.scans.asReadonly();
-    public readonly revision = this.publications.asReadonly();
+    public readonly state = this.frame.asReadonly();
+    /** Последние blur-подтверждения DOM-экземпляров, включая уже ушедшие контролы. */
+    public readonly confirmedControls = computed(() => this.state().confirmedControls);
+    public readonly snapshot = computed(() => this.state().snapshot);
+    public readonly isObserving = computed(() => this.state().isObserving);
+    public readonly error = computed(() => this.state().error);
+    public readonly scanCount = computed(() => this.state().scanCount);
+    public readonly revision = computed(() => this.state().revision);
     /** Синхронный атомарный результат; сразу отдаёт текущее состояние новому подписчику. */
     public readonly updates$ = this.updates.asObservable();
     public readonly controls = computed<readonly DomElementSnapshot[]>(() => {
@@ -81,7 +93,7 @@ export class TrainingObserver {
             : [];
     });
 
-    public readonly logicalControls = this.projection.asReadonly();
+    public readonly logicalControls = computed(() => this.state().controls);
 
     constructor() {
         this.destroyRef.onDestroy(() => {
@@ -108,8 +120,7 @@ export class TrainingObserver {
         );
 
         this.stop();
-        this.confirmed.set({});
-        this.failure.set(null);
+        this.frame.update((state) => ({...state, confirmedControls: {}, error: null}));
         this.continuationOptions = options;
         this.startSession(root, options, initial);
 
@@ -139,23 +150,24 @@ export class TrainingObserver {
         );
 
         if (departures) {
-            this.confirmed.set(this.mergeConfirmations(departures));
+            const confirmedControls = this.mergeConfirmations(departures);
+
+            this.frame.update((state) => ({...state, confirmedControls}));
         }
 
         this.stop();
-        this.failure.set(null);
+        this.frame.update((state) => ({...state, error: null}));
         this.continuationOptions = options;
 
         if (root && initial) {
             this.startSession(root, options, initial);
         } else {
             this.fingerprint = null;
-            this.current.set(null);
-            this.projection.set([]);
+            this.frame.update((state) => ({...state, snapshot: null, controls: []}));
             this.updates.next({
                 snapshot: null,
-                controls: this.projection(),
-                confirmedControls: this.confirmed(),
+                controls: this.logicalControls(),
+                confirmedControls: this.confirmedControls(),
             });
         }
 
@@ -167,7 +179,7 @@ export class TrainingObserver {
         this.sessionRef?.destroy();
         this.sessionRef = null;
         this.sessionContext = null;
-        this.observing.set(false);
+        this.frame.update((state) => ({...state, isObserving: false}));
     }
 
     public capture(root?: Element, options?: Partial<DomSnapshotOptions>): DomSnapshot {
@@ -192,7 +204,7 @@ export class TrainingObserver {
                 this.session?.project(snapshot) ?? {
                     snapshot,
                     controls: this.controlBuilder.build(snapshot),
-                    confirmedControls: this.confirmed(),
+                    confirmedControls: this.confirmedControls(),
                 },
         );
 
@@ -211,14 +223,17 @@ export class TrainingObserver {
         this.stop();
         this.fingerprint = null;
         this.continuationOptions = null;
-        this.failure.set(null);
-        this.current.set(null);
-        this.projection.set([]);
-        this.confirmed.set({});
+        this.frame.update((state) => ({
+            ...state,
+            error: null,
+            snapshot: null,
+            controls: [],
+            confirmedControls: {},
+        }));
         this.updates.next({
             snapshot: null,
-            controls: this.projection(),
-            confirmedControls: this.confirmed(),
+            controls: this.logicalControls(),
+            confirmedControls: this.confirmedControls(),
         });
     }
 
@@ -243,7 +258,9 @@ export class TrainingObserver {
             try {
                 const result = ref.session.start(initial);
 
-                this.zone.run(() => this.observing.set(true));
+                this.zone.run(() =>
+                    this.frame.update((state) => ({...state, isObserving: true})),
+                );
                 this.publish(result, false);
             } catch (error: unknown) {
                 this.stop();
@@ -255,7 +272,10 @@ export class TrainingObserver {
     private fail(error: unknown): void {
         this.zone.run(() => {
             this.stop();
-            this.failure.set(error instanceof Error ? error.message : String(error));
+            this.frame.update((state) => ({
+                ...state,
+                error: error instanceof Error ? error.message : String(error),
+            }));
         });
     }
 
@@ -265,10 +285,8 @@ export class TrainingObserver {
         const fingerprint = snapshotFingerprint(snapshot);
 
         this.zone.run(() => {
-            this.scans.update((count) => count + 1);
-            const confirmationsChanged = this.confirmed() !== confirmedControls;
-
-            this.confirmed.set(confirmedControls);
+            const current = this.frame();
+            const confirmationsChanged = current.confirmedControls !== confirmedControls;
 
             if (
                 !onlyIfChanged ||
@@ -276,10 +294,17 @@ export class TrainingObserver {
                 confirmationsChanged
             ) {
                 this.fingerprint = fingerprint;
-                this.current.set(snapshot);
-                this.projection.set(controls);
-                this.publications.update((count) => count + 1);
+                this.frame.set({
+                    ...current,
+                    snapshot,
+                    controls,
+                    confirmedControls,
+                    scanCount: current.scanCount + 1,
+                    revision: current.revision + 1,
+                });
                 this.updates.next({snapshot, controls, confirmedControls});
+            } else {
+                this.frame.set({...current, scanCount: current.scanCount + 1});
             }
         });
     }
@@ -287,7 +312,7 @@ export class TrainingObserver {
     private mergeConfirmations(
         incoming: Readonly<Record<string, ControlSnapshot>>,
     ): Readonly<Record<string, ControlSnapshot>> {
-        const current = this.confirmed();
+        const current = this.confirmedControls();
 
         return Object.entries(incoming).some(([id, control]) => current[id] !== control)
             ? {...current, ...incoming}

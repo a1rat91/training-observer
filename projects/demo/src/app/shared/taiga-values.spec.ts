@@ -4,7 +4,7 @@ import {expect} from '@jest/globals';
 import {readControlValue} from '@training-observer/contracts';
 import {provideDomObservation, TrainingObserver} from '@training-observer/core';
 import {type ControlSnapshot} from '@training-observer/core/models';
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
 
 const options = {batchDelayMs: 0, propertyCheckIntervalMs: 0};
 const rangeRects = Object.getOwnPropertyDescriptor(Range.prototype, 'getClientRects');

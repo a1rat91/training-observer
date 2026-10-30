@@ -17,6 +17,7 @@ import {ControlSnapshotBuilder} from '../controls/control-snapshot-builder';
 import {CONTROL_ADAPTER_EXCLUSIONS, CONTROL_ADAPTERS} from '../tokens/control-adapters';
 import {type DomObservationOptions} from '../tokens/dom-observation-options';
 import {BlurConfirmation} from './blur-confirmation';
+import {BLUR_CONFIRMATION_CONTEXT} from './confirmation-context';
 import {DomObservationSession} from './dom-observation-session';
 import {SESSION_CONTEXT, SessionSourceMode} from './session-context';
 
@@ -35,6 +36,10 @@ export class ObservationSessionFactory {
         {provide: DomElementAnalyzer, useValue: inject(DomElementAnalyzer)},
         {provide: ControlSnapshotBuilder, useValue: inject(ControlSnapshotBuilder)},
         {provide: CONTROL_ADAPTERS, useValue: inject(CONTROL_ADAPTERS)},
+        {
+            provide: BLUR_CONFIRMATION_CONTEXT,
+            useValue: inject(BLUR_CONFIRMATION_CONTEXT),
+        },
         {
             provide: CONTROL_ADAPTER_EXCLUSIONS,
             useValue: inject(CONTROL_ADAPTER_EXCLUSIONS),

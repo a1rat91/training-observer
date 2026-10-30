@@ -1,55 +1,36 @@
 /** Taiga UI DOM rules. No Angular instances or component private fields are read. */
 import {
     type ControlAdapter,
-    type ControlAdapterResult,
     type ControlCandidate,
     normalizeText,
+    type SnapshotReader,
 } from '@training-observer/core/adapters';
 import {
     type ControlKind,
+    ControlType,
     type DomElementSnapshot,
     type DomNodeId,
 } from '@training-observer/core/models';
 
-const TAIGA_FIELD_KINDS: readonly ControlKind[] = [
-    'textbox',
-    'number',
-    'select',
-    'combobox',
-];
+import {
+    isSelectLikeEditor,
+    isTextValue,
+    matchTaigaControl,
+} from './taiga-ui-control-rules';
+import {
+    findTaigaField,
+    hasDateField,
+    hasTaigaAttribute,
+    hasTaigaClass,
+    hasTaigaHost,
+    isTaigaField,
+    TAIGA_ADAPTER_ID,
+    TaigaAttribute,
+    TaigaClass,
+    TaigaFieldHost,
+} from './taiga-ui-dom';
 
-/** Хосты текстовых полей Taiga; нативный input лежит внутри них. */
-const TAIGA_FIELD_HOSTS = new Set([
-    'tui-combo-box',
-    'tui-input',
-    'tui-input-date',
-    'tui-input-date-range',
-    'tui-input-date-time',
-    'tui-input-month',
-    'tui-input-month-range',
-    'tui-input-number',
-    'tui-input-tag',
-    'tui-input-time',
-    'tui-input-time-range',
-    'tui-multi-select',
-    'tui-primitive-textfield',
-    'tui-select',
-    'tui-textarea',
-    'tui-textfield',
-]);
-
-/** Даты/время: нативный input пуст, значение отображается в .t-ghost. */
-const TAIGA_DATE_FIELD_HOSTS = new Set([
-    'tui-input-date',
-    'tui-input-date-range',
-    'tui-input-date-time',
-    'tui-input-month',
-    'tui-input-month-range',
-    'tui-input-time',
-    'tui-input-time-range',
-]);
-
-// Each projection owns its candidate array; the weak key retains no snapshot graph.
+// One projection owns each candidate array; this cache retains no snapshot graph.
 const fieldHostsByCandidates = new WeakMap<
     readonly ControlCandidate[],
     ReadonlySet<DomNodeId>
@@ -57,58 +38,37 @@ const fieldHostsByCandidates = new WeakMap<
 
 /** DOM markers verified with Taiga UI 4.98. Native controls remain core fallbacks. */
 export const taigaUiAdapter: ControlAdapter = {
-    id: 'taiga-ui',
+    id: TAIGA_ADAPTER_ID,
     priority: 100,
     excludedSubtreeSelectors: ['tui-calendar', 'tui-scroll-controls'],
     match({target, ancestors, nativeKind}) {
-        // Taiga рендерит legacy-дубликат рядом с нативным полем — это один логический контрол.
-        if (
-            'tuitextfieldlegacy' in target.attributes &&
-            (target.tagName === 'input' || target.tagName === 'textarea')
-        ) {
+        if (isLegacyDuplicate(target)) {
             return {status: 'exclude'};
         }
 
-        const field = ancestors.find((parent) => TAIGA_FIELD_HOSTS.has(parent.tagName));
+        const field = findTaigaField(ancestors);
 
-        if (field && isTaigaFiller(target)) {
+        if (field && isFiller(target)) {
             return {status: 'exclude'};
         }
 
-        // Select editors must not fall back to ordinary textboxes.
-        const native =
-            nativeKind === 'textbox' && 'tuiselectlike' in target.attributes
-                ? null
-                : nativeKind;
-
+        const selectLike = isSelectLikeEditor(target, nativeKind);
+        const native = selectLike ? null : nativeKind;
         const match = matchTaigaControl(target, field, native, ancestors);
-        const kind = match?.kind ?? native;
 
-        // Multi-value fields need a dedicated adapter.
-        if (
-            field &&
-            'multi' in field.attributes &&
-            (kind === 'textbox' || kind === 'number')
-        ) {
-            return {status: 'exclude'};
-        }
-
-        if (match) {
-            return match;
-        }
-
-        return nativeKind === 'textbox' && 'tuiselectlike' in target.attributes
+        // A multi textfield needs its own adapter; select/combobox rules may still claim it.
+        return isUnsupportedMultiField(field, match?.kind ?? native)
             ? {status: 'exclude'}
-            : null;
+            : (match ?? (selectLike ? {status: 'exclude'} : null));
     },
     excludeCandidate({candidate, candidates}) {
-        if (!isTaigaCleaner(candidate.target)) {
+        if (!isCleaner(candidate.target)) {
             return false;
         }
 
         const fieldHosts = taigaFieldHosts(candidates);
 
-        // Only known clear buttons inside supported fields join those fields.
+        // Only cleaners belonging to a recognized field are decoration.
         return candidate.ancestors.some((parent) => fieldHosts.has(parent.id));
     },
     resolveLabel({reader, candidate, members}) {
@@ -117,76 +77,93 @@ export const taigaUiAdapter: ControlAdapter = {
         }
 
         const labels = reader.labels.filter(
-            (label) => members.has(label.id) && 'tuilabel' in label.attributes,
+            (label) =>
+                members.has(label.id) && hasTaigaAttribute(label, TaigaAttribute.Label),
         );
 
-        // Do not choose between unrelated floating labels.
-        if (labels.length === 1 && labels[0]) {
-            return normalizeText(reader.text(labels[0].id));
-        }
-
-        // Без tuilabel меткой поля выступает плейсхолдер (t-placeholder): его for-связь
-        // указывает на исключённый legacy-инпут, а не на нативный, поэтому generic-анализатор его не видит.
         const placeholders = reader.labels.filter(
             (label) =>
-                members.has(label.id) &&
-                (label.attributes['class'] ?? '').split(/\s+/).includes('t-placeholder'),
+                members.has(label.id) && hasTaigaClass(label, TaigaClass.Placeholder),
         );
 
-        return placeholders.length === 1 && placeholders[0]
-            ? normalizeText(reader.text(placeholders[0].id))
-            : undefined;
+        // Legacy placeholder.for points to the excluded duplicate input.
+        return uniqueLabel(reader, labels) ?? uniqueLabel(reader, placeholders);
     },
     resolveValue({reader, candidate, members}) {
-        if (candidate.kind !== 'textbox' || !isTaigaField(candidate)) {
+        if (candidate.kind !== ControlType.Textbox || !isTaigaField(candidate)) {
             return;
         }
 
-        if (candidate.ancestors.some((parent) => parent.tagName === 'tui-multi-select')) {
-            // Выбранные элементы живут в тегах .t-tags .t-text, а не в нативном input.
-            const tags = candidate.ancestors.find((node) => hasClass(node, 't-tags'));
-
-            if (!tags) {
-                return;
-            }
-
-            const tagIds = [...members].filter((id) => {
-                const node = reader.snapshot.nodes[id];
-
-                return (
-                    node?.kind === 'element' &&
-                    hasClass(node, 't-text') &&
-                    reader.ancestors(node).some((parent) => parent.id === tags.id)
-                );
-            });
-
-            return tagIds.map((id) => normalizeText(reader.text(id))).filter(Boolean);
+        if (hasTaigaHost(candidate.ancestors, TaigaFieldHost.MultiSelect)) {
+            return selectedTags(reader, candidate, members);
         }
 
-        if (
-            candidate.ancestors.some((parent) =>
-                TAIGA_DATE_FIELD_HOSTS.has(parent.tagName),
-            )
-        ) {
-            // Даты/время: нативный input пуст, значение отображается в .t-ghost.
-            const ghostId = [...members].find((id) => {
-                const node = reader.snapshot.nodes[id];
-
-                return (
-                    node?.kind === 'element' &&
-                    (node.attributes['class'] ?? '').split(/\s+/).includes('t-ghost')
-                );
-            });
-
-            return ghostId ? normalizeText(reader.text(ghostId)) : undefined;
+        if (hasDateField(candidate.ancestors)) {
+            return dateValue(reader, members);
         }
 
         return;
     },
 };
 
-function hasClass(node: DomElementSnapshot, name: string): boolean {
-    return (node.attributes['class'] ?? '').split(/\s+/).includes(name);
+function uniqueLabel(
+    reader: SnapshotReader,
+    labels: readonly DomElementSnapshot[],
+): string | undefined {
+    const [label] = labels;
+
+    return labels.length === 1 && label
+        ? normalizeText(reader.text(label.id))
+        : undefined;
+}
+
+function selectedTags(
+    reader: SnapshotReader,
+    candidate: ControlCandidate,
+    members: ReadonlySet<DomNodeId>,
+): readonly string[] | undefined {
+    const tags = candidate.ancestors.find((node) => hasTaigaClass(node, TaigaClass.Tags));
+
+    if (!tags) {
+        return;
+    }
+
+    const labels: string[] = [];
+
+    for (const id of members) {
+        const node = reader.snapshot.nodes[id];
+
+        if (
+            node?.kind !== 'element' ||
+            !hasTaigaClass(node, TaigaClass.TagText) ||
+            !reader.ancestors(node).some((parent) => parent.id === tags.id)
+        ) {
+            continue;
+        }
+
+        const label = normalizeText(reader.text(id));
+
+        if (label) {
+            labels.push(label);
+        }
+    }
+
+    return labels;
+}
+
+function dateValue(
+    reader: SnapshotReader,
+    members: ReadonlySet<DomNodeId>,
+): string | undefined {
+    for (const id of members) {
+        const node = reader.snapshot.nodes[id];
+
+        if (node?.kind === 'element' && hasTaigaClass(node, TaigaClass.Ghost)) {
+            return normalizeText(reader.text(id));
+        }
+    }
+
+    return;
 }
 
 function taigaFieldHosts(
@@ -217,107 +194,37 @@ function taigaFieldHosts(
     return fieldHosts;
 }
 
-function isTaigaField(candidate: ControlCandidate): boolean {
-    return candidate.source === 'taiga-ui' && TAIGA_FIELD_KINDS.includes(candidate.kind);
-}
-
-/** v4 clear buttons require a supported textfield plus these DOM markers. */
-function isTaigaCleaner(node: DomElementSnapshot): boolean {
+function isLegacyDuplicate(node: DomElementSnapshot): boolean {
     return (
-        'tuibuttonx' in node.attributes ||
-        (node.tagName === 'button' &&
-            'tuiiconbutton' in node.attributes &&
-            (node.attributes['class'] ?? '').split(/\s+/).includes('t-clear'))
+        hasTaigaAttribute(node, TaigaAttribute.LegacyTextfield) &&
+        (node.tagName === 'input' || node.tagName === 'textarea')
     );
 }
 
-function isTaigaFiller(node: DomElementSnapshot): boolean {
+function isCleaner(node: DomElementSnapshot): boolean {
+    return hasTaigaAttribute(node, TaigaAttribute.Cleaner) || isIconCleaner(node);
+}
+
+function isIconCleaner(node: DomElementSnapshot): boolean {
+    return (
+        node.tagName === 'button' &&
+        hasTaigaAttribute(node, TaigaAttribute.IconButton) &&
+        hasTaigaClass(node, TaigaClass.Clear)
+    );
+}
+
+function isUnsupportedMultiField(
+    field: DomElementSnapshot | undefined,
+    kind: ControlKind | null,
+): boolean {
+    return !!field && hasTaigaAttribute(field, TaigaAttribute.Multi) && isTextValue(kind);
+}
+
+function isFiller(node: DomElementSnapshot): boolean {
     return (
         node.tagName === 'input' &&
         node.state.disabled &&
         node.attributes['aria-hidden'] === 'true' &&
-        (node.attributes['class'] ?? '').split(/\s+/).includes('t-filler')
+        hasTaigaClass(node, TaigaClass.Filler)
     );
-}
-
-function matchTaigaControl(
-    node: DomElementSnapshot,
-    field: DomElementSnapshot | undefined,
-    native: ControlKind | null,
-    ancestors: readonly DomElementSnapshot[],
-): Extract<ControlAdapterResult, {status: 'match'}> | null {
-    const attributes = node.attributes;
-    let kind: ControlKind | undefined;
-
-    if (
-        (node.tagName === 'input' || node.tagName === 'select') &&
-        'tuiselect' in attributes
-    ) {
-        kind = 'select';
-    } else if (node.tagName === 'input' && 'tuicombobox' in attributes) {
-        kind = 'combobox';
-    } else if (
-        node.tagName === 'input' &&
-        'tuiinputnumber' in attributes &&
-        ['number', 'text'].includes((attributes['type'] ?? 'text').toLowerCase()) &&
-        (!attributes['role'] ||
-            ['combobox', 'spinbutton', 'textbox'].includes(attributes['role']))
-    ) {
-        // Inputmode alone cannot distinguish numbers from phones or account IDs.
-        kind = 'number';
-    } else if (
-        node.tagName === 'input' &&
-        ('tuiinput' in attributes ||
-            'tuitextfield' in attributes ||
-            'tuidropdowna11y' in attributes ||
-            'tuidropdownrole' in attributes) &&
-        attributes['role'] === 'combobox' &&
-        !('tuiselectlike' in attributes)
-    ) {
-        // A generic dropdown does not imply selection semantics.
-        kind = 'textbox';
-    } else if (
-        node.tagName === 'input' &&
-        attributes['role'] === 'combobox' &&
-        ancestors.some((parent) => parent.tagName === 'tui-combo-box')
-    ) {
-        // Combo-box: выбор из дропдауна, значение живёт в нативном input/ghost.
-        kind = 'combobox';
-    } else if (
-        node.tagName === 'input' &&
-        attributes['role'] === 'combobox' &&
-        ancestors.some(
-            (parent) =>
-                parent.tagName === 'tui-multi-select' ||
-                parent.tagName === 'tui-input-tag' ||
-                TAIGA_DATE_FIELD_HOSTS.has(parent.tagName),
-        )
-    ) {
-        // Multi-select: значение в тегах; даты/время: значение в .t-ghost, нативный input пуст.
-        kind = 'textbox';
-    } else if (
-        native === 'textbox' &&
-        (field || 'tuiinput' in attributes || 'tuitextfield' in attributes)
-    ) {
-        kind = native;
-    }
-
-    if (kind) {
-        return {
-            status: 'match',
-            kind,
-            hostId: (field ?? node).id,
-            popup:
-                (kind === 'textbox' || kind === 'number') &&
-                attributes['role'] === 'combobox',
-        };
-    }
-
-    return (native === 'button' &&
-        ('tuibutton' in attributes || 'tuiiconbutton' in attributes)) ||
-        (native === 'checkbox' && 'tuicheckbox' in attributes) ||
-        (native === 'radio' && 'tuiradio' in attributes) ||
-        (native === 'switch' && 'tuiswitch' in attributes)
-        ? {status: 'match', kind: native, hostId: node.id}
-        : null;
 }

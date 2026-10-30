@@ -50,14 +50,16 @@ Native fallback уточняется адаптером Taiga UI с приори
 обращения к Angular injector, экземплярам компонентов или приватным полям Taiga UI. Стенд содержит настоящие
 TuiTextfield, TuiButton и TuiCheckbox с привязкой к форме для проверки пользовательского взаимодействия.
 
-Для Angular подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui/angular`. Core по умолчанию содержит
-только общие правила. Собственный адаптер регистрируется через `provideControlAdapters(...adapters)`;
+Для Angular подключите `provideTaigaUiAdapter()` из `@training-observer/taiga-ui`. Core по умолчанию содержит только
+общие правила. Собственный адаптер регистрируется через `provideControlAdapters(...adapters)`;
 [контракт SDK](../../libs/training-observer/adapters/README.md) описывает приоритеты, исключения и композицию внешних
 компонентов с внутренними Taiga-полями.
 
-Slider/Range, календарные контролы, contenteditable, ARIA-контролы без native-элемента и редактор `tui-textfield[multi]`
-не входят в этот набор. Их DOM остаётся в исходном снимке. Вложенный простой контрол сложного виджета может быть
-распознан отдельно; полноценная семантика виджета ещё не описана.
+Taiga date/time-поля читаются как textbox по видимой строке `.t-ghost`; теги `tui-multi-select` сохраняются как
+`string[]`, включая пустой массив после очистки. Внутренний `tui-calendar` исключён: библиотека не восстанавливает
+семантику календаря из его кнопок. Slider/Range, самостоятельные календари, contenteditable без отдельного адаптера,
+ARIA-контролы без native-элемента и редактор `tui-textfield[multi]` не входят в этот набор. Вложенный простой контрол
+сложного виджета может быть распознан отдельно.
 
 Динамические dropdown, варианты, загрузка и границы достоверности выбранного значения описаны в
 [наблюдении за Select и ComboBox](dropdown-observation.md). Radio, Switch и InputNumber, включая подписи, значения и

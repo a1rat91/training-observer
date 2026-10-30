@@ -178,7 +178,11 @@ test('a quiet correct remount still permits the next wrong blur to report the sa
 });
 
 const valuesByKind = [
-    ['textbox', ['', 'Анна'], [true, [], ['Анна']]],
+    [
+        'textbox',
+        ['', 'Анна', [], ['Анна'], ['A; B', ' Second ']],
+        [true, 42, ['Анна', null], [[]]],
+    ],
     ['number', ['', '1 500,00'], [false, 1500, ['1500']]],
     ['checkbox', [false, true], ['', [], ['checked']]],
     ['radio', [false, true], ['', [], ['option']]],

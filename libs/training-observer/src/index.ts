@@ -5,9 +5,14 @@ export {ControlSnapshotBuilder} from './lib/controls/control-snapshot-builder';
 export {DomHighlighter} from './lib/highlight/dom-highlighter';
 export {MicrofrontendObserver} from './lib/microfrontend-observer';
 export type {ObservationUpdate} from './lib/observation-update';
+export {PageObservation} from './lib/page-observation.service';
 export {provideDomObservation} from './lib/provide-dom-observation';
+export {providePageObservation} from './lib/provide-page-observation';
 export {readScreenState} from './lib/screen/screen-state-reader';
 export {ScreenVisitTracker} from './lib/screen/screen-visit-tracker';
+export {ObservationConnection} from './lib/session/observation-connection';
+export type {ObservationSessionOptions} from './lib/session/observation-session-options';
+export {readSessionScreen} from './lib/session/read-session-screen';
 export {CONTROL_ADAPTERS, provideControlAdapters} from './lib/tokens/control-adapters';
 export {
     DOM_OBSERVATION_OPTIONS,
@@ -18,7 +23,7 @@ export {
     type DomSnapshotOptions,
 } from './lib/tokens/dom-snapshot-options';
 export {provideScreenAdapters, SCREEN_ADAPTERS} from './lib/tokens/screen-adapters';
-export {TrainingObserver} from './lib/training-observer';
+export {type ObservationState, TrainingObserver} from './lib/training-observer';
 export type {
     ControlAdapter,
     ControlAdapterContext,

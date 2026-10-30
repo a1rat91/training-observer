@@ -2,11 +2,14 @@ import nx from '@nx/eslint-plugin';
 import taiga from '@taiga-ui/eslint-plugin-experience-next';
 
 // Nx проверяет направления зависимостей между проектами по их layer-тегам.
-const pureLayerConstraints = ['contracts', 'recording', 'runtime'].map((layer) => ({
+const featureLayerConstraints = ['contracts', 'recording', 'runtime'].map((layer) => ({
     sourceTag: `layer:${layer}`,
     onlyDependOnLibsWithTags:
         layer === 'contracts' ? ['layer:core'] : ['layer:core', 'layer:contracts'],
-    bannedExternalImports: ['@angular/*', '@taiga-ui/*', 'rxjs', 'rxjs/*'],
+    bannedExternalImports:
+        layer === 'contracts'
+            ? ['@angular/*', '@taiga-ui/*', 'rxjs', 'rxjs/*']
+            : ['@taiga-ui/*'],
 }));
 
 export default [
@@ -36,17 +39,7 @@ export default [
                             sourceTag: 'layer:core',
                             onlyDependOnLibsWithTags: ['layer:core'],
                         },
-                        {
-                            sourceTag: 'layer:angular',
-                            onlyDependOnLibsWithTags: [
-                                'layer:core',
-                                'layer:contracts',
-                                'layer:recording',
-                                'layer:runtime',
-                            ],
-                            bannedExternalImports: ['@taiga-ui/*'],
-                        },
-                        ...pureLayerConstraints,
+                        ...featureLayerConstraints,
                         {
                             sourceTag: 'layer:taiga-ui',
                             onlyDependOnLibsWithTags: ['layer:core'],
@@ -64,7 +57,6 @@ export default [
                                 'layer:contracts',
                                 'layer:recording',
                                 'layer:runtime',
-                                'layer:angular',
                                 'layer:taiga-ui',
                                 'layer:procedure-player',
                             ],
@@ -75,7 +67,7 @@ export default [
         },
     },
     {
-        files: ['libs/training-{contracts,recording,runtime}/**/*.ts'],
+        files: ['libs/training-contracts/**/*.ts'],
         rules: {
             // Чистые пакеты используют только модели, не Angular API core.
             'no-restricted-imports': [
@@ -111,8 +103,10 @@ export default [
     },
     {
         files: [
-            'libs/training-taiga-ui/src/**/*.ts',
-            'libs/training-procedure-player/src/**/*.ts',
+            'libs/training-taiga-ui/src/lib/taiga-ui-adapter.ts',
+            'libs/training-procedure-player/src/lib/procedure-player-adapter.ts',
+            'libs/training-procedure-player/src/lib/procedure-player-screen-adapter.ts',
+            'libs/training-procedure-player/src/lib/procedure-player-block-tracker.ts',
         ],
         rules: {
             'no-restricted-imports': [

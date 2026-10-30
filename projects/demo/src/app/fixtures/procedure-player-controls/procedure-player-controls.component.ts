@@ -11,14 +11,24 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormsModule} from '@angular/forms';
 import {TuiButton, TuiTextfield} from '@taiga-ui/core';
 import {TuiInputNumber, TuiRadio} from '@taiga-ui/kit';
-import {provideRecordingSession, RecordingSession} from '@training-observer/angular';
-import {provideProcedurePlayerAdapter} from '@training-observer/procedure-player/angular';
-import {provideTaigaUiAdapter} from '@training-observer/taiga-ui/angular';
+import {provideProcedurePlayerAdapter} from '@training-observer/procedure-player';
+import {provideRecordingSession, RecordingSession} from '@training-observer/recording';
+import {provideTaigaUiAdapter} from '@training-observer/taiga-ui';
+
+import {MicrofrontendHostDirective} from '../../shared/microfrontend-host.directive';
 
 /** Browser fixture for the real procedure table DOM markers and independent recording. */
 @Component({
     selector: 'app-procedure-player-controls',
-    imports: [FormsModule, JsonPipe, TuiButton, TuiInputNumber, TuiRadio, TuiTextfield],
+    imports: [
+        FormsModule,
+        JsonPipe,
+        MicrofrontendHostDirective,
+        TuiButton,
+        TuiInputNumber,
+        TuiRadio,
+        TuiTextfield,
+    ],
     templateUrl: './procedure-player-controls.component.html',
     styleUrl: './procedure-player-controls.component.less',
     changeDetection: ChangeDetectionStrategy.OnPush,

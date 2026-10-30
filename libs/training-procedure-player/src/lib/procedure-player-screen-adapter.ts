@@ -4,91 +4,144 @@ import {
     SnapshotReader,
 } from '@training-observer/core/adapters';
 import {
+    type DomElementSnapshot,
     type DomSnapshot,
-    type ScreenState,
+    ScreenIdentityKind,
     ScreenStatus,
 } from '@training-observer/core/models';
 
-const PLAYER_TAGS = new Set(['player-procedure', 'procedure-player']);
+const BLOCK_ID = 'block-id';
+const MICROFRONTEND = 'microfrontend';
+const PAGE_ROOTS = new Set(['body', 'html']);
 
-/** Правила DOM procedure-player. Идентичность блока не зависит от состава его контролов. */
+/** Идентичность блока задаёт block-id внутри принадлежащего области снимка, независимо от тега MF. */
 export const procedurePlayerScreenAdapter: ScreenAdapter = {
     id: 'procedure-player',
-    rootSelector: 'player-procedure,procedure-player',
     read(snapshot, controls) {
         const reader = new SnapshotReader(snapshot);
-        const players = reader.elements.filter(
-            (node) => PLAYER_TAGS.has(node.tagName) && node.visible,
-        );
+        const root = snapshot.rootId ? snapshot.nodes[snapshot.rootId] : undefined;
 
-        if (!players.length) {
+        if (root?.kind !== 'element') {
             return null;
         }
 
-        if (snapshot.stats.truncated) {
-            return unavailable('truncated');
-        }
-
-        if (players.length > 1) {
-            return unavailable('root-ambiguous', ScreenStatus.Ambiguous);
-        }
-
-        const player = players[0]!;
-        const scoped: DomSnapshot = {
-            ...snapshot,
-            rootId: player.id,
-            nodes: Object.fromEntries(
-                Object.entries(snapshot.nodes).filter(
-                    ([id]) => owner(snapshot, id) === player.id,
-                ),
+        const areas = capturedAreas(snapshot, root, reader.elements);
+        const nodes = Object.fromEntries(
+            Object.entries(snapshot.nodes).filter(([id]) =>
+                belongsToArea(snapshot, id, areas),
             ),
-        };
+        );
 
-        const screen = readScreenState(scoped, controls, {
-            root: {attribute: {name: 'block-id'}},
-            identity: {kind: 'attribute', name: 'block-id'},
+        const blocks = reader.elements.filter(
+            (node) => nodes[node.id] && node.visible && BLOCK_ID in node.attributes,
+        );
+
+        if (!blocks.length) {
+            return null;
+        }
+
+        const screen = readScreenState({...snapshot, nodes}, controls, {
+            root: {attribute: {name: BLOCK_ID}},
+            identity: {kind: ScreenIdentityKind.Attribute, name: BLOCK_ID},
             loading: {name: 'aria-busy', value: 'true'},
         });
 
-        return player.attributes['aria-busy'] === 'true' &&
-            screen.status !== ScreenStatus.Ambiguous
+        const block = blocks.length === 1 ? blocks[0] : undefined;
+
+        return block &&
+            screen.reason !== 'truncated' &&
+            isLoading({...snapshot, nodes}, block)
             ? {
                   ...screen,
                   status: ScreenStatus.Loading,
                   reason: 'loading',
-                  rootNodeId: screen.rootNodeId ?? player.id,
+                  rootNodeId: screen.rootNodeId ?? block.id,
               }
             : screen;
     },
 };
 
-/** Не захватываем блоки вложенного procedure-player или соседнего микрофронта. */
-function owner(snapshot: DomSnapshot, id: string): string | null {
+/** Whole-page recordings may contain several independent MF snapshots in one captured graph. */
+function capturedAreas(
+    snapshot: DomSnapshot,
+    root: DomElementSnapshot,
+    elements: readonly DomElementSnapshot[],
+): ReadonlySet<string> {
+    const areas = new Set([root.id]);
+
+    if (PAGE_ROOTS.has(root.tagName)) {
+        for (const element of elements) {
+            const parent = element.parentId
+                ? snapshot.nodes[element.parentId]
+                : undefined;
+
+            if (
+                parent?.kind === 'element' &&
+                parent.tagName === MICROFRONTEND &&
+                parent.parentId &&
+                belongsToCapture(snapshot, parent.parentId, root.id)
+            ) {
+                areas.add(element.id);
+            }
+        }
+    }
+
+    return areas;
+}
+
+function belongsToCapture(snapshot: DomSnapshot, id: string, rootId: string): boolean {
     const visited = new Set<string>();
     let node = snapshot.nodes[id];
 
     while (node && !visited.has(node.id)) {
+        if (node.id === rootId) {
+            return true;
+        }
+
         visited.add(node.id);
-
-        if (node.kind === 'element' && PLAYER_TAGS.has(node.tagName)) {
-            return node.id;
-        }
-
-        const parent = node.parentId ? snapshot.nodes[node.parentId] : undefined;
-
-        if (parent?.kind === 'element' && parent.tagName === 'microfrontend') {
-            return null;
-        }
-
-        node = parent;
+        node = node.parentId ? snapshot.nodes[node.parentId] : undefined;
     }
 
-    return null;
+    return false;
 }
 
-function unavailable(
-    reason: ScreenState['reason'],
-    status: ScreenState['status'] = ScreenStatus.Unavailable,
-): ScreenState {
-    return {schemaVersion: 1, status, reason, key: null, rootNodeId: null, controls: []};
+/** A nested MF wrapper owns its descendants; disconnected and cyclic nodes cannot enter this area. */
+function belongsToArea(
+    snapshot: DomSnapshot,
+    id: string,
+    roots: ReadonlySet<string>,
+): boolean {
+    const visited = new Set<string>();
+    let node = snapshot.nodes[id];
+
+    while (node && !visited.has(node.id)) {
+        if (roots.has(node.id)) {
+            return true;
+        }
+
+        if (node.kind === 'element' && node.tagName === MICROFRONTEND) {
+            return false;
+        }
+
+        visited.add(node.id);
+        node = node.parentId ? snapshot.nodes[node.parentId] : undefined;
+    }
+
+    return false;
+}
+
+function isLoading(snapshot: DomSnapshot, block: DomElementSnapshot): boolean {
+    const visited = new Set<string>();
+    let node = snapshot.nodes[block.id];
+
+    while (node && !visited.has(node.id)) {
+        if (node.kind === 'element' && node.attributes['aria-busy'] === 'true') {
+            return true;
+        }
+
+        visited.add(node.id);
+        node = node.parentId ? snapshot.nodes[node.parentId] : undefined;
+    }
+
+    return false;
 }

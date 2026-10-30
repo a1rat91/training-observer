@@ -19,8 +19,8 @@
         tabindex="0"
         class="content"
     >
-        @if (session.error()) {
-            <p role="alert">{{ session.error() }}</p>
+        @if (observer.error()) {
+            <p role="alert">{{ observer.error() }}</p>
         }
         @for (area of areas(); track area.id) {
             <section class="mf-group">
@@ -28,6 +28,9 @@
                     {{ area.name }}
                     <small>· {{ area.id }}</small>
                 </h3>
+                @if (area.error) {
+                    <p role="alert">{{ area.error }}</p>
+                }
                 @for (control of area.logicalControls; track control.id) {
                     <div
                         class="control"

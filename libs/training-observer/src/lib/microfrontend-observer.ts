@@ -2,6 +2,7 @@
 import {DOCUMENT} from '@angular/common';
 import {DestroyRef, inject, Injectable, NgZone, signal} from '@angular/core';
 import {type MicrofrontendSnapshot} from '@training-observer/core/models';
+import {BehaviorSubject} from 'rxjs';
 
 import {
     isAdapterExcluded,
@@ -49,6 +50,10 @@ export class MicrofrontendObserver {
     private readonly defaults = inject(DOM_OBSERVATION_OPTIONS);
     private readonly excludedSelector = inject(CONTROL_ADAPTER_EXCLUSIONS).join(',');
     private readonly current = signal<readonly MicrofrontendSnapshot[]>([]);
+    private readonly updates = new BehaviorSubject<readonly MicrofrontendSnapshot[]>(
+        this.current(),
+    );
+
     private readonly active = signal(false);
     private readonly entries = new Map<Element, Area>();
     private readonly identities = new WeakMap<Element, string>();
@@ -56,14 +61,18 @@ export class MicrofrontendObserver {
     private sources: DomObservationSources | null = null;
     private readonly cleanups: Array<() => void> = [];
     private destroyed = false;
+    private generation = 0;
 
     public readonly areas = this.current.asReadonly();
     public readonly isObserving = this.active.asReadonly();
+    /** Синхронная публикация того же массива, который возвращает areas(). */
+    public readonly updates$ = this.updates.asObservable();
 
     constructor() {
         inject(DestroyRef).onDestroy(() => {
-            this.clear();
             this.destroyed = true;
+            this.clear();
+            this.updates.complete();
         });
     }
 
@@ -99,11 +108,20 @@ export class MicrofrontendObserver {
         validateObservationTiming(options);
         this.builder.validateOptions(options);
         this.stop();
+        const generation = this.generation;
+
         this.zone.runOutsideAngular(() => {
             this.reconcile(root, options);
-            this.connectSharedSources(root, options, view);
+
+            // updates$ is synchronous: its subscriber may stop, destroy or start again.
+            if (this.isCurrent(generation)) {
+                this.connectSharedSources(root, options, view, generation);
+            }
         });
-        this.active.set(true);
+
+        if (this.isCurrent(generation)) {
+            this.active.set(true);
+        }
     }
 
     /** Находит существующие и поздно смонтированные области по селекторам в текущем документе. */
@@ -138,6 +156,8 @@ export class MicrofrontendObserver {
 
     /** Сохраняет результаты, освобождает DOM-ссылки и все browser-ресурсы. */
     public stop(): void {
+        this.generation++;
+
         for (const cleanup of this.cleanups.splice(0)) {
             cleanup();
         }
@@ -153,18 +173,23 @@ export class MicrofrontendObserver {
 
     public clear(): void {
         this.stop();
-        this.current.set([]);
+        this.publish();
     }
 
     private connectSharedSources(
         root: Element,
         options: DomObservationOptions,
         view: Window & typeof globalThis,
+        generation: number,
     ): void {
         const sources = new DomObservationSources(
             this.document,
             PAGE_EVENTS,
             (records) => {
+                if (!this.isCurrent(generation)) {
+                    return;
+                }
+
                 const relevant = records.filter((record) =>
                     this.discoveryRelevant(record, options.ignoreSelector),
                 );
@@ -181,6 +206,10 @@ export class MicrofrontendObserver {
                 }
 
                 for (const area of this.entries.values()) {
+                    if (!this.isCurrent(generation)) {
+                        return;
+                    }
+
                     if (existing.has(area)) {
                         area.sessionRef.session.handleMutations(relevant);
                     }
@@ -188,6 +217,10 @@ export class MicrofrontendObserver {
             },
             (event) => {
                 for (const area of this.entries.values()) {
+                    if (!this.isCurrent(generation)) {
+                        return;
+                    }
+
                     area.sessionRef.session.handleEvent(event);
                 }
             },
@@ -196,25 +229,46 @@ export class MicrofrontendObserver {
         this.sources = sources;
         this.cleanups.push(() => sources.dispose());
 
-        const resize = (): void => this.refresh();
+        const resize = (): void => {
+            if (this.isCurrent(generation)) {
+                this.refresh();
+            }
+        };
 
         view.addEventListener('resize', resize, {passive: true});
         this.cleanups.push(() => view.removeEventListener('resize', resize));
 
         if (options.propertyCheckIntervalMs > 0) {
             const timer = view.setInterval(() => {
+                if (!this.isCurrent(generation)) {
+                    return;
+                }
+
                 if (sources.refresh()) {
                     this.reconcile(root, options);
+
+                    if (!this.isCurrent(generation)) {
+                        return;
+                    }
+
                     this.refresh();
                 }
 
                 for (const area of this.entries.values()) {
+                    if (!this.isCurrent(generation)) {
+                        return;
+                    }
+
                     area.sessionRef.session.checkProperties();
                 }
             }, options.propertyCheckIntervalMs);
 
             this.cleanups.push(() => view.clearInterval(timer));
         }
+    }
+
+    private isCurrent(generation: number): boolean {
+        return !this.destroyed && this.generation === generation;
     }
 
     private reconcile(root: Element, options: DomObservationOptions): void {
@@ -264,7 +318,12 @@ export class MicrofrontendObserver {
             }
 
             if (area.state.name !== name || area.state.parentId !== parentId) {
-                area.state = {...area.state, name, parentId};
+                area.state = {
+                    ...area.state,
+                    name,
+                    parentId,
+                    revision: area.state.revision + 1,
+                };
                 changed = true;
             }
         }
@@ -283,16 +342,22 @@ export class MicrofrontendObserver {
         }
 
         const sessionRef = this.sessions.create(root, options, SessionSourceMode.Shared);
+        const parent = parentAcrossShadow(root);
+        const parentArea = parent
+            ? closestAcrossShadow(parent, options.boundarySelector!)
+            : null;
 
         const area: Area = {
             root,
             sessionRef,
-            parent: parentAcrossShadow(root),
+            parent,
             fingerprint: null,
             state: {
                 id,
                 name: root.localName,
-                parentId: null,
+                parentId: parentArea
+                    ? (this.entries.get(parentArea)?.state.id ?? null)
+                    : null,
                 snapshot: null,
                 logicalControls: [],
                 confirmedControls: {},
@@ -327,13 +392,16 @@ export class MicrofrontendObserver {
         area.state = {
             ...area.state,
             error: error instanceof Error ? error.message : String(error),
+            revision: area.state.revision + 1,
         };
     }
 
     private acceptArea(area: Area, result: SessionSnapshot): void {
         const {snapshot, controls, confirmedControls} = result;
         const fingerprint = snapshotFingerprint(snapshot);
-        const changed = fingerprint !== area.fingerprint;
+        const changed =
+            fingerprint !== area.fingerprint ||
+            confirmedControls !== area.state.confirmedControls;
 
         area.fingerprint = fingerprint;
         area.state = {
@@ -351,9 +419,12 @@ export class MicrofrontendObserver {
     }
 
     private publish(): void {
-        this.zone.run(() =>
-            this.current.set([...this.entries.values()].map((area) => area.state)),
-        );
+        this.zone.run(() => {
+            const state = [...this.entries.values()].map((area) => area.state);
+
+            this.current.set(state);
+            this.updates.next(state);
+        });
     }
 
     private discoveryRelevant(record: MutationRecord, ignoreSelector: string): boolean {
